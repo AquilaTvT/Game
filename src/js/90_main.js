@@ -6,6 +6,7 @@ const App = {
     document.documentElement.lang = LANG === 'zh' ? 'zh-CN' : 'en';
     UI.layout();
     initUiCore();
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) { UI.touch = true; document.body.classList.add('touch'); }
     Gfx.init();
     FX.init();
     BG.init();

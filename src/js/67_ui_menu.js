@@ -276,7 +276,7 @@ const Menu = {
           y.draw(PROFILE.settings.reduce ? 8 : p);
           if (p < 8) requestAnimationFrame(anim);
         };
-        anim();
+        setTimeout(anim, 30);
         const burst = () => { if (!y.cv.isConnected) return; const c = UI.center(y.cv); FX.spark(c.x + (Math.random() - 0.5) * c.w * 2, c.y + (Math.random() - 0.5) * c.h, Math.random() < 0.5 ? '#f3d98b' : '#ff9a6a', 18, 260 * UI.s, 2.6 * UI.s); };
         for (let i = 0; i < 9; i++) setTimeout(burst, 400 + i * 330);
       },

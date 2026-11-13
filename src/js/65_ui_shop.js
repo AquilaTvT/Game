@@ -45,7 +45,7 @@ const Shop = {
     const run = UI.run;
     if (it.kind === 'seal') {
       const d = SEALS[it.id];
-      const el = h('div.good.seal', { class: it.sold ? 'sold' : '', data: { i } },
+      const el = h('div.good.gseal', { class: it.sold ? 'sold' : '', data: { i } },
         h('div.body', Gfx.sealEl(it.id, 84, it.ed), h('div.gn', { text: nm(d) }), h('span.rar', { style: { background: RARITY[d.r].col } }), it.ed ? h('span.edtag', { text: nm(EDITIONS[it.ed]), style: { left: 'auto', right: '4px', top: '4px' } }) : null),
         this.priceEl(it.price, it.gift));
       bindCard(el, () => sealCard(it.id, null, run, { ed: it.ed, actions: [{ label: `${T('buy')} ${it.price ? coinHtml(it.price) : ''}`, cls: 'red', silent: true, fn: () => this.buy(i, false) }] }));

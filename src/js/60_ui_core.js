@@ -254,7 +254,7 @@ function showAchievements() {
 function initUiCore() {
   UI.stage = $('#stage');
   document.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'touch') UI.touch = true; else if (e.pointerType === 'mouse') UI.touch = false;
+    if (e.pointerType === 'touch') { UI.touch = true; document.body.classList.add('touch'); } else if (e.pointerType === 'mouse') { UI.touch = false; document.body.classList.remove('touch'); }
     const pop = $('#pop');
     if (_popAnchor && !pop.contains(e.target) && !_popAnchor.contains(e.target)) hidePop();
   }, true);
