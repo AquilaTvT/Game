@@ -12,7 +12,7 @@ const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ?
   const file = path.join(os.tmpdir(), 'fkz-dev-' + process.pid + '.html');
   execFileSync('node', [path.join(__dirname, 'build.js'), '--dev', file], { stdio: 'ignore' });
   const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: +arg('dpr', 1), hasTouch: process.argv.includes('--touch'), isMobile: process.argv.includes('--touch') });
+  const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: +arg('dpr', 1), hasTouch: process.argv.includes('--touch'), isMobile: process.argv.includes('--touch'), locale: arg('locale', 'zh-CN') });
   const page = await ctx.newPage();
   const errors = [];
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console: ' + m.text()); });

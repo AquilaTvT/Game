@@ -29,7 +29,7 @@ const Game = {
   enter() {
     UI.busy = false;
     UI.screen('game');
-    Play.cancelDrag(); Play.kb = null; Play.rinseMode = false; Play.target = null; Play.viewBoard = null; Play.strokes.length = 0; Play.hidden.clear(); Play.pops.clear(); Play.flashCells.clear(); Play.trayUid = [];
+    Play.cancelDrag(); Play.kb = null; Play.rinseMode = false; Play.target = null; Play.viewBoard = null; Play.strokes.length = 0; Play.hidden.clear(); Play.pops.clear(); Play.flashCells.clear(); Play.lineFlash.length = 0; Play.trayUid = [];
     FX.clear();
     Hud._patKey = ''; Hud._score = 0;
     this.route();
@@ -76,9 +76,12 @@ const Game = {
   place(slot, x, y) {
     const run = UI.run;
     if (UI.busy || run.phase !== 'round') return;
+    const before = findLines(run);
     const r = placeBlock(run, slot, x, y);
     if (!r.ok) { Snd.play('bad'); return; }
     Play.inkDirty = true;
+    for (const y2 of r.lines.rows) if (!before.rows.includes(y2)) Play.lineFlash.push({ kind: 'row', i: y2, t0: Play.t });
+    for (const x2 of r.lines.cols) if (!before.cols.includes(x2)) Play.lineFlash.push({ kind: 'col', i: x2, t0: Play.t });
     const u = UI.s;
     for (const i of r.cells) {
       Play.flashCells.set(i, Play.t);

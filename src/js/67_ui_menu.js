@@ -114,7 +114,8 @@ const Menu = {
     const add = (label, cls, fn, id) => { const b = mkBtn(label, cls, fn); if (id) b.id = id; list.appendChild(b); return b; };
     const run = PROFILE.run;
     if (run) add(`${T('menu.continue')}<small>${T('menu.continue.d', nm(DECKS[run.deckId]), run.ante > 8 ? run.ante : T('num.' + run.ante))}</small>`, 'gold', () => Game.resume(), 'btn-continue');
-    add(T('menu.new'), 'red', () => this.setup(), 'btn-new');
+    // the very first run starts straight away, with the tutorial; the full setup comes afterwards
+    add(T('menu.new'), 'red', () => { if (!PROFILE.meta.tutorial && !PROFILE.meta.runs && !PROFILE.run) Game.begin({ deck: 'kai', stake: 0, tutorial: true }); else this.setup(); }, 'btn-new');
     const dk = todayKey(), dd = PROFILE.meta.daily[dk];
     add(`${T('menu.daily')}<small>${dd && dd.done ? T('menu.daily.done', dd.ante > 8 ? 8 : dd.ante) : T('menu.daily.d')}</small>`, '', () => this.daily(), 'btn-daily');
     list.appendChild(h('div.rowbtns', mkBtn(T('menu.collection'), '', () => Overlays.collection()), mkBtn(T('menu.help'), '', () => Overlays.help()), mkBtn(T('menu.settings'), '', () => Overlays.settings())));

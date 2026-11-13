@@ -3,7 +3,7 @@ const Play = {
   active: false, cv: null, c: null, k: 1, cw: 0, ch: 0, cs: 40, bx: 0, by: 0, slots: [],
   inkLayer: null, inkDirty: true, viewBoard: null, lines: { rows: [], cols: [], diags: [], n: 0 },
   drag: null, kb: null, rinseMode: false, target: null,
-  pops: new Map(), strokes: [], hidden: new Set(), flashCells: new Map(), trayAppear: [], trayUid: [], shakeSlot: -1, shakeT: 0,
+  pops: new Map(), strokes: [], hidden: new Set(), flashCells: new Map(), lineFlash: [], trayAppear: [], trayUid: [], shakeSlot: -1, shakeT: 0,
   ghost: null, lastGhostKey: '', raf: 0, t: 0,
 
   init() {
@@ -13,6 +13,7 @@ const Play = {
     cv.addEventListener('pointermove', (e) => this.onMove(e));
     cv.addEventListener('pointerup', (e) => this.onUp(e));
     cv.addEventListener('pointercancel', (e) => this.cancelDrag());
+    cv.addEventListener('pointerleave', () => { this._hoverSlot = -1; if (!this.drag) this.hideSlotCard(); });
     cv.addEventListener('wheel', (e) => { if (this.drag || this.slotAt(e) >= 0) { e.preventDefault(); this.rotate(this.drag ? this.drag.slot : this.slotAt(e), e.deltaY > 0 ? 1 : -1); } }, { passive: false });
     Hud.el.ignite.addEventListener('click', () => Game.ignite());
     Hud.el.rinse.addEventListener('click', () => this.toggleRinse());
@@ -32,11 +33,13 @@ const Play = {
     const W = Math.round(this.cw * k), H = Math.round(this.ch * k);
     if (this.cv.width !== W || this.cv.height !== H) { this.cv.width = W; this.cv.height = H; }
     const bb = Hud.el.boardbox, w = run.w, h = run.h;
-    const bw = bb.offsetWidth, bh = bb.offsetHeight;
+    // a masterwork shows its rule above the sheet: leave it a strip
+    const top = run.round && run.round.boss && run.phase === 'round' ? 26 : 0;
+    const bw = bb.offsetWidth, bh = bb.offsetHeight - top;
     const cs = Math.max(12, Math.floor(Math.min((bw - 6) / (w + 1.15), (bh - 6) / (h + 1.2))));
     this.cs = cs;
     this.bx = Math.round(bb.offsetLeft + (bw - w * cs) / 2);
-    this.by = Math.round(bb.offsetTop + (bh - h * cs) / 2 - cs * 0.05);
+    this.by = Math.round(bb.offsetTop + top + (bh - h * cs) / 2 - cs * 0.05);
     this.inkDirty = true;
     this.layoutTray();
   },
@@ -87,19 +90,46 @@ const Play = {
     if (e.button === 2) { this.rotate(slot, -1); return; }
     if (this.rinseMode) { this.setRinse(false); Game.discard(slot); return; }
     const p = this.local(e);
-    this.drag = { slot, id: e.pointerId, sx: p.x, sy: p.y, x: p.x, y: p.y, moved: false, touch: e.pointerType !== 'mouse', gx: 0, gy: 0, valid: false, onBoard: false, overRinse: false };
+    this.hideSlotCard();
+    this.drag = { slot, id: e.pointerId, sx: p.x, sy: p.y, x: p.x, y: p.y, moved: false, touch: e.pointerType !== 'mouse', gx: 0, gy: 0, valid: false, onBoard: false, overRinse: false, held: false };
+    if (this.drag.touch) this._hoverT = setTimeout(() => { const d = this.drag; if (d && !d.moved && d.slot === slot) { d.held = true; this.showSlotCard(slot); } }, 480);
     this.kb = null;
     try { this.cv.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
   },
+  // a card describing the block under the pointer (hover with a mouse, press-and-hold with a finger)
+  showSlotCard(slot) {
+    const run = UI.run, rd = run.round, tp = rd.tray[slot];
+    if (!tp) return;
+    const p = pieceByUid(run, tp.uid);
+    if (!p) return;
+    const s = this.slots[slot], a = Hud.el.trayAnchor, tb = Hud.el.traybox;
+    a.style.left = s.x - tb.offsetLeft + 'px'; a.style.top = s.y - tb.offsetTop + 'px'; a.style.width = s.w + 'px'; a.style.height = s.h + 'px';
+    const was = UI.touch;
+    UI.touch = false;
+    showTip(a, Object.assign(pieceCard({ shape: tp.sh || p.shape, ink: p.ink, enh: p.enh }), { side: 'below' }));
+    UI.touch = was;
+    this._slotCard = slot;
+  },
+  hideSlotCard() { clearTimeout(this._hoverT); if (this._slotCard != null) { this._slotCard = null; hideTip(); } },
+  onHover(e) {
+    if (e.pointerType !== 'mouse' || !this.canAct()) return;
+    const slot = this.slotAt(e);
+    if (slot === this._hoverSlot) return;
+    this._hoverSlot = slot;
+    this.hideSlotCard();
+    if (slot >= 0 && UI.run.round.tray[slot]) this._hoverT = setTimeout(() => { if (!this.drag && this.canAct()) this.showSlotCard(slot); }, 380);
+  },
   onMove(e) {
     const d = this.drag;
-    if (!d || e.pointerId !== d.id) return;
+    if (!d) { this.onHover(e); return; }
+    if (e.pointerId !== d.id) return;
     const p = this.local(e);
     d.x = p.x; d.y = p.y; d.cx = e.clientX; d.cy = e.clientY;
     if (!d.moved) {
       if (Math.hypot(p.x - d.sx, p.y - d.sy) < (d.touch ? 12 : 7)) return;
       if (!slotUsable(UI.run, d.slot)) { this.drag = null; this.nope(d.slot); Snd.play('bad'); return; }
       d.moved = true;
+      this.hideSlotCard();
       Snd.play('pick');
       hidePop(); hideTip();
       Hud.el.rinse.classList.toggle('target', UI.run.round.discards > 0);
@@ -155,7 +185,8 @@ const Play = {
     this.drag = null;
     Hud.el.rinse.classList.remove('target', 'armed');
     FX.setDrag(null);
-    if (!d.moved) { this.rotate(d.slot, 1); return; }
+    this.hideSlotCard();
+    if (!d.moved) { if (!d.held) this.rotate(d.slot, 1); return; }
     const g = this.ghost;
     this.setGhost(null);
     if (d.overRinse) { Game.discard(d.slot); return; }
@@ -164,6 +195,7 @@ const Play = {
     else Snd.play('back');
   },
   cancelDrag() {
+    this.hideSlotCard();
     if (!this.drag) return;
     this.drag = null;
     Hud.el.rinse.classList.remove('target', 'armed');
@@ -362,6 +394,20 @@ const Play = {
       if (L.diags.length) {
         c.save(); c.strokeStyle = 'rgba(243,217,139,0.9)'; c.lineWidth = Math.max(2, cs * 0.08); c.setLineDash([cs * 0.2, cs * 0.14]);
         for (const d of L.diags) { c.beginPath(); if (d === 0) { c.moveTo(bx, by); c.lineTo(bx + w * cs, by + h * cs); } else { c.moveTo(bx + w * cs, by); c.lineTo(bx, by + h * cs); } c.stroke(); }
+        c.restore();
+      }
+    }
+    // a line that has just been completed flashes once
+    if (this.lineFlash.length) {
+      for (let i = this.lineFlash.length - 1; i >= 0; i--) {
+        const f = this.lineFlash[i], u = (t - f.t0) / 520;
+        if (u >= 1) { this.lineFlash.splice(i, 1); continue; }
+        const e = 1 - u;
+        c.save();
+        c.globalAlpha = 0.75 * e * e; c.fillStyle = '#fff6dc';
+        const grow = cs * 0.25 * u;
+        if (f.kind === 'row') c.fillRect(bx - grow, by + f.i * cs - grow, w * cs + grow * 2, cs + grow * 2);
+        else c.fillRect(bx + f.i * cs - grow, by - grow, cs + grow * 2, h * cs + grow * 2);
         c.restore();
       }
     }

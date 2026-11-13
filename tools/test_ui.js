@@ -4,7 +4,7 @@ const assert = (c, m) => { if (!c) throw new Error('assert: ' + m); };
 module.exports = async ({ page, ev, W, H }) => {
   await page.waitForTimeout(500);
   await page.click('#btn-new'); await page.waitForTimeout(250);
-  await page.click('#btn-go'); await page.waitForTimeout(400);
+  if (await page.$('#btn-go')) await page.click('#btn-go'); await page.waitForTimeout(400);
   await ev('Tutorial.set(99); Tutorial.hide(); 1');
   await page.click('#btn-start'); await page.waitForTimeout(500);
   const st = () => ev(`JSON.stringify({ ink: UI.run.round.ink, placed: UI.run.round.placed, discards: UI.run.round.discards, filled: UI.run.round.board.filter(Boolean).length, rots: UI.run.round.tray.map(t => t ? t.rot : -1), phase: UI.run.phase, busy: UI.busy })`).then(JSON.parse);

@@ -47,7 +47,11 @@ const nm = (o) => (LANG === 'zh' ? o.zh : o.en);
 const UI = {
   W: 1280, H: 720, s: 1, orient: 'l', stage: null, touch: false, run: null, busy: false,
   layout() {
-    const vw = window.innerWidth, vh = window.innerHeight;
+    // keep clear of notches and the home indicator
+    const probe = this._probe || (this._probe = document.body.appendChild(h('div', { style: { position: 'fixed', left: '0', top: '0', width: '0', height: '0', visibility: 'hidden', pointerEvents: 'none', paddingTop: 'env(safe-area-inset-top, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingLeft: 'env(safe-area-inset-left, 0px)' } })));
+    const cs = getComputedStyle(probe);
+    const sa = { t: parseFloat(cs.paddingTop) || 0, r: parseFloat(cs.paddingRight) || 0, b: parseFloat(cs.paddingBottom) || 0, l: parseFloat(cs.paddingLeft) || 0 };
+    const vw = window.innerWidth - sa.l - sa.r, vh = window.innerHeight - sa.t - sa.b;
     if (vw < 10 || vh < 10) return;
     const asp = vw / vh;
     let W, H, o;
@@ -58,6 +62,7 @@ const UI = {
     this.W = W; this.H = H; this.s = s; this.orient = o;
     const st = document.documentElement.style;
     st.setProperty('--W', W + 'px'); st.setProperty('--H', H + 'px'); st.setProperty('--s', String(s));
+    st.setProperty('--cx', sa.l + vw / 2 + 'px'); st.setProperty('--cy', sa.t + vh / 2 + 'px');
     document.body.dataset.o = o;
     return changed;
   },

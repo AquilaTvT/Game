@@ -69,7 +69,7 @@ const Shop = {
   packArt(id) {
     const d = PACKS[id];
     const g = { seal: '印', tie: '帖', wen: '房', mo: '墨' }[d.kind];
-    return h('div.packart.k-' + d.kind, h('div.pg', { text: g }), h('div.pn', { text: nm(d) }), h('div.pc', { text: T('pack.pick', d.k, d.n) }));
+    return h('div.packart.k-' + d.kind, h('div.pg', { text: g }), h('div.pn', { text: nm(d) }), h('div.pk', { text: T('pack.pick', d.k, d.n) }));
   },
   pack(pk, i) {
     const run = UI.run, d = PACKS[pk.id];

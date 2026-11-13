@@ -24,7 +24,7 @@ body.nogl #bg { display: none; }
 #bg { position: fixed; left: 0; top: 0; width: 100%; height: 100%; display: block; }
 #fx { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 60; }
 #stage {
-  position: fixed; left: 50%; top: 50%; width: var(--W); height: var(--H); z-index: 10;
+  position: fixed; left: var(--cx, 50%); top: var(--cy, 50%); width: var(--W); height: var(--H); z-index: 10;
   transform: translate(calc(-50% + var(--shx, 0px)), calc(-50% + var(--shy, 0px))) scale(var(--s));
   transform-origin: 50% 50%;
 }
@@ -122,6 +122,8 @@ body[data-o="p"] .charcard { flex: 1 1 100%; flex-direction: row; align-items: c
 body[data-o="p"] .charcard .who { flex: 0 0 286px; }
 .charcard .glyph { width: 70px; height: 70px; flex: none; border-radius: 8px; background: linear-gradient(135deg, #f8f1de, #e2d3b2); box-shadow: inset 0 0 0 1px rgba(160, 44, 32, 0.5), 0 3px 8px rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
 .charcard .glyph canvas { width: 58px; height: 58px; }
+.charcard .glyph.flip { animation: glyphflip 0.34s cubic-bezier(0.2, 1.5, 0.4, 1); }
+@keyframes glyphflip { 0% { transform: scale(0.72) rotate(-8deg); filter: brightness(1.6); } 100% { transform: none; filter: none; } }
 .charcard .glyph.empty::after { content: ""; position: absolute; inset: 9px; border: 2px dashed rgba(160, 44, 32, 0.3); border-radius: 4px; }
 .charcard .meta { min-width: 0; flex: 1; }
 .charcard .cname { font-family: var(--f-kai); font-size: 31px; font-weight: 700; line-height: 1.1; white-space: nowrap; display: flex; align-items: baseline; gap: 8px; }
@@ -183,14 +185,15 @@ body[data-o="p"] .sealbox { flex-direction: row; flex: 1 1 auto; align-items: ce
 body[data-o="p"] .boxtitle { flex-direction: column; letter-spacing: 0; padding: 0 2px 0 0; gap: 2px; align-items: center; justify-content: center; font-size: 17px; line-height: 1.1; }
 body[data-o="p"] .boxtitle .num { font-size: 14px; }
 .seallist { display: flex; gap: 6px; min-height: 0; min-width: 0; flex: 1 1 auto; }
-body[data-o="l"] .seallist { flex-direction: column; }
+body[data-o="l"] .seallist { flex-direction: column; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+body[data-o="l"] .seallist::-webkit-scrollbar { display: none; }
 body[data-o="p"] .seallist { flex-direction: row; align-items: center; }
 .seal { display: flex; align-items: center; gap: 10px; border-radius: 9px; padding: 4px 6px; cursor: pointer; position: relative; min-width: 0; border: 1px solid transparent; transition: background 0.12s, transform 0.12s; touch-action: none; }
-body[data-o="l"] .seal { flex: 0 1 76px; min-height: 0; }
+body[data-o="l"] .seal { flex: 0 0 auto; min-height: 70px; }
 .seal:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.08); }
 .seal .sealface { flex: none; width: 62px; height: 62px; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
 body[data-o="p"] .seal { padding: 2px; }
-body[data-o="p"] .seal .sealface { width: 74px; height: 74px; }
+body[data-o="p"] .seal .sealface { width: var(--ss, 74px); height: var(--ss, 74px); }
 body[data-o="p"] .seal .st { display: none; }
 .seal .st { min-width: 0; flex: 1; }
 .seal .st .n { font-family: var(--f-kai); font-size: 20px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
@@ -206,7 +209,7 @@ body[data-o="l"] .seal.dropbefore::before { left: 4px; right: 4px; top: -4px; he
 body[data-o="p"] .seal.dropbefore::before { top: 4px; bottom: 4px; left: -4px; width: 3px; }
 .seal.empty { border: 1px dashed rgba(210, 168, 74, 0.22); cursor: default; justify-content: center; color: var(--dim2); font-family: var(--f-kai); font-size: 17px; }
 .seal.empty:hover { background: none; }
-body[data-o="p"] .seal.empty { width: 78px; height: 78px; font-size: 15px; }
+body[data-o="p"] .seal.empty { width: calc(var(--ss, 74px) + 4px); height: calc(var(--ss, 74px) + 4px); font-size: 15px; flex: none; }
 .edtag { position: absolute; left: 2px; top: 0; font-family: var(--f-kai); font-size: 13px; padding: 0 5px; border-radius: 5px; background: #111; color: var(--gold2); border: 1px solid var(--line2); z-index: 2; }
 .itembox { padding: 8px; display: flex; gap: 6px; min-width: 0; }
 body[data-o="l"] .itembox { flex-direction: column; flex: none; }
@@ -231,6 +234,7 @@ body[data-o="p"] .item { width: 62px; height: 78px; }
 #trayrow { flex: 0 0 150px; display: flex; align-items: center; gap: 10px; padding: 0 6px 4px; }
 body[data-o="p"] #trayrow { flex-basis: 164px; }
 #traybox { flex: 1 1 auto; align-self: stretch; min-width: 0; position: relative; }
+#trayanchor { position: absolute; pointer-events: none; }
 #trayrow .actbtn { pointer-events: auto; flex: none; width: 118px; height: 118px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; position: relative; transition: transform 0.08s, filter 0.12s, box-shadow 0.1s; }
 #trayrow .actbtn .t { font-family: var(--f-kai); font-size: 33px; font-weight: 700; letter-spacing: 0.05em; line-height: 1.1; }
 #trayrow .actbtn .n { font-family: var(--f-num); font-size: 22px; font-weight: 700; line-height: 1; opacity: 0.95; }
@@ -327,7 +331,7 @@ body[data-o="p"] .sheet.now { transform: none; }
 .packart { width: 112px; height: 136px; border-radius: 9px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.18), inset 0 0 0 5px rgba(0, 0, 0, 0.18); overflow: hidden; }
 .packart .pg { font-family: var(--f-kai); font-size: 50px; font-weight: 700; line-height: 1; color: rgba(255, 246, 225, 0.95); text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35); }
 .packart .pn { font-family: var(--f-kai); font-size: 17px; color: rgba(255, 246, 225, 0.9); }
-.packart .pc { font-family: var(--f-num); font-size: 15px; color: rgba(255, 246, 225, 0.8); }
+.packart .pk { font-family: var(--f-num); font-size: 15px; color: rgba(255, 246, 225, 0.8); }
 .packart.k-seal { background: linear-gradient(150deg, #b3382a, #6d1810); }
 .packart.k-tie { background: linear-gradient(150deg, #2f5f8c, #16314c); }
 .packart.k-wen { background: linear-gradient(150deg, #3c8a6c, #1b4a39); }

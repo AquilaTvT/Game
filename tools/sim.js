@@ -10,6 +10,7 @@ const profName = process.argv[5] || 'mid';
 const PROFILES = {
   novice: { chars: ['yi', 'gun', 'er', 'dao', 'san', 'chuan', 'si4'], spill: 0.6, greed: 1.0, simTop: 2, shopSkill: 0 },
   mid: {},
+  casual: { chars: ['yi', 'gun', 'er', 'dao', 'san', 'chuan', 'si4', 'shi', 'ding', 'shang'], spill: 0.7, greed: 1.1, simTop: 3, shopSkill: 1 },
   expert: { chars: Object.keys(E.CH).filter((k) => k !== 'sanbi' && !E.CH[k].d), spill: 1.3, greed: 1.6, simTop: 8 },
 };
 const bot = makeBot(E, PROFILES[profName]);

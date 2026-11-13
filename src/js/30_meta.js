@@ -42,7 +42,16 @@ function migrateProfile(p) {
   return p;
 }
 function loadProfile() {
-  PROFILE = migrateProfile(Store.read());
+  const saved = Store.read();
+  PROFILE = migrateProfile(saved);
+  if (!saved) {
+    // first visit: follow the system where it has an opinion
+    try {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) PROFILE.settings.reduce = true;
+      const l = (navigator.language || 'zh').toLowerCase();
+      PROFILE.settings.lang = l.startsWith('zh') ? 'zh' : 'en';
+    } catch (e) { /* keep the defaults */ }
+  }
   LANG = PROFILE.settings.lang === 'en' ? 'en' : 'zh';
   return PROFILE;
 }

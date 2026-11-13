@@ -41,7 +41,7 @@ body.nogl #bg { display: none; }
 #bg { position: fixed; left: 0; top: 0; width: 100%; height: 100%; display: block; }
 #fx { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 60; }
 #stage {
-  position: fixed; left: 50%; top: 50%; width: var(--W); height: var(--H); z-index: 10;
+  position: fixed; left: var(--cx, 50%); top: var(--cy, 50%); width: var(--W); height: var(--H); z-index: 10;
   transform: translate(calc(-50% + var(--shx, 0px)), calc(-50% + var(--shy, 0px))) scale(var(--s));
   transform-origin: 50% 50%;
 }
@@ -139,6 +139,8 @@ body[data-o="p"] .charcard { flex: 1 1 100%; flex-direction: row; align-items: c
 body[data-o="p"] .charcard .who { flex: 0 0 286px; }
 .charcard .glyph { width: 70px; height: 70px; flex: none; border-radius: 8px; background: linear-gradient(135deg, #f8f1de, #e2d3b2); box-shadow: inset 0 0 0 1px rgba(160, 44, 32, 0.5), 0 3px 8px rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
 .charcard .glyph canvas { width: 58px; height: 58px; }
+.charcard .glyph.flip { animation: glyphflip 0.34s cubic-bezier(0.2, 1.5, 0.4, 1); }
+@keyframes glyphflip { 0% { transform: scale(0.72) rotate(-8deg); filter: brightness(1.6); } 100% { transform: none; filter: none; } }
 .charcard .glyph.empty::after { content: ""; position: absolute; inset: 9px; border: 2px dashed rgba(160, 44, 32, 0.3); border-radius: 4px; }
 .charcard .meta { min-width: 0; flex: 1; }
 .charcard .cname { font-family: var(--f-kai); font-size: 31px; font-weight: 700; line-height: 1.1; white-space: nowrap; display: flex; align-items: baseline; gap: 8px; }
@@ -200,14 +202,15 @@ body[data-o="p"] .sealbox { flex-direction: row; flex: 1 1 auto; align-items: ce
 body[data-o="p"] .boxtitle { flex-direction: column; letter-spacing: 0; padding: 0 2px 0 0; gap: 2px; align-items: center; justify-content: center; font-size: 17px; line-height: 1.1; }
 body[data-o="p"] .boxtitle .num { font-size: 14px; }
 .seallist { display: flex; gap: 6px; min-height: 0; min-width: 0; flex: 1 1 auto; }
-body[data-o="l"] .seallist { flex-direction: column; }
+body[data-o="l"] .seallist { flex-direction: column; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+body[data-o="l"] .seallist::-webkit-scrollbar { display: none; }
 body[data-o="p"] .seallist { flex-direction: row; align-items: center; }
 .seal { display: flex; align-items: center; gap: 10px; border-radius: 9px; padding: 4px 6px; cursor: pointer; position: relative; min-width: 0; border: 1px solid transparent; transition: background 0.12s, transform 0.12s; touch-action: none; }
-body[data-o="l"] .seal { flex: 0 1 76px; min-height: 0; }
+body[data-o="l"] .seal { flex: 0 0 auto; min-height: 70px; }
 .seal:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.08); }
 .seal .sealface { flex: none; width: 62px; height: 62px; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
 body[data-o="p"] .seal { padding: 2px; }
-body[data-o="p"] .seal .sealface { width: 74px; height: 74px; }
+body[data-o="p"] .seal .sealface { width: var(--ss, 74px); height: var(--ss, 74px); }
 body[data-o="p"] .seal .st { display: none; }
 .seal .st { min-width: 0; flex: 1; }
 .seal .st .n { font-family: var(--f-kai); font-size: 20px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
@@ -223,7 +226,7 @@ body[data-o="l"] .seal.dropbefore::before { left: 4px; right: 4px; top: -4px; he
 body[data-o="p"] .seal.dropbefore::before { top: 4px; bottom: 4px; left: -4px; width: 3px; }
 .seal.empty { border: 1px dashed rgba(210, 168, 74, 0.22); cursor: default; justify-content: center; color: var(--dim2); font-family: var(--f-kai); font-size: 17px; }
 .seal.empty:hover { background: none; }
-body[data-o="p"] .seal.empty { width: 78px; height: 78px; font-size: 15px; }
+body[data-o="p"] .seal.empty { width: calc(var(--ss, 74px) + 4px); height: calc(var(--ss, 74px) + 4px); font-size: 15px; flex: none; }
 .edtag { position: absolute; left: 2px; top: 0; font-family: var(--f-kai); font-size: 13px; padding: 0 5px; border-radius: 5px; background: #111; color: var(--gold2); border: 1px solid var(--line2); z-index: 2; }
 .itembox { padding: 8px; display: flex; gap: 6px; min-width: 0; }
 body[data-o="l"] .itembox { flex-direction: column; flex: none; }
@@ -248,6 +251,7 @@ body[data-o="p"] .item { width: 62px; height: 78px; }
 #trayrow { flex: 0 0 150px; display: flex; align-items: center; gap: 10px; padding: 0 6px 4px; }
 body[data-o="p"] #trayrow { flex-basis: 164px; }
 #traybox { flex: 1 1 auto; align-self: stretch; min-width: 0; position: relative; }
+#trayanchor { position: absolute; pointer-events: none; }
 #trayrow .actbtn { pointer-events: auto; flex: none; width: 118px; height: 118px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; position: relative; transition: transform 0.08s, filter 0.12s, box-shadow 0.1s; }
 #trayrow .actbtn .t { font-family: var(--f-kai); font-size: 33px; font-weight: 700; letter-spacing: 0.05em; line-height: 1.1; }
 #trayrow .actbtn .n { font-family: var(--f-num); font-size: 22px; font-weight: 700; line-height: 1; opacity: 0.95; }
@@ -344,7 +348,7 @@ body[data-o="p"] .sheet.now { transform: none; }
 .packart { width: 112px; height: 136px; border-radius: 9px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 6px 14px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.18), inset 0 0 0 5px rgba(0, 0, 0, 0.18); overflow: hidden; }
 .packart .pg { font-family: var(--f-kai); font-size: 50px; font-weight: 700; line-height: 1; color: rgba(255, 246, 225, 0.95); text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35); }
 .packart .pn { font-family: var(--f-kai); font-size: 17px; color: rgba(255, 246, 225, 0.9); }
-.packart .pc { font-family: var(--f-num); font-size: 15px; color: rgba(255, 246, 225, 0.8); }
+.packart .pk { font-family: var(--f-num); font-size: 15px; color: rgba(255, 246, 225, 0.8); }
 .packart.k-seal { background: linear-gradient(150deg, #b3382a, #6d1810); }
 .packart.k-tie { background: linear-gradient(150deg, #2f5f8c, #16314c); }
 .packart.k-wen { background: linear-gradient(150deg, #3c8a6c, #1b4a39); }
@@ -1894,11 +1898,11 @@ defDeck('feibai', '飞白书', 'Flying White', {
 const STAKES = [
   { zh: '童生', en: 'Pupil', dz: '基础难度', de: 'The base game' },
   { zh: '秀才', en: 'Licentiate', dz: '「习字」过关不再有润笔', de: 'Practice sheets pay nothing', flags: { noSmallReward: 1 } },
-  { zh: '举人', en: 'Provincial Graduate', dz: '目标分数增长更快', de: 'Targets grow faster', flags: { scale: 1 } },
+  { zh: '举人', en: 'Provincial Graduate', dz: '目标分数更高，且越往后越高', de: 'Higher targets, growing faster as the run goes on', flags: { scale: [1.25, 0.1] } },
   { zh: '贡士', en: 'Tribute Scholar', dz: '每局 墨量−10', de: '−10 Ink every round', mods: { inkMax: -10 } },
   { zh: '进士', en: 'Metropolitan Graduate', dz: '每局 洗笔−1', de: '−1 Rinse every round', mods: { discards: -1 } },
   { zh: '探花', en: 'Third Laureate', dz: '铺中货物贵两成', de: 'Shop prices rise by 20%', mods: { discount: -20 } },
-  { zh: '榜眼', en: 'Second Laureate', dz: '目标分数增长再加快', de: 'Targets grow faster still', flags: { scale: 1 } },
+  { zh: '榜眼', en: 'Second Laureate', dz: '目标分数再度提高', de: 'Targets rise again, and steeply', flags: { scale: [1.5, 0.2] } },
   { zh: '状元', en: 'First Laureate', dz: '名帖的目标为平常的 1.4 倍', de: 'Masterwork targets ×1.4', flags: { bossMul: 1.4 } },
 ];
 const BASE_STATS = {
@@ -2106,9 +2110,10 @@ function beginAnte(run) {
 function blindInfo(run, b) {
   const boss = b === 2 ? run.boss : null;
   let t = anteBase(run.ante) * BLIND_MULT[b];
-  let scale = 0;
-  for (let i = 1; i <= run.stake; i++) if (STAKES[i].flags && STAKES[i].flags.scale) scale++;
-  if (scale) t *= Math.pow(1 + 0.08 * scale, run.ante - 1);
+  for (let i = 1; i <= run.stake; i++) {
+    const sc = STAKES[i].flags && STAKES[i].flags.scale;
+    if (sc) t *= sc[0] + sc[1] * (Math.min(run.ante, 12) - 1);
+  }
   if (boss) {
     t *= BOSSES[boss].targetMul || 1;
     for (let i = 1; i <= run.stake; i++) if (STAKES[i].flags && STAKES[i].flags.bossMul) t *= STAKES[i].flags.bossMul;
@@ -2969,7 +2974,16 @@ function migrateProfile(p) {
   return p;
 }
 function loadProfile() {
-  PROFILE = migrateProfile(Store.read());
+  const saved = Store.read();
+  PROFILE = migrateProfile(saved);
+  if (!saved) {
+    // first visit: follow the system where it has an opinion
+    try {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) PROFILE.settings.reduce = true;
+      const l = (navigator.language || 'zh').toLowerCase();
+      PROFILE.settings.lang = l.startsWith('zh') ? 'zh' : 'en';
+    } catch (e) { /* keep the defaults */ }
+  }
   LANG = PROFILE.settings.lang === 'en' ? 'en' : 'zh';
   return PROFILE;
 }
@@ -3202,6 +3216,7 @@ const STR = {
     'say.norinse': '洗笔的次数用完了', 'say.norotate': '此帖之下无法旋转', 'say.rinse': '点选要洗去的墨块', 'say.roundonly': '只能在对局中使用', 'say.wash': '江水冲走了底行',
     'say.nomoney': '润笔不够', 'say.noroom': '没有空位了',
     stuck: '已无可落之墨', 'stuck.end': '结束此局',
+    'boss.limit': '已落 {0} / {1} 块', 'boss.tide': '再落 {0} 块，江水至', 'boss.blot': '再落 {0} 块，添一处涂改',
     'confirm.ignite': '现在挥毫，写下「{0}」？',
     'pick.start': '开始', 'pick.skip': '跳过', 'pick.skipfor': '跳过此局可得题签', 'pick.skipped': '题签 · {0}', 'pick.done': '已过', 'pick.reward': '润笔 {0}', 'pick.noreward': '无润笔',
     'pick.info': '{0} · {1}　　墨匣 {2} 块',
@@ -3276,6 +3291,7 @@ const STR = {
     'say.norinse': 'No rinses left', 'say.norotate': 'Blocks cannot be rotated here', 'say.rinse': 'Pick a block to rinse away', 'say.roundonly': 'Only usable during a round', 'say.wash': 'The river washed the bottom row away',
     'say.nomoney': 'Not enough coins', 'say.noroom': 'No free slot',
     stuck: 'Nothing more can be done', 'stuck.end': 'End the round',
+    'boss.limit': '{0} / {1} blocks placed', 'boss.tide': '{0} more until the river rises', 'boss.blot': '{0} more until the next blot',
     'confirm.ignite': 'Flourish now and write {0}?',
     'pick.start': 'Begin', 'pick.skip': 'Skip', 'pick.skipfor': 'Skip this sheet for the tag', 'pick.skipped': 'Tag — {0}', 'pick.done': 'Cleared', 'pick.reward': 'Fee {0}', 'pick.noreward': 'No fee',
     'pick.info': '{0} · {1} · {2} blocks in the Ink Box',
@@ -4492,7 +4508,11 @@ const nm = (o) => (LANG === 'zh' ? o.zh : o.en);
 const UI = {
   W: 1280, H: 720, s: 1, orient: 'l', stage: null, touch: false, run: null, busy: false,
   layout() {
-    const vw = window.innerWidth, vh = window.innerHeight;
+    // keep clear of notches and the home indicator
+    const probe = this._probe || (this._probe = document.body.appendChild(h('div', { style: { position: 'fixed', left: '0', top: '0', width: '0', height: '0', visibility: 'hidden', pointerEvents: 'none', paddingTop: 'env(safe-area-inset-top, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingLeft: 'env(safe-area-inset-left, 0px)' } })));
+    const cs = getComputedStyle(probe);
+    const sa = { t: parseFloat(cs.paddingTop) || 0, r: parseFloat(cs.paddingRight) || 0, b: parseFloat(cs.paddingBottom) || 0, l: parseFloat(cs.paddingLeft) || 0 };
+    const vw = window.innerWidth - sa.l - sa.r, vh = window.innerHeight - sa.t - sa.b;
     if (vw < 10 || vh < 10) return;
     const asp = vw / vh;
     let W, H, o;
@@ -4503,6 +4523,7 @@ const UI = {
     this.W = W; this.H = H; this.s = s; this.orient = o;
     const st = document.documentElement.style;
     st.setProperty('--W', W + 'px'); st.setProperty('--H', H + 'px'); st.setProperty('--s', String(s));
+    st.setProperty('--cx', sa.l + vw / 2 + 'px'); st.setProperty('--cy', sa.t + vh / 2 + 'px');
     document.body.dataset.o = o;
     return changed;
   },
@@ -4740,7 +4761,7 @@ const Hud = {
         E.boardbox = h('div#boardbox', E.bossline = h('div.bossline.hide'), E.peek = h('div.panel.peekbox.hide')),
         h('div#trayrow',
           E.rinse = h('button#btn-rinse.actbtn', { type: 'button' }, h('span.t', { text: T('rinse') }), E.rinseN = h('span.n'), h('span.k', { text: 'Q' })),
-          E.traybox = h('div#traybox'),
+          E.traybox = h('div#traybox', E.trayAnchor = h('div#trayanchor')),
           E.ignite = h('button#btn-ignite.actbtn', { type: 'button' }, h('span.t', { text: T('ignite') }), E.igniteN = h('span.n'), h('span.k', { text: 'Space' })))),
       E.viewPick = h('div.view#v-pick'), E.viewCash = h('div.view#v-cash'), E.viewShop = h('div.view#v-shop'));
     g.appendChild(E.center);
@@ -4799,7 +4820,15 @@ const Hud = {
     this.pattern();
     this.buttons();
     // boss reminder over the sheet, and the look-ahead
-    if (rd && rd.boss && run.phase === 'round') { E.bossline.classList.remove('hide'); E.bossline.innerHTML = rich(dtx(BOSSES[rd.boss]).split('\n')[0]); } else E.bossline.classList.add('hide');
+    if (rd && rd.boss && run.phase === 'round') {
+      E.bossline.classList.remove('hide');
+      let extra = '';
+      const lim = flag(run, 'pieceLimit');
+      if (lim) extra = T('boss.limit', rd.placed, lim);
+      else if (rd.boss === 'yihe') extra = T('boss.tide', 6 - (rd.placed % 6));
+      else if (rd.boss === 'jizhi') extra = T('boss.blot', 3 - (rd.placed % 3));
+      E.bossline.innerHTML = rich(dtx(BOSSES[rd.boss]).split('\n')[0]) + (extra ? `<b style="color:#ffd9a0;margin-left:10px">${extra}</b>` : '');
+    } else E.bossline.classList.add('hide');
     this.renderPeek();
   },
   buttons() {
@@ -4861,6 +4890,7 @@ const Hud = {
     clear(E.glyph); clear(E.cname); clear(E.hints);
     E.csub.className = 'csub';
     if (!p) {
+      if (!ghost) this._lastChar = null;
       E.glyph.classList.add('empty');
       E.cname.appendChild(h('span', { text: T('hud.nochar'), style: { color: 'var(--dim)', fontSize: '25px' } }));
       E.csub.innerHTML = inRound ? T('hud.nochar.tip') : '';
@@ -4870,6 +4900,8 @@ const Hud = {
     }
     E.glyph.classList.remove('empty');
     const def = CH[p.id];
+    if (!ghost && this._lastChar !== p.id) { E.glyph.classList.remove('flip'); void E.glyph.offsetWidth; E.glyph.classList.add('flip'); }
+    if (!ghost) this._lastChar = p.id;
     E.glyph.appendChild(Gfx.glyphCanvas(p.id, 62, p.nul ? '#9c8f7c' : '#1b1918', { lay: p.lines, w: run.w, h: run.h }));
     E.glyph.style.opacity = ghost ? 0.75 : 1;
     E.cname.appendChild(h('span', { text: p.id === 'sanbi' ? T('sanbi') : def.g }));
@@ -4922,7 +4954,10 @@ const Hud = {
     E.sealTitle.innerHTML = `<span>${T('seals')}</span><span class="num">${used}/${slots}</span>`;
     clear(E.sealList);
     const rd = run.round;
-    const size = UI.orient === 'p' ? 74 : 62;
+    // in portrait the seals share one strip: shrink them when there are many
+    const shown = run.seals.length + Math.max(0, slots - used);
+    const size = UI.orient === 'p' ? clamp(Math.floor((UI.W - 250) / Math.max(5, shown)) - 12, 40, 74) : 62;
+    E.sealList.style.setProperty('--ss', size + 'px');
     run.seals.forEach((s, i) => {
       const d = SEALS[s.id];
       const el = h('div.seal', { data: { uid: s.uid } }, Gfx.sealEl(s.id, size, s.ed),
@@ -4934,7 +4969,7 @@ const Hud = {
       E.sealList.appendChild(el);
     });
     const freeSlots = Math.max(0, slots - used);
-    for (let i = 0; i < freeSlots && (UI.orient === 'l' || E.sealList.children.length < 6); i++) E.sealList.appendChild(h('div.seal.empty', { text: T('seal.empty') }));
+    for (let i = 0; i < freeSlots; i++) E.sealList.appendChild(h('div.seal.empty', { text: T('seal.empty') }));
   },
   bindSealDrag(el, index) {
     // drag a seal onto another to reorder (order matters: they act left to right)
@@ -5069,7 +5104,7 @@ const Play = {
   active: false, cv: null, c: null, k: 1, cw: 0, ch: 0, cs: 40, bx: 0, by: 0, slots: [],
   inkLayer: null, inkDirty: true, viewBoard: null, lines: { rows: [], cols: [], diags: [], n: 0 },
   drag: null, kb: null, rinseMode: false, target: null,
-  pops: new Map(), strokes: [], hidden: new Set(), flashCells: new Map(), trayAppear: [], trayUid: [], shakeSlot: -1, shakeT: 0,
+  pops: new Map(), strokes: [], hidden: new Set(), flashCells: new Map(), lineFlash: [], trayAppear: [], trayUid: [], shakeSlot: -1, shakeT: 0,
   ghost: null, lastGhostKey: '', raf: 0, t: 0,
 
   init() {
@@ -5079,6 +5114,7 @@ const Play = {
     cv.addEventListener('pointermove', (e) => this.onMove(e));
     cv.addEventListener('pointerup', (e) => this.onUp(e));
     cv.addEventListener('pointercancel', (e) => this.cancelDrag());
+    cv.addEventListener('pointerleave', () => { this._hoverSlot = -1; if (!this.drag) this.hideSlotCard(); });
     cv.addEventListener('wheel', (e) => { if (this.drag || this.slotAt(e) >= 0) { e.preventDefault(); this.rotate(this.drag ? this.drag.slot : this.slotAt(e), e.deltaY > 0 ? 1 : -1); } }, { passive: false });
     Hud.el.ignite.addEventListener('click', () => Game.ignite());
     Hud.el.rinse.addEventListener('click', () => this.toggleRinse());
@@ -5098,11 +5134,13 @@ const Play = {
     const W = Math.round(this.cw * k), H = Math.round(this.ch * k);
     if (this.cv.width !== W || this.cv.height !== H) { this.cv.width = W; this.cv.height = H; }
     const bb = Hud.el.boardbox, w = run.w, h = run.h;
-    const bw = bb.offsetWidth, bh = bb.offsetHeight;
+    // a masterwork shows its rule above the sheet: leave it a strip
+    const top = run.round && run.round.boss && run.phase === 'round' ? 26 : 0;
+    const bw = bb.offsetWidth, bh = bb.offsetHeight - top;
     const cs = Math.max(12, Math.floor(Math.min((bw - 6) / (w + 1.15), (bh - 6) / (h + 1.2))));
     this.cs = cs;
     this.bx = Math.round(bb.offsetLeft + (bw - w * cs) / 2);
-    this.by = Math.round(bb.offsetTop + (bh - h * cs) / 2 - cs * 0.05);
+    this.by = Math.round(bb.offsetTop + top + (bh - h * cs) / 2 - cs * 0.05);
     this.inkDirty = true;
     this.layoutTray();
   },
@@ -5153,19 +5191,46 @@ const Play = {
     if (e.button === 2) { this.rotate(slot, -1); return; }
     if (this.rinseMode) { this.setRinse(false); Game.discard(slot); return; }
     const p = this.local(e);
-    this.drag = { slot, id: e.pointerId, sx: p.x, sy: p.y, x: p.x, y: p.y, moved: false, touch: e.pointerType !== 'mouse', gx: 0, gy: 0, valid: false, onBoard: false, overRinse: false };
+    this.hideSlotCard();
+    this.drag = { slot, id: e.pointerId, sx: p.x, sy: p.y, x: p.x, y: p.y, moved: false, touch: e.pointerType !== 'mouse', gx: 0, gy: 0, valid: false, onBoard: false, overRinse: false, held: false };
+    if (this.drag.touch) this._hoverT = setTimeout(() => { const d = this.drag; if (d && !d.moved && d.slot === slot) { d.held = true; this.showSlotCard(slot); } }, 480);
     this.kb = null;
     try { this.cv.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
   },
+  // a card describing the block under the pointer (hover with a mouse, press-and-hold with a finger)
+  showSlotCard(slot) {
+    const run = UI.run, rd = run.round, tp = rd.tray[slot];
+    if (!tp) return;
+    const p = pieceByUid(run, tp.uid);
+    if (!p) return;
+    const s = this.slots[slot], a = Hud.el.trayAnchor, tb = Hud.el.traybox;
+    a.style.left = s.x - tb.offsetLeft + 'px'; a.style.top = s.y - tb.offsetTop + 'px'; a.style.width = s.w + 'px'; a.style.height = s.h + 'px';
+    const was = UI.touch;
+    UI.touch = false;
+    showTip(a, Object.assign(pieceCard({ shape: tp.sh || p.shape, ink: p.ink, enh: p.enh }), { side: 'below' }));
+    UI.touch = was;
+    this._slotCard = slot;
+  },
+  hideSlotCard() { clearTimeout(this._hoverT); if (this._slotCard != null) { this._slotCard = null; hideTip(); } },
+  onHover(e) {
+    if (e.pointerType !== 'mouse' || !this.canAct()) return;
+    const slot = this.slotAt(e);
+    if (slot === this._hoverSlot) return;
+    this._hoverSlot = slot;
+    this.hideSlotCard();
+    if (slot >= 0 && UI.run.round.tray[slot]) this._hoverT = setTimeout(() => { if (!this.drag && this.canAct()) this.showSlotCard(slot); }, 380);
+  },
   onMove(e) {
     const d = this.drag;
-    if (!d || e.pointerId !== d.id) return;
+    if (!d) { this.onHover(e); return; }
+    if (e.pointerId !== d.id) return;
     const p = this.local(e);
     d.x = p.x; d.y = p.y; d.cx = e.clientX; d.cy = e.clientY;
     if (!d.moved) {
       if (Math.hypot(p.x - d.sx, p.y - d.sy) < (d.touch ? 12 : 7)) return;
       if (!slotUsable(UI.run, d.slot)) { this.drag = null; this.nope(d.slot); Snd.play('bad'); return; }
       d.moved = true;
+      this.hideSlotCard();
       Snd.play('pick');
       hidePop(); hideTip();
       Hud.el.rinse.classList.toggle('target', UI.run.round.discards > 0);
@@ -5221,7 +5286,8 @@ const Play = {
     this.drag = null;
     Hud.el.rinse.classList.remove('target', 'armed');
     FX.setDrag(null);
-    if (!d.moved) { this.rotate(d.slot, 1); return; }
+    this.hideSlotCard();
+    if (!d.moved) { if (!d.held) this.rotate(d.slot, 1); return; }
     const g = this.ghost;
     this.setGhost(null);
     if (d.overRinse) { Game.discard(d.slot); return; }
@@ -5230,6 +5296,7 @@ const Play = {
     else Snd.play('back');
   },
   cancelDrag() {
+    this.hideSlotCard();
     if (!this.drag) return;
     this.drag = null;
     Hud.el.rinse.classList.remove('target', 'armed');
@@ -5428,6 +5495,20 @@ const Play = {
       if (L.diags.length) {
         c.save(); c.strokeStyle = 'rgba(243,217,139,0.9)'; c.lineWidth = Math.max(2, cs * 0.08); c.setLineDash([cs * 0.2, cs * 0.14]);
         for (const d of L.diags) { c.beginPath(); if (d === 0) { c.moveTo(bx, by); c.lineTo(bx + w * cs, by + h * cs); } else { c.moveTo(bx + w * cs, by); c.lineTo(bx, by + h * cs); } c.stroke(); }
+        c.restore();
+      }
+    }
+    // a line that has just been completed flashes once
+    if (this.lineFlash.length) {
+      for (let i = this.lineFlash.length - 1; i >= 0; i--) {
+        const f = this.lineFlash[i], u = (t - f.t0) / 520;
+        if (u >= 1) { this.lineFlash.splice(i, 1); continue; }
+        const e = 1 - u;
+        c.save();
+        c.globalAlpha = 0.75 * e * e; c.fillStyle = '#fff6dc';
+        const grow = cs * 0.25 * u;
+        if (f.kind === 'row') c.fillRect(bx - grow, by + f.i * cs - grow, w * cs + grow * 2, cs + grow * 2);
+        else c.fillRect(bx + f.i * cs - grow, by - grow, cs + grow * 2, h * cs + grow * 2);
         c.restore();
       }
     }
@@ -5793,7 +5874,7 @@ const Game = {
   enter() {
     UI.busy = false;
     UI.screen('game');
-    Play.cancelDrag(); Play.kb = null; Play.rinseMode = false; Play.target = null; Play.viewBoard = null; Play.strokes.length = 0; Play.hidden.clear(); Play.pops.clear(); Play.flashCells.clear(); Play.trayUid = [];
+    Play.cancelDrag(); Play.kb = null; Play.rinseMode = false; Play.target = null; Play.viewBoard = null; Play.strokes.length = 0; Play.hidden.clear(); Play.pops.clear(); Play.flashCells.clear(); Play.lineFlash.length = 0; Play.trayUid = [];
     FX.clear();
     Hud._patKey = ''; Hud._score = 0;
     this.route();
@@ -5840,9 +5921,12 @@ const Game = {
   place(slot, x, y) {
     const run = UI.run;
     if (UI.busy || run.phase !== 'round') return;
+    const before = findLines(run);
     const r = placeBlock(run, slot, x, y);
     if (!r.ok) { Snd.play('bad'); return; }
     Play.inkDirty = true;
+    for (const y2 of r.lines.rows) if (!before.rows.includes(y2)) Play.lineFlash.push({ kind: 'row', i: y2, t0: Play.t });
+    for (const x2 of r.lines.cols) if (!before.cols.includes(x2)) Play.lineFlash.push({ kind: 'col', i: x2, t0: Play.t });
     const u = UI.s;
     for (const i of r.cells) {
       Play.flashCells.set(i, Play.t);
@@ -6227,7 +6311,7 @@ const Shop = {
   packArt(id) {
     const d = PACKS[id];
     const g = { seal: '印', tie: '帖', wen: '房', mo: '墨' }[d.kind];
-    return h('div.packart.k-' + d.kind, h('div.pg', { text: g }), h('div.pn', { text: nm(d) }), h('div.pc', { text: T('pack.pick', d.k, d.n) }));
+    return h('div.packart.k-' + d.kind, h('div.pg', { text: g }), h('div.pn', { text: nm(d) }), h('div.pk', { text: T('pack.pick', d.k, d.n) }));
   },
   pack(pk, i) {
     const run = UI.run, d = PACKS[pk.id];
@@ -6970,7 +7054,8 @@ const Menu = {
     const add = (label, cls, fn, id) => { const b = mkBtn(label, cls, fn); if (id) b.id = id; list.appendChild(b); return b; };
     const run = PROFILE.run;
     if (run) add(`${T('menu.continue')}<small>${T('menu.continue.d', nm(DECKS[run.deckId]), run.ante > 8 ? run.ante : T('num.' + run.ante))}</small>`, 'gold', () => Game.resume(), 'btn-continue');
-    add(T('menu.new'), 'red', () => this.setup(), 'btn-new');
+    // the very first run starts straight away, with the tutorial; the full setup comes afterwards
+    add(T('menu.new'), 'red', () => { if (!PROFILE.meta.tutorial && !PROFILE.meta.runs && !PROFILE.run) Game.begin({ deck: 'kai', stake: 0, tutorial: true }); else this.setup(); }, 'btn-new');
     const dk = todayKey(), dd = PROFILE.meta.daily[dk];
     add(`${T('menu.daily')}<small>${dd && dd.done ? T('menu.daily.done', dd.ante > 8 ? 8 : dd.ante) : T('menu.daily.d')}</small>`, '', () => this.daily(), 'btn-daily');
     list.appendChild(h('div.rowbtns', mkBtn(T('menu.collection'), '', () => Overlays.collection()), mkBtn(T('menu.help'), '', () => Overlays.help()), mkBtn(T('menu.settings'), '', () => Overlays.settings())));

@@ -208,11 +208,11 @@ defDeck('feibai', '飞白书', 'Flying White', {
 const STAKES = [
   { zh: '童生', en: 'Pupil', dz: '基础难度', de: 'The base game' },
   { zh: '秀才', en: 'Licentiate', dz: '「习字」过关不再有润笔', de: 'Practice sheets pay nothing', flags: { noSmallReward: 1 } },
-  { zh: '举人', en: 'Provincial Graduate', dz: '目标分数增长更快', de: 'Targets grow faster', flags: { scale: 1 } },
+  { zh: '举人', en: 'Provincial Graduate', dz: '目标分数更高，且越往后越高', de: 'Higher targets, growing faster as the run goes on', flags: { scale: [1.25, 0.1] } },
   { zh: '贡士', en: 'Tribute Scholar', dz: '每局 墨量−10', de: '−10 Ink every round', mods: { inkMax: -10 } },
   { zh: '进士', en: 'Metropolitan Graduate', dz: '每局 洗笔−1', de: '−1 Rinse every round', mods: { discards: -1 } },
   { zh: '探花', en: 'Third Laureate', dz: '铺中货物贵两成', de: 'Shop prices rise by 20%', mods: { discount: -20 } },
-  { zh: '榜眼', en: 'Second Laureate', dz: '目标分数增长再加快', de: 'Targets grow faster still', flags: { scale: 1 } },
+  { zh: '榜眼', en: 'Second Laureate', dz: '目标分数再度提高', de: 'Targets rise again, and steeply', flags: { scale: [1.5, 0.2] } },
   { zh: '状元', en: 'First Laureate', dz: '名帖的目标为平常的 1.4 倍', de: 'Masterwork targets ×1.4', flags: { bossMul: 1.4 } },
 ];
 const BASE_STATS = {

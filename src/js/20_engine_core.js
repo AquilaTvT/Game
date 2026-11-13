@@ -198,9 +198,10 @@ function beginAnte(run) {
 function blindInfo(run, b) {
   const boss = b === 2 ? run.boss : null;
   let t = anteBase(run.ante) * BLIND_MULT[b];
-  let scale = 0;
-  for (let i = 1; i <= run.stake; i++) if (STAKES[i].flags && STAKES[i].flags.scale) scale++;
-  if (scale) t *= Math.pow(1 + 0.08 * scale, run.ante - 1);
+  for (let i = 1; i <= run.stake; i++) {
+    const sc = STAKES[i].flags && STAKES[i].flags.scale;
+    if (sc) t *= sc[0] + sc[1] * (Math.min(run.ante, 12) - 1);
+  }
   if (boss) {
     t *= BOSSES[boss].targetMul || 1;
     for (let i = 1; i <= run.stake; i++) if (STAKES[i].flags && STAKES[i].flags.bossMul) t *= STAKES[i].flags.bossMul;

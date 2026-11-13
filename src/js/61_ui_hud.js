@@ -29,7 +29,7 @@ const Hud = {
         E.boardbox = h('div#boardbox', E.bossline = h('div.bossline.hide'), E.peek = h('div.panel.peekbox.hide')),
         h('div#trayrow',
           E.rinse = h('button#btn-rinse.actbtn', { type: 'button' }, h('span.t', { text: T('rinse') }), E.rinseN = h('span.n'), h('span.k', { text: 'Q' })),
-          E.traybox = h('div#traybox'),
+          E.traybox = h('div#traybox', E.trayAnchor = h('div#trayanchor')),
           E.ignite = h('button#btn-ignite.actbtn', { type: 'button' }, h('span.t', { text: T('ignite') }), E.igniteN = h('span.n'), h('span.k', { text: 'Space' })))),
       E.viewPick = h('div.view#v-pick'), E.viewCash = h('div.view#v-cash'), E.viewShop = h('div.view#v-shop'));
     g.appendChild(E.center);
@@ -88,7 +88,15 @@ const Hud = {
     this.pattern();
     this.buttons();
     // boss reminder over the sheet, and the look-ahead
-    if (rd && rd.boss && run.phase === 'round') { E.bossline.classList.remove('hide'); E.bossline.innerHTML = rich(dtx(BOSSES[rd.boss]).split('\n')[0]); } else E.bossline.classList.add('hide');
+    if (rd && rd.boss && run.phase === 'round') {
+      E.bossline.classList.remove('hide');
+      let extra = '';
+      const lim = flag(run, 'pieceLimit');
+      if (lim) extra = T('boss.limit', rd.placed, lim);
+      else if (rd.boss === 'yihe') extra = T('boss.tide', 6 - (rd.placed % 6));
+      else if (rd.boss === 'jizhi') extra = T('boss.blot', 3 - (rd.placed % 3));
+      E.bossline.innerHTML = rich(dtx(BOSSES[rd.boss]).split('\n')[0]) + (extra ? `<b style="color:#ffd9a0;margin-left:10px">${extra}</b>` : '');
+    } else E.bossline.classList.add('hide');
     this.renderPeek();
   },
   buttons() {
@@ -150,6 +158,7 @@ const Hud = {
     clear(E.glyph); clear(E.cname); clear(E.hints);
     E.csub.className = 'csub';
     if (!p) {
+      if (!ghost) this._lastChar = null;
       E.glyph.classList.add('empty');
       E.cname.appendChild(h('span', { text: T('hud.nochar'), style: { color: 'var(--dim)', fontSize: '25px' } }));
       E.csub.innerHTML = inRound ? T('hud.nochar.tip') : '';
@@ -159,6 +168,8 @@ const Hud = {
     }
     E.glyph.classList.remove('empty');
     const def = CH[p.id];
+    if (!ghost && this._lastChar !== p.id) { E.glyph.classList.remove('flip'); void E.glyph.offsetWidth; E.glyph.classList.add('flip'); }
+    if (!ghost) this._lastChar = p.id;
     E.glyph.appendChild(Gfx.glyphCanvas(p.id, 62, p.nul ? '#9c8f7c' : '#1b1918', { lay: p.lines, w: run.w, h: run.h }));
     E.glyph.style.opacity = ghost ? 0.75 : 1;
     E.cname.appendChild(h('span', { text: p.id === 'sanbi' ? T('sanbi') : def.g }));
@@ -211,7 +222,10 @@ const Hud = {
     E.sealTitle.innerHTML = `<span>${T('seals')}</span><span class="num">${used}/${slots}</span>`;
     clear(E.sealList);
     const rd = run.round;
-    const size = UI.orient === 'p' ? 74 : 62;
+    // in portrait the seals share one strip: shrink them when there are many
+    const shown = run.seals.length + Math.max(0, slots - used);
+    const size = UI.orient === 'p' ? clamp(Math.floor((UI.W - 250) / Math.max(5, shown)) - 12, 40, 74) : 62;
+    E.sealList.style.setProperty('--ss', size + 'px');
     run.seals.forEach((s, i) => {
       const d = SEALS[s.id];
       const el = h('div.seal', { data: { uid: s.uid } }, Gfx.sealEl(s.id, size, s.ed),
@@ -223,7 +237,7 @@ const Hud = {
       E.sealList.appendChild(el);
     });
     const freeSlots = Math.max(0, slots - used);
-    for (let i = 0; i < freeSlots && (UI.orient === 'l' || E.sealList.children.length < 6); i++) E.sealList.appendChild(h('div.seal.empty', { text: T('seal.empty') }));
+    for (let i = 0; i < freeSlots; i++) E.sealList.appendChild(h('div.seal.empty', { text: T('seal.empty') }));
   },
   bindSealDrag(el, index) {
     // drag a seal onto another to reorder (order matters: they act left to right)
