@@ -516,6 +516,9 @@ body[data-o="l"] .title { flex-direction: row; gap: 70px; }
 .logo .sub { font-family: var(--f-num); font-size: 22px; letter-spacing: 0.62em; color: var(--gold2); margin-top: 10px; padding-left: 0.62em; opacity: 0.9; text-transform: uppercase; }
 .logo .tag { font-family: var(--f-kai); font-size: 24px; color: #d9cdb6; letter-spacing: 0.5em; margin-top: 12px; padding-left: 0.5em; }
 .menulist { display: flex; flex-direction: column; gap: 12px; width: 330px; }
+body[data-o="p"] .menulist { width: 430px; gap: 14px; }
+body[data-o="p"] .menulist .btn { min-height: 72px; font-size: 34px; }
+body[data-o="p"] .menulist .rowbtns .btn { min-height: 60px; font-size: 25px; }
 .menulist .btn { width: 100%; min-height: 62px; font-size: 30px; letter-spacing: 0.24em; padding-left: calc(22px + 0.24em); }
 .menulist .btn small { font-family: var(--f-ui); font-size: 14px; letter-spacing: 0; font-weight: 400; opacity: 0.85; margin-left: 4px; }
 .menulist .rowbtns { display: flex; gap: 10px; }
@@ -953,8 +956,8 @@ defChar('wang', '王', 'wáng', 4, 3, [[1, 1, 1]], [[0, 1, 0]], { tags: ['cross'
   zh: '王', en: 'King', gz: '天下所归往也。三画而连其中谓之王：三者天地人也，而参通之者王也。', ge: 'He to whom all under heaven turns. Three lines — Heaven, Earth, Man — and the one who joins them is King.' });
 defChar('feng', '丰', 'fēng', 4, 1.5, [[0, 3, 0], [1, 2, 0], [0, 2, 1]], [[0, 1, 0]], { tags: ['cross'], yi: 'money2',
   zh: '丰', en: 'Plenty', gz: '艸盛丰丰也。', ge: 'Grass growing thick and lush: abundance.' });
-defChar('ji4', '彐', 'jì', 4, 2, [[1, 1, 1]], [[0, 0, 1]], { tags: [], yi: 'discard',
-  zh: '彐', en: 'Broom', gz: '豕之头，象其锐而上见也。又为「帚」之省，扫也。', ge: 'The snout of a boar; also the abbreviated form of the broom that sweeps.' });
+defChar('ji4', '彐', 'jì', 4, 2, [[1, 1, 1]], [[0, 0, 1]], { tags: [], yi: 'sweep',
+  zh: '彐', en: 'Snout', gz: '豕之头，象其锐而上见也。今「雪」「帚」「扫」诸字皆从之。', ge: 'The snout of a boar, pointed and raised. It lives on inside 雪 (snow), 帚 (broom) and 扫 (to sweep).' });
 defChar('shan', '山', 'shān', 4, 2.5, [[0, 0, 1]], [[1, 1, 1]], { tags: ['di'],
   zh: '山', en: 'Mountain', gz: '宣也。宣气散，生万物，有石而高。', ge: 'That which spreads the vital breath and gives life to all things; stony and high.' });
 defChar('jin', '巾', 'jīn', 4, 2.5, [[1, 0, 0]], [[1, 1, 1]], { tags: [], yi: 'wipe',
@@ -1006,6 +1009,7 @@ CH.sanbi.g = '';
 const YI = {
   ink:     { dz: '汲水：回复 [k|16 墨]', de: 'Draw water: restore [k|16 Ink]' },
   discard: { dz: '川流：本局 [k|洗笔+1]', de: 'Flow: [k|+1 Rinse] this round' },
+  sweep:   { dz: '洒扫：本局 [k|洗笔+1]', de: 'Sweep: [k|+1 Rinse] this round' },
   money2:  { dz: '所获：[g|+2 文]', de: 'Earnings: [g|+$2]' },
   money4:  { dz: '丰收：[g|+4 文]', de: 'Harvest: [g|+$4]' },
   tierUp:  { dz: '圭臬：随机一个画数等级 [k|+1]', de: 'Standard: a random stroke tier gains [k|+1 level]' },
@@ -1245,7 +1249,7 @@ defSeal('shizi', '识字', 'Literacy', 2, 6, {
   init(s) { s.st.m = 0; },
   end(sc, s) { if (sc.newRun && sc.isChar) s.st.m += 3; if (s.st.m > 0) sc.m(s.st.m); } });
 defSeal('linchi', '临池', 'By the Ink Pond', 2, 6, {
-  dz: (s) => `每耗 50 墨，此印永久 [c|形+12]（当前 [c|+${stv(s, 'c', 0)}]）\n[n|张芝临池学书，池水尽墨]`, de: (s) => `For every 50 Ink you spend, this seal permanently gains [c|+12 Form] (now [c|+${stv(s, 'c', 0)}])\n[n|Zhang Zhi practised by a pond until its water ran black.]`,
+  dz: (s) => `每耗 50 墨，此印永久 [c|形+12]（当前 [c|+${stv(s, 'c', 0)}]）\n[n|张芝临池学书，池水尽黑]`, de: (s) => `For every 50 Ink you spend, this seal permanently gains [c|+12 Form] (now [c|+${stv(s, 'c', 0)}])\n[n|Zhang Zhi practised by a pond until its water ran black.]`,
   init(s) { s.st.c = 0; s.st.acc = 0; },
   place(run, s, info) { s.st.acc += info.cost; while (s.st.acc >= 50) { s.st.acc -= 50; s.st.c += 12; } },
   end(sc, s) { if (s.st.c > 0) sc.c(s.st.c); } });
@@ -1762,7 +1766,7 @@ defBoss('boyuan', '伯远帖', 'Letter to Boyuan', 1, {
   author: { zh: '东晋 · 王珣', en: 'Wang Xun, Eastern Jin' },
   dz: '[jin|金]色的格不计分', de: '[jin|Gold] cells score nothing', flags: { inkDead: 'jin' } });
 defBoss('haotai', '好大王碑', 'Stele of King Gwanggaeto', 2, {
-  author: { zh: '东晋 · 佚名', en: 'Anonymous, Eastern Jin' },
+  author: { zh: '高句丽 · 佚名', en: 'Anonymous, Goguryeo' },
   dz: '目标分数为平常名帖的 [k|1.5 倍]\n[n|碑高六米有余]', de: 'The target is [k|1.5×] that of an ordinary masterwork\n[n|The stele stands over six metres tall]', targetMul: 1.5 });
 defBoss('dutong', '肚痛帖', 'Stomach-ache Note', 2, {
   author: { zh: '唐 · 张旭', en: 'Zhang Xu, Tang' },
@@ -1874,16 +1878,16 @@ defDeck('zhuan', '篆书', 'Seal Script', {
   mods: { sealSlots: 1, ignites: -1 }, unlock: { win: 'li' },
   build: () => perInk(['dot', 'i2', 'i3', 'i4', 'v3', 'o4', 't4', 'l4']) });
 defDeck('shoujin', '瘦金体', 'Slender Gold', {
-  dz: '所有墨块皆为[jin|金]色，开局 [g|12 文]；但[k|没有利息]。\n[n|宋徽宗所创，瘦硬通神]', de: 'Every block is [jin|Gold] and you start with [g|$12]; but you earn [k|no interest].\n[n|The hand of Emperor Huizong: thin, hard and uncanny]',
-  flags: { noInterest: 1 }, money: 12, unlock: { ante: 6 },
+  dz: '所有墨块皆为[jin|金]色，开局 [g|8 文]；但[k|没有利息]，且 [k|墨量−15]。\n[n|宋徽宗所创，瘦硬通神]', de: 'Every block is [jin|Gold] and you start with [g|$8]; but you earn [k|no interest] and have [k|−15 Ink].\n[n|The hand of Emperor Huizong: thin, hard and uncanny]',
+  flags: { noInterest: 1 }, money: 8, mods: { inkMax: -15 }, unlock: { ante: 6 },
   build: () => perInk(['dot', 'i2', 'i3', 'i4', 'v3', 'o4', 't4', 'l4'], ['jin', 'jin', 'jin', 'jin']) });
 defDeck('weibei', '魏碑', 'Wei Stele Script', {
-  dz: '墨块方厚沉重，[k|墨量+25]。\n[n|斩钉截铁，雄强朴茂]', de: 'Heavy, blocky pieces and [k|+25 Ink].\n[n|Cut as if with an axe: blunt and powerful]',
-  mods: { inkMax: 25 }, unlock: { chars: 16 },
+  dz: '墨块方厚沉重，[k|墨量+30]，开局自带一枚「密不透风」。\n[n|斩钉截铁，雄强朴茂]', de: 'Heavy, blocky pieces, [k|+30 Ink], and you begin with the seal Not a Breath of Wind.\n[n|Cut as if with an axe: blunt and powerful]',
+  mods: { inkMax: 30 }, seals: ['mibu'], unlock: { chars: 16 },
   build: () => perInk(['dot', 'i2', 'o4', 'o4', 'o6', 't4', 'l4', 'j4']) });
 defDeck('jiagu', '甲骨文', 'Oracle Bone Script', {
-  dz: '纸为 [k|7×7] 的龟甲，[k|墨量−20]，开局持有一张《集古录》。\n[n|殷墟卜辞，文字之始]', de: 'The sheet is a [k|7×7] tortoise shell with [k|−20 Ink]; you start with a Record of Antiquities.\n[n|Divinations of the Shang: where writing begins]',
-  w: 7, h: 7, mods: { inkMax: -20 }, items: ['jigulu'], unlock: { chars: 24 },
+  dz: '纸为 [k|7×7] 的龟甲，[k|墨量−28]，开局持有一册《集古录》。\n[n|殷墟卜辞，文字之始]', de: 'The sheet is a [k|7×7] tortoise shell with [k|−28 Ink]; you start with a Record of Antiquities.\n[n|Divinations of the Shang: where writing begins]',
+  w: 7, h: 7, mods: { inkMax: -28 }, items: ['jigulu'], unlock: { chars: 24 },
   build: () => perInk(['dot', 'i2', 'i3', 'i4', 'v3', 'o4', 't4']) });
 defDeck('changjuan', '长卷', 'The Handscroll', {
   dz: '纸为 [k|10×6] 的横卷：横长竖短，[k|墨量+10]。\n[n|展卷如行千里]', de: 'The sheet is a [k|10×6] scroll: long rows, short columns, [k|+10 Ink].\n[n|To unroll it is to travel a thousand leagues]',
@@ -2084,6 +2088,7 @@ function newRun(opts) {
     if (deck.randomEnh) p.enh = rndPick(run, 'misc', ENH_IDS);
   }
   if (deck.items) for (const id of deck.items) giveItem(run, id, true);
+  if (deck.seals) for (const id of deck.seals) addSeal(run, id, null);
   beginAnte(run);
   return run;
 }
@@ -2478,7 +2483,7 @@ function ignite(run) {
     const y = { t: 'yi', char: pat.id, yi: def.yi };
     switch (def.yi) {
       case 'ink': addInk(run, 16); break;
-      case 'discard': rd.discards += 1; break;
+      case 'discard': case 'sweep': rd.discards += 1; break;
       case 'money2': run.money += 2; run.stats.earned += 2; y.v = 2; break;
       case 'money4': run.money += 4; run.stats.earned += 4; y.v = 4; break;
       case 'tierUp': y.tier = 1 + rndInt(run, 'misc', TIER_MAX); levelUp(run, y.tier, 1); break;
@@ -3402,7 +3407,7 @@ const Snd = (() => {
     const s = PROFILE.settings;
     const t = ctx.currentTime;
     sfxBus.gain.setTargetAtTime(muted ? 0 : s.sfx * s.sfx, t, 0.03);
-    musBus.gain.setTargetAtTime(muted ? 0 : s.music * s.music * 0.7, t, 0.08);
+    musBus.gain.setTargetAtTime(muted ? 0 : s.music * s.music * 1.15, t, 0.08);
   }
   function resume() {
     if (!init()) return;
@@ -3558,7 +3563,7 @@ const Snd = (() => {
       bell(midiHz(m), 0.24, 1.3); bell(midiHz(m + 7), 0.14, 1.1);
       tone('sine', 110, 55, 0.4, 0.3);
     },
-    coin() { tone('sine', 2640, 2640, 0.09, 0.09); tone('sine', 3520, 3520, 0.16, 0.08, ctx ? ctx.currentTime + 0.06 : 0); tone('sine', 5280, 5280, 0.1, 0.03, ctx ? ctx.currentTime + 0.06 : 0); },
+    coin() { tone('sine', 2640, 2640, 0.1, 0.17); tone('sine', 3520, 3520, 0.18, 0.15, ctx ? ctx.currentTime + 0.06 : 0); tone('sine', 5280, 5280, 0.1, 0.05, ctx ? ctx.currentTime + 0.06 : 0); },
     seal() { tone('sine', 150, 58, 0.16, 0.55); noise(0.04, 0.16, 1800, 900, 0.8, 'bandpass'); },
     pure() { bell(midiHz(88), 0.07, 0.8); pluck(81, 0.16, 0, 'zheng', sfxBus, 0.4); },
     char(tier) {
@@ -3592,9 +3597,9 @@ const Snd = (() => {
       drum(45, 0.9, 0.9, t + 1.15);
     },
     buy() { fx.coin(); tone('triangle', 500, 700, 0.07, 0.1); },
-    sell() { tone('sine', 1760, 1320, 0.1, 0.09); tone('sine', 2640, 2640, 0.1, 0.06, ctx ? ctx.currentTime + 0.05 : 0); },
+    sell() { tone('sine', 1760, 1320, 0.12, 0.16); tone('sine', 2640, 2640, 0.12, 0.11, ctx ? ctx.currentTime + 0.05 : 0); },
     deny() { tone('sine', 220, 180, 0.09, 0.2); tone('sine', 196, 150, 0.12, 0.2, ctx ? ctx.currentTime + 0.09 : 0); },
-    reroll() { const t = ctx ? ctx.currentTime : 0; for (let i = 0; i < 4; i++) noise(0.06, 0.12, 2500 + i * 500, 4500, 1, 'bandpass', t + i * 0.05); },
+    reroll() { const t = ctx ? ctx.currentTime : 0; for (let i = 0; i < 4; i++) noise(0.06, 0.22, 2500 + i * 500, 4500, 1, 'bandpass', t + i * 0.05); },
     open() { noise(0.4, 0.2, 500, 4500, 0.8, 'bandpass', 0, sfxBus, 0.3); const t = ctx ? ctx.currentTime : 0; [4, 6, 8].forEach((d, i) => bell(midiHz(degMidi(74, d)), 0.08, 1.0, t + 0.12 + i * 0.07)); },
     level() { const t = ctx ? ctx.currentTime : 0; [2, 4, 7, 9].forEach((d, i) => pluck(degMidi(69, d), 0.24, t + i * 0.06, 'zheng', sfxBus, 0.5)); bell(midiHz(86), 0.07, 1.2, t + 0.24); },
     ach() { const t = ctx ? ctx.currentTime : 0; [0, 4, 7].forEach((d, i) => bell(midiHz(degMidi(74, d)), 0.12, 1.8, t + i * 0.09)); },
@@ -3744,7 +3749,7 @@ const Snd = (() => {
     get ready() { return ready; },
     get running() { return !!ctx && ctx.state === 'running'; },
     setMuted(v) { muted = v; applyVolumes(); },
-    _ctx: () => ctx,
+    _ctx: () => ctx, _out: () => comp,
   };
 })();
 
@@ -4371,6 +4376,9 @@ const FX = (() => {
 // ---------- background: slow ink drifting in dark water (WebGL, with a plain fallback) ----------
 const BG = (() => {
   let cv = null, gl = null, prog = null, uR = null, uT = null, uTint = null, uAmp = null, raf = 0, t0 = 0, lastDraw = 0;
+  // quality steps down by itself on machines that cannot keep up
+  let level = 0, lastRaf = 0, ema = 16, checkAt = 0;
+  const QUAL = [[0.6, 40], [0.42, 66], [0.3, 100], [0.2, 160]];
   let tint = [0.2, 0.17, 0.12], tintTo = [0.2, 0.17, 0.12], amp = 1, ampTo = 1, pulse = 0, alive = false;
   const TINTS = { title: [0.21, 0.18, 0.13], calm: [0.18, 0.16, 0.13], shop: [0.09, 0.19, 0.16], boss: [0.32, 0.08, 0.06], win: [0.3, 0.24, 0.1], over: [0.1, 0.1, 0.13] };
   const FS = `
@@ -4430,7 +4438,7 @@ void main(){
   }
   function resize() {
     if (!gl) return;
-    const sc = Math.min(1, 900 / Math.max(window.innerWidth, window.innerHeight)) * 0.6;
+    const sc = Math.min(1, 900 / Math.max(window.innerWidth, window.innerHeight)) * QUAL[level][0];
     cv.width = Math.max(64, Math.round(window.innerWidth * sc));
     cv.height = Math.max(64, Math.round(window.innerHeight * sc));
     gl.viewport(0, 0, cv.width, cv.height);
@@ -4438,9 +4446,15 @@ void main(){
   }
   function loop(t) {
     raf = requestAnimationFrame(loop);
-    if (!alive || document.hidden) return;
+    if (!alive || document.hidden) { lastRaf = 0; return; }
+    if (lastRaf) { const d = t - lastRaf; if (d < 250) ema += (d - ema) * 0.04; }
+    lastRaf = t;
+    if (t > checkAt) {
+      checkAt = t + 3000;
+      if (ema > 27 && level < QUAL.length - 1 && t - t0 > 0) { level++; ema = 16; resize(); }
+    }
     const slow = PROFILE.settings.reduce;
-    if (t - lastDraw < (slow ? 200 : 40)) return;
+    if (t - lastDraw < (slow ? 200 : QUAL[level][1])) return;
     const dt = Math.min(0.2, (t - lastDraw) / 1000);
     lastDraw = t;
     for (let i = 0; i < 3; i++) tint[i] += (tintTo[i] - tint[i]) * Math.min(1, dt * 1.6);
@@ -4790,6 +4804,7 @@ const Hud = {
   refresh() {
     const run = UI.run, E = this.el;
     if (!run) return;
+    Play.poke();
     const rd = run.round;
     // blind card
     const fa = FA[((run.ante - 1) % 8) + 1];
@@ -5142,6 +5157,7 @@ const Play = {
     this.bx = Math.round(bb.offsetLeft + (bw - w * cs) / 2);
     this.by = Math.round(bb.offsetTop + top + (bh - h * cs) / 2 - cs * 0.05);
     this.inkDirty = true;
+    this.poke();
     this.layoutTray();
   },
   layoutTray() {
@@ -5171,6 +5187,7 @@ const Play = {
 
   // ---- pointer input
   onDown(e) {
+    this.poke();
     if (!this.canAct()) return;
     Snd.resume();
     if (this.target) {
@@ -5223,6 +5240,7 @@ const Play = {
   onMove(e) {
     const d = this.drag;
     if (!d) { this.onHover(e); return; }
+    this.poke();
     if (e.pointerId !== d.id) return;
     const p = this.local(e);
     d.x = p.x; d.y = p.y; d.cx = e.clientX; d.cy = e.clientY;
@@ -5280,6 +5298,7 @@ const Play = {
     return { gx: clamp(gx, 0, run.w - g.w), gy: clamp(gy, 0, run.h - g.h), valid: false, onBoard: true };
   },
   onUp(e) {
+    this.poke();
     const d = this.drag;
     if (!d || e.pointerId !== d.id) return;
     try { this.cv.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ }
@@ -5303,7 +5322,7 @@ const Play = {
     FX.setDrag(null);
     this.setGhost(null);
   },
-  nope(slot) { this.shakeSlot = slot; this.shakeT = nowMs(); },
+  nope(slot) { this.shakeSlot = slot; this.shakeT = nowMs(); this.poke(); },
   rotate(slot, dir) {
     const run = UI.run;
     if (!this.canAct() || slot < 0) return;
@@ -5333,6 +5352,7 @@ const Play = {
 
   // ---- keyboard
   key(e) {
+    this.poke();
     if (!this.canAct()) return false;
     const run = UI.run, rd = run.round, k = e.key;
     const pickSlot = (s) => {
@@ -5401,10 +5421,20 @@ const Play = {
   },
 
   // ---- drawing
+  // anything that may change what the canvas shows calls poke(); idle sheets are not redrawn
+  poke() { this.pokeT = nowMs(); },
   frame(t) {
     this.raf = requestAnimationFrame((tt) => this.frame(tt));
     this.t = t;
     if (!this.active || !UI.run || !UI.run.round || !$('#game').classList.contains('on')) return;
+    this.fno = (this.fno || 0) + 1;
+    const now = nowMs();
+    const busy = this.inkDirty || (this.drag && this.drag.moved) || this.ghost || this.flashCells.size || this.pops.size || this.strokes.length || this.lineFlash.length ||
+      this.shakeSlot >= 0 || this.rinseMode || this.target || now - (this.pokeT || 0) < 700;
+    if (!busy) {
+      // completed lines keep a slow sheen: half rate is plenty; otherwise just a rare safety refresh
+      if (this.lines.n > 0 ? this.fno % 2 : this.fno % 45) return;
+    }
     this.draw();
   },
   buildInk(board) {
@@ -6965,17 +6995,15 @@ const Menu = {
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
     const c = cv.getContext('2d');
     const glyphs = [LOGO.fang, LOGO.kuai, LOGO.zi];
-    const inks = ['mo', 'mo', 'mo'];
-    const accent = [[6, 0, 'zhu'], [6, 1, 'zhu']];
+    // the opening dot of each character is written in vermilion
+    const dots = [[6, 0], [8, 0], [6, 0]];
     const lists = glyphs.map((rows, gi) => {
       const on = (x, y) => y >= 0 && y < 13 && x >= 0 && x < 13 && rows[y][x] === '#';
       const list = [];
       for (let y = 0; y < 13; y++) for (let x = 0; x < 13; x++) {
         if (!on(x, y)) continue;
-        let ink = inks[gi];
-        if (gi !== 1 && accent.some((a) => a[0] === x && a[1] === y)) ink = 'zhu';
-        if (gi === 1 && ((x === 8 && y < 2) || (y === 11 && x < 3) || (x === 3 && y === 10))) ink = gi === 1 && y < 2 ? 'zhu' : 'mo';
-        list.push({ x, y, ink, enh: null, nb: (on(x, y - 1) ? 1 : 0) | (on(x + 1, y) ? 2 : 0) | (on(x, y + 1) ? 4 : 0) | (on(x - 1, y) ? 8 : 0), d: Math.hypot(x - 6, y - 6) });
+        const red = x === dots[gi][0] && y < 2;
+        list.push({ x, y, ink: red ? 'zhu' : 'mo', enh: null, nb: (on(x, y - 1) ? 1 : 0) | (on(x + 1, y) ? 2 : 0) | (on(x, y + 1) ? 4 : 0) | (on(x - 1, y) ? 8 : 0), d: Math.hypot(x - 6, y - 6) });
       }
       return list;
     });

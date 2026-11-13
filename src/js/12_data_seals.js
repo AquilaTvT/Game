@@ -140,7 +140,7 @@ defSeal('shizi', '识字', 'Literacy', 2, 6, {
   init(s) { s.st.m = 0; },
   end(sc, s) { if (sc.newRun && sc.isChar) s.st.m += 3; if (s.st.m > 0) sc.m(s.st.m); } });
 defSeal('linchi', '临池', 'By the Ink Pond', 2, 6, {
-  dz: (s) => `每耗 50 墨，此印永久 [c|形+12]（当前 [c|+${stv(s, 'c', 0)}]）\n[n|张芝临池学书，池水尽墨]`, de: (s) => `For every 50 Ink you spend, this seal permanently gains [c|+12 Form] (now [c|+${stv(s, 'c', 0)}])\n[n|Zhang Zhi practised by a pond until its water ran black.]`,
+  dz: (s) => `每耗 50 墨，此印永久 [c|形+12]（当前 [c|+${stv(s, 'c', 0)}]）\n[n|张芝临池学书，池水尽黑]`, de: (s) => `For every 50 Ink you spend, this seal permanently gains [c|+12 Form] (now [c|+${stv(s, 'c', 0)}])\n[n|Zhang Zhi practised by a pond until its water ran black.]`,
   init(s) { s.st.c = 0; s.st.acc = 0; },
   place(run, s, info) { s.st.acc += info.cost; while (s.st.acc >= 50) { s.st.acc -= 50; s.st.c += 12; } },
   end(sc, s) { if (s.st.c > 0) sc.c(s.st.c); } });

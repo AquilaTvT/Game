@@ -172,6 +172,7 @@ function newRun(opts) {
     if (deck.randomEnh) p.enh = rndPick(run, 'misc', ENH_IDS);
   }
   if (deck.items) for (const id of deck.items) giveItem(run, id, true);
+  if (deck.seals) for (const id of deck.seals) addSeal(run, id, null);
   beginAnte(run);
   return run;
 }
@@ -566,7 +567,7 @@ function ignite(run) {
     const y = { t: 'yi', char: pat.id, yi: def.yi };
     switch (def.yi) {
       case 'ink': addInk(run, 16); break;
-      case 'discard': rd.discards += 1; break;
+      case 'discard': case 'sweep': rd.discards += 1; break;
       case 'money2': run.money += 2; run.stats.earned += 2; y.v = 2; break;
       case 'money4': run.money += 4; run.stats.earned += 4; y.v = 4; break;
       case 'tierUp': y.tier = 1 + rndInt(run, 'misc', TIER_MAX); levelUp(run, y.tier, 1); break;

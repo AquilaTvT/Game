@@ -75,8 +75,8 @@ defChar('wang', '王', 'wáng', 4, 3, [[1, 1, 1]], [[0, 1, 0]], { tags: ['cross'
   zh: '王', en: 'King', gz: '天下所归往也。三画而连其中谓之王：三者天地人也，而参通之者王也。', ge: 'He to whom all under heaven turns. Three lines — Heaven, Earth, Man — and the one who joins them is King.' });
 defChar('feng', '丰', 'fēng', 4, 1.5, [[0, 3, 0], [1, 2, 0], [0, 2, 1]], [[0, 1, 0]], { tags: ['cross'], yi: 'money2',
   zh: '丰', en: 'Plenty', gz: '艸盛丰丰也。', ge: 'Grass growing thick and lush: abundance.' });
-defChar('ji4', '彐', 'jì', 4, 2, [[1, 1, 1]], [[0, 0, 1]], { tags: [], yi: 'discard',
-  zh: '彐', en: 'Broom', gz: '豕之头，象其锐而上见也。又为「帚」之省，扫也。', ge: 'The snout of a boar; also the abbreviated form of the broom that sweeps.' });
+defChar('ji4', '彐', 'jì', 4, 2, [[1, 1, 1]], [[0, 0, 1]], { tags: [], yi: 'sweep',
+  zh: '彐', en: 'Snout', gz: '豕之头，象其锐而上见也。今「雪」「帚」「扫」诸字皆从之。', ge: 'The snout of a boar, pointed and raised. It lives on inside 雪 (snow), 帚 (broom) and 扫 (to sweep).' });
 defChar('shan', '山', 'shān', 4, 2.5, [[0, 0, 1]], [[1, 1, 1]], { tags: ['di'],
   zh: '山', en: 'Mountain', gz: '宣也。宣气散，生万物，有石而高。', ge: 'That which spreads the vital breath and gives life to all things; stony and high.' });
 defChar('jin', '巾', 'jīn', 4, 2.5, [[1, 0, 0]], [[1, 1, 1]], { tags: [], yi: 'wipe',
@@ -128,6 +128,7 @@ CH.sanbi.g = '';
 const YI = {
   ink:     { dz: '汲水：回复 [k|16 墨]', de: 'Draw water: restore [k|16 Ink]' },
   discard: { dz: '川流：本局 [k|洗笔+1]', de: 'Flow: [k|+1 Rinse] this round' },
+  sweep:   { dz: '洒扫：本局 [k|洗笔+1]', de: 'Sweep: [k|+1 Rinse] this round' },
   money2:  { dz: '所获：[g|+2 文]', de: 'Earnings: [g|+$2]' },
   money4:  { dz: '丰收：[g|+4 文]', de: 'Harvest: [g|+$4]' },
   tierUp:  { dz: '圭臬：随机一个画数等级 [k|+1]', de: 'Standard: a random stroke tier gains [k|+1 level]' },

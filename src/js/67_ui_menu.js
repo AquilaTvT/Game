@@ -25,17 +25,15 @@ const Menu = {
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
     const c = cv.getContext('2d');
     const glyphs = [LOGO.fang, LOGO.kuai, LOGO.zi];
-    const inks = ['mo', 'mo', 'mo'];
-    const accent = [[6, 0, 'zhu'], [6, 1, 'zhu']];
+    // the opening dot of each character is written in vermilion
+    const dots = [[6, 0], [8, 0], [6, 0]];
     const lists = glyphs.map((rows, gi) => {
       const on = (x, y) => y >= 0 && y < 13 && x >= 0 && x < 13 && rows[y][x] === '#';
       const list = [];
       for (let y = 0; y < 13; y++) for (let x = 0; x < 13; x++) {
         if (!on(x, y)) continue;
-        let ink = inks[gi];
-        if (gi !== 1 && accent.some((a) => a[0] === x && a[1] === y)) ink = 'zhu';
-        if (gi === 1 && ((x === 8 && y < 2) || (y === 11 && x < 3) || (x === 3 && y === 10))) ink = gi === 1 && y < 2 ? 'zhu' : 'mo';
-        list.push({ x, y, ink, enh: null, nb: (on(x, y - 1) ? 1 : 0) | (on(x + 1, y) ? 2 : 0) | (on(x, y + 1) ? 4 : 0) | (on(x - 1, y) ? 8 : 0), d: Math.hypot(x - 6, y - 6) });
+        const red = x === dots[gi][0] && y < 2;
+        list.push({ x, y, ink: red ? 'zhu' : 'mo', enh: null, nb: (on(x, y - 1) ? 1 : 0) | (on(x + 1, y) ? 2 : 0) | (on(x, y + 1) ? 4 : 0) | (on(x - 1, y) ? 8 : 0), d: Math.hypot(x - 6, y - 6) });
       }
       return list;
     });

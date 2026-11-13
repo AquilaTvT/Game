@@ -138,6 +138,9 @@ const FX = (() => {
 // ---------- background: slow ink drifting in dark water (WebGL, with a plain fallback) ----------
 const BG = (() => {
   let cv = null, gl = null, prog = null, uR = null, uT = null, uTint = null, uAmp = null, raf = 0, t0 = 0, lastDraw = 0;
+  // quality steps down by itself on machines that cannot keep up
+  let level = 0, lastRaf = 0, ema = 16, checkAt = 0;
+  const QUAL = [[0.6, 40], [0.42, 66], [0.3, 100], [0.2, 160]];
   let tint = [0.2, 0.17, 0.12], tintTo = [0.2, 0.17, 0.12], amp = 1, ampTo = 1, pulse = 0, alive = false;
   const TINTS = { title: [0.21, 0.18, 0.13], calm: [0.18, 0.16, 0.13], shop: [0.09, 0.19, 0.16], boss: [0.32, 0.08, 0.06], win: [0.3, 0.24, 0.1], over: [0.1, 0.1, 0.13] };
   const FS = `
@@ -197,7 +200,7 @@ void main(){
   }
   function resize() {
     if (!gl) return;
-    const sc = Math.min(1, 900 / Math.max(window.innerWidth, window.innerHeight)) * 0.6;
+    const sc = Math.min(1, 900 / Math.max(window.innerWidth, window.innerHeight)) * QUAL[level][0];
     cv.width = Math.max(64, Math.round(window.innerWidth * sc));
     cv.height = Math.max(64, Math.round(window.innerHeight * sc));
     gl.viewport(0, 0, cv.width, cv.height);
@@ -205,9 +208,15 @@ void main(){
   }
   function loop(t) {
     raf = requestAnimationFrame(loop);
-    if (!alive || document.hidden) return;
+    if (!alive || document.hidden) { lastRaf = 0; return; }
+    if (lastRaf) { const d = t - lastRaf; if (d < 250) ema += (d - ema) * 0.04; }
+    lastRaf = t;
+    if (t > checkAt) {
+      checkAt = t + 3000;
+      if (ema > 27 && level < QUAL.length - 1 && t - t0 > 0) { level++; ema = 16; resize(); }
+    }
     const slow = PROFILE.settings.reduce;
-    if (t - lastDraw < (slow ? 200 : 40)) return;
+    if (t - lastDraw < (slow ? 200 : QUAL[level][1])) return;
     const dt = Math.min(0.2, (t - lastDraw) / 1000);
     lastDraw = t;
     for (let i = 0; i < 3; i++) tint[i] += (tintTo[i] - tint[i]) * Math.min(1, dt * 1.6);

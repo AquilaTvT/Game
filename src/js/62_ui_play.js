@@ -41,6 +41,7 @@ const Play = {
     this.bx = Math.round(bb.offsetLeft + (bw - w * cs) / 2);
     this.by = Math.round(bb.offsetTop + top + (bh - h * cs) / 2 - cs * 0.05);
     this.inkDirty = true;
+    this.poke();
     this.layoutTray();
   },
   layoutTray() {
@@ -70,6 +71,7 @@ const Play = {
 
   // ---- pointer input
   onDown(e) {
+    this.poke();
     if (!this.canAct()) return;
     Snd.resume();
     if (this.target) {
@@ -122,6 +124,7 @@ const Play = {
   onMove(e) {
     const d = this.drag;
     if (!d) { this.onHover(e); return; }
+    this.poke();
     if (e.pointerId !== d.id) return;
     const p = this.local(e);
     d.x = p.x; d.y = p.y; d.cx = e.clientX; d.cy = e.clientY;
@@ -179,6 +182,7 @@ const Play = {
     return { gx: clamp(gx, 0, run.w - g.w), gy: clamp(gy, 0, run.h - g.h), valid: false, onBoard: true };
   },
   onUp(e) {
+    this.poke();
     const d = this.drag;
     if (!d || e.pointerId !== d.id) return;
     try { this.cv.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ }
@@ -202,7 +206,7 @@ const Play = {
     FX.setDrag(null);
     this.setGhost(null);
   },
-  nope(slot) { this.shakeSlot = slot; this.shakeT = nowMs(); },
+  nope(slot) { this.shakeSlot = slot; this.shakeT = nowMs(); this.poke(); },
   rotate(slot, dir) {
     const run = UI.run;
     if (!this.canAct() || slot < 0) return;
@@ -232,6 +236,7 @@ const Play = {
 
   // ---- keyboard
   key(e) {
+    this.poke();
     if (!this.canAct()) return false;
     const run = UI.run, rd = run.round, k = e.key;
     const pickSlot = (s) => {
@@ -300,10 +305,20 @@ const Play = {
   },
 
   // ---- drawing
+  // anything that may change what the canvas shows calls poke(); idle sheets are not redrawn
+  poke() { this.pokeT = nowMs(); },
   frame(t) {
     this.raf = requestAnimationFrame((tt) => this.frame(tt));
     this.t = t;
     if (!this.active || !UI.run || !UI.run.round || !$('#game').classList.contains('on')) return;
+    this.fno = (this.fno || 0) + 1;
+    const now = nowMs();
+    const busy = this.inkDirty || (this.drag && this.drag.moved) || this.ghost || this.flashCells.size || this.pops.size || this.strokes.length || this.lineFlash.length ||
+      this.shakeSlot >= 0 || this.rinseMode || this.target || now - (this.pokeT || 0) < 700;
+    if (!busy) {
+      // completed lines keep a slow sheen: half rate is plenty; otherwise just a rare safety refresh
+      if (this.lines.n > 0 ? this.fno % 2 : this.fno % 45) return;
+    }
     this.draw();
   },
   buildInk(board) {

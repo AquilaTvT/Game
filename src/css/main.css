@@ -499,6 +499,9 @@ body[data-o="l"] .title { flex-direction: row; gap: 70px; }
 .logo .sub { font-family: var(--f-num); font-size: 22px; letter-spacing: 0.62em; color: var(--gold2); margin-top: 10px; padding-left: 0.62em; opacity: 0.9; text-transform: uppercase; }
 .logo .tag { font-family: var(--f-kai); font-size: 24px; color: #d9cdb6; letter-spacing: 0.5em; margin-top: 12px; padding-left: 0.5em; }
 .menulist { display: flex; flex-direction: column; gap: 12px; width: 330px; }
+body[data-o="p"] .menulist { width: 430px; gap: 14px; }
+body[data-o="p"] .menulist .btn { min-height: 72px; font-size: 34px; }
+body[data-o="p"] .menulist .rowbtns .btn { min-height: 60px; font-size: 25px; }
 .menulist .btn { width: 100%; min-height: 62px; font-size: 30px; letter-spacing: 0.24em; padding-left: calc(22px + 0.24em); }
 .menulist .btn small { font-family: var(--f-ui); font-size: 14px; letter-spacing: 0; font-weight: 400; opacity: 0.85; margin-left: 4px; }
 .menulist .rowbtns { display: flex; gap: 10px; }

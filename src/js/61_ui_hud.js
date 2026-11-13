@@ -58,6 +58,7 @@ const Hud = {
   refresh() {
     const run = UI.run, E = this.el;
     if (!run) return;
+    Play.poke();
     const rd = run.round;
     // blind card
     const fa = FA[((run.ante - 1) % 8) + 1];

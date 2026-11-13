@@ -72,7 +72,7 @@ defBoss('boyuan', '伯远帖', 'Letter to Boyuan', 1, {
   author: { zh: '东晋 · 王珣', en: 'Wang Xun, Eastern Jin' },
   dz: '[jin|金]色的格不计分', de: '[jin|Gold] cells score nothing', flags: { inkDead: 'jin' } });
 defBoss('haotai', '好大王碑', 'Stele of King Gwanggaeto', 2, {
-  author: { zh: '东晋 · 佚名', en: 'Anonymous, Eastern Jin' },
+  author: { zh: '高句丽 · 佚名', en: 'Anonymous, Goguryeo' },
   dz: '目标分数为平常名帖的 [k|1.5 倍]\n[n|碑高六米有余]', de: 'The target is [k|1.5×] that of an ordinary masterwork\n[n|The stele stands over six metres tall]', targetMul: 1.5 });
 defBoss('dutong', '肚痛帖', 'Stomach-ache Note', 2, {
   author: { zh: '唐 · 张旭', en: 'Zhang Xu, Tang' },
@@ -184,16 +184,16 @@ defDeck('zhuan', '篆书', 'Seal Script', {
   mods: { sealSlots: 1, ignites: -1 }, unlock: { win: 'li' },
   build: () => perInk(['dot', 'i2', 'i3', 'i4', 'v3', 'o4', 't4', 'l4']) });
 defDeck('shoujin', '瘦金体', 'Slender Gold', {
-  dz: '所有墨块皆为[jin|金]色，开局 [g|12 文]；但[k|没有利息]。\n[n|宋徽宗所创，瘦硬通神]', de: 'Every block is [jin|Gold] and you start with [g|$12]; but you earn [k|no interest].\n[n|The hand of Emperor Huizong: thin, hard and uncanny]',
-  flags: { noInterest: 1 }, money: 12, unlock: { ante: 6 },
+  dz: '所有墨块皆为[jin|金]色，开局 [g|8 文]；但[k|没有利息]，且 [k|墨量−15]。\n[n|宋徽宗所创，瘦硬通神]', de: 'Every block is [jin|Gold] and you start with [g|$8]; but you earn [k|no interest] and have [k|−15 Ink].\n[n|The hand of Emperor Huizong: thin, hard and uncanny]',
+  flags: { noInterest: 1 }, money: 8, mods: { inkMax: -15 }, unlock: { ante: 6 },
   build: () => perInk(['dot', 'i2', 'i3', 'i4', 'v3', 'o4', 't4', 'l4'], ['jin', 'jin', 'jin', 'jin']) });
 defDeck('weibei', '魏碑', 'Wei Stele Script', {
-  dz: '墨块方厚沉重，[k|墨量+25]。\n[n|斩钉截铁，雄强朴茂]', de: 'Heavy, blocky pieces and [k|+25 Ink].\n[n|Cut as if with an axe: blunt and powerful]',
-  mods: { inkMax: 25 }, unlock: { chars: 16 },
+  dz: '墨块方厚沉重，[k|墨量+30]，开局自带一枚「密不透风」。\n[n|斩钉截铁，雄强朴茂]', de: 'Heavy, blocky pieces, [k|+30 Ink], and you begin with the seal Not a Breath of Wind.\n[n|Cut as if with an axe: blunt and powerful]',
+  mods: { inkMax: 30 }, seals: ['mibu'], unlock: { chars: 16 },
   build: () => perInk(['dot', 'i2', 'o4', 'o4', 'o6', 't4', 'l4', 'j4']) });
 defDeck('jiagu', '甲骨文', 'Oracle Bone Script', {
-  dz: '纸为 [k|7×7] 的龟甲，[k|墨量−20]，开局持有一张《集古录》。\n[n|殷墟卜辞，文字之始]', de: 'The sheet is a [k|7×7] tortoise shell with [k|−20 Ink]; you start with a Record of Antiquities.\n[n|Divinations of the Shang: where writing begins]',
-  w: 7, h: 7, mods: { inkMax: -20 }, items: ['jigulu'], unlock: { chars: 24 },
+  dz: '纸为 [k|7×7] 的龟甲，[k|墨量−28]，开局持有一册《集古录》。\n[n|殷墟卜辞，文字之始]', de: 'The sheet is a [k|7×7] tortoise shell with [k|−28 Ink]; you start with a Record of Antiquities.\n[n|Divinations of the Shang: where writing begins]',
+  w: 7, h: 7, mods: { inkMax: -28 }, items: ['jigulu'], unlock: { chars: 24 },
   build: () => perInk(['dot', 'i2', 'i3', 'i4', 'v3', 'o4', 't4']) });
 defDeck('changjuan', '长卷', 'The Handscroll', {
   dz: '纸为 [k|10×6] 的横卷：横长竖短，[k|墨量+10]。\n[n|展卷如行千里]', de: 'The sheet is a [k|10×6] scroll: long rows, short columns, [k|+10 Ink].\n[n|To unroll it is to travel a thousand leagues]',

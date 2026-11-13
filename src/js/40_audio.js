@@ -47,7 +47,7 @@ const Snd = (() => {
     const s = PROFILE.settings;
     const t = ctx.currentTime;
     sfxBus.gain.setTargetAtTime(muted ? 0 : s.sfx * s.sfx, t, 0.03);
-    musBus.gain.setTargetAtTime(muted ? 0 : s.music * s.music * 0.7, t, 0.08);
+    musBus.gain.setTargetAtTime(muted ? 0 : s.music * s.music * 1.15, t, 0.08);
   }
   function resume() {
     if (!init()) return;
@@ -203,7 +203,7 @@ const Snd = (() => {
       bell(midiHz(m), 0.24, 1.3); bell(midiHz(m + 7), 0.14, 1.1);
       tone('sine', 110, 55, 0.4, 0.3);
     },
-    coin() { tone('sine', 2640, 2640, 0.09, 0.09); tone('sine', 3520, 3520, 0.16, 0.08, ctx ? ctx.currentTime + 0.06 : 0); tone('sine', 5280, 5280, 0.1, 0.03, ctx ? ctx.currentTime + 0.06 : 0); },
+    coin() { tone('sine', 2640, 2640, 0.1, 0.17); tone('sine', 3520, 3520, 0.18, 0.15, ctx ? ctx.currentTime + 0.06 : 0); tone('sine', 5280, 5280, 0.1, 0.05, ctx ? ctx.currentTime + 0.06 : 0); },
     seal() { tone('sine', 150, 58, 0.16, 0.55); noise(0.04, 0.16, 1800, 900, 0.8, 'bandpass'); },
     pure() { bell(midiHz(88), 0.07, 0.8); pluck(81, 0.16, 0, 'zheng', sfxBus, 0.4); },
     char(tier) {
@@ -237,9 +237,9 @@ const Snd = (() => {
       drum(45, 0.9, 0.9, t + 1.15);
     },
     buy() { fx.coin(); tone('triangle', 500, 700, 0.07, 0.1); },
-    sell() { tone('sine', 1760, 1320, 0.1, 0.09); tone('sine', 2640, 2640, 0.1, 0.06, ctx ? ctx.currentTime + 0.05 : 0); },
+    sell() { tone('sine', 1760, 1320, 0.12, 0.16); tone('sine', 2640, 2640, 0.12, 0.11, ctx ? ctx.currentTime + 0.05 : 0); },
     deny() { tone('sine', 220, 180, 0.09, 0.2); tone('sine', 196, 150, 0.12, 0.2, ctx ? ctx.currentTime + 0.09 : 0); },
-    reroll() { const t = ctx ? ctx.currentTime : 0; for (let i = 0; i < 4; i++) noise(0.06, 0.12, 2500 + i * 500, 4500, 1, 'bandpass', t + i * 0.05); },
+    reroll() { const t = ctx ? ctx.currentTime : 0; for (let i = 0; i < 4; i++) noise(0.06, 0.22, 2500 + i * 500, 4500, 1, 'bandpass', t + i * 0.05); },
     open() { noise(0.4, 0.2, 500, 4500, 0.8, 'bandpass', 0, sfxBus, 0.3); const t = ctx ? ctx.currentTime : 0; [4, 6, 8].forEach((d, i) => bell(midiHz(degMidi(74, d)), 0.08, 1.0, t + 0.12 + i * 0.07)); },
     level() { const t = ctx ? ctx.currentTime : 0; [2, 4, 7, 9].forEach((d, i) => pluck(degMidi(69, d), 0.24, t + i * 0.06, 'zheng', sfxBus, 0.5)); bell(midiHz(86), 0.07, 1.2, t + 0.24); },
     ach() { const t = ctx ? ctx.currentTime : 0; [0, 4, 7].forEach((d, i) => bell(midiHz(degMidi(74, d)), 0.12, 1.8, t + i * 0.09)); },
@@ -389,6 +389,6 @@ const Snd = (() => {
     get ready() { return ready; },
     get running() { return !!ctx && ctx.state === 'running'; },
     setMuted(v) { muted = v; applyVolumes(); },
-    _ctx: () => ctx,
+    _ctx: () => ctx, _out: () => comp,
   };
 })();

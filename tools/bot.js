@@ -220,65 +220,73 @@ function makeBot(E, profile) {
     if (ids && ids.length >= (def.need.min || 1)) E.useItem(run, i, { pieces: ids });
   }
 
+  // One decision at a time, so the same brain can also drive the real interface in tests.
+  // mem: { plan, stuck } kept by the caller for the length of a round.
+  function decide(run, mem) {
+    const rd = run.round;
+    const L = E.findLines(run);
+    if (!mem.plan || mem.stuck >= 2) { mem.plan = choosePlan(run); mem.stuck = 0; }
+    else {
+      // drop a plan that has become impossible
+      let need = 0;
+      for (const i of mem.plan.M) if (!rd.board[i]) need++;
+      const cur = L.n ? E.classifyLines(run.w, run.h, L.rows, L.cols, L.diags) : null;
+      if (need > rd.ink || L.rows.some((y) => !mem.plan.rc.rows.includes(y)) || L.cols.some((x) => !mem.plan.rc.cols.includes(x))) mem.plan = choosePlan(run);
+      else if (need === 0 && cur && cur.id !== mem.plan.id) mem.plan = choosePlan(run);
+    }
+    const plan = mem.plan;
+    if (plan) {
+      let need = 0;
+      for (const i of plan.M) if (!rd.board[i]) need++;
+      if (need === 0) { mem.plan = null; if (rd.ignites > 0 && L.n) return { t: 'ignite' }; }
+    }
+    if (!mem.plan) {
+      if (L.n && rd.ignites > 0) return { t: 'ignite' };
+      if (!E.hasMove(run)) return { t: 'concede' };
+      // nothing sensible: rinse or dump the smallest spill
+      const s0 = rd.tray.findIndex((t, s) => t && E.slotUsable(run, s));
+      if (rd.discards > 0 && s0 >= 0) return { t: 'discard', slot: s0 };
+      const dump = placements(run, { M: new Set(), rc: { rows: [], cols: [] } }).sort((a, b) => a.bad - b.bad || a.spill - b.spill)[0];
+      if (dump) return { t: 'place', slot: dump.slot, rot: dump.rot, x: dump.x, y: dump.y };
+      return { t: 'concede' };
+    }
+    const moves = placements(run, plan);
+    let best = null;
+    for (const m of moves) if (m.gain > 0 && m.score > 0 && (!best || m.score > best.score)) best = m;
+    if (best) { mem.stuck = 0; return { t: 'place', slot: best.slot, rot: best.rot, x: best.x, y: best.y }; }
+    // no clean move
+    if (rd.discards > 0) {
+      const per = {};
+      for (const m of moves) per[m.slot] = Math.max(per[m.slot] == null ? -1e9 : per[m.slot], m.score);
+      let slot = -1, worst = 1e9;
+      for (let s = 0; s < rd.tray.length; s++) if (rd.tray[s] && E.slotUsable(run, s)) { const v = per[s] == null ? -1e8 : per[s]; if (v < worst) { worst = v; slot = s; } }
+      if (slot >= 0) return { t: 'discard', slot };
+    }
+    // accept the least messy move that still makes progress, else cash in what we have
+    let ok = null;
+    for (const m of moves) if (m.gain > 0 && m.bad === 0 && (!ok || m.score > ok.score)) ok = m;
+    if (ok) { mem.stuck++; return { t: 'place', slot: ok.slot, rot: ok.rot, x: ok.x, y: ok.y }; }
+    if (L.n && rd.ignites > 0) { mem.plan = null; return { t: 'ignite' }; }
+    mem.stuck = 2;
+    if (!E.hasMove(run)) return { t: 'concede' };
+    const dump = moves.sort((a, b) => a.bad - b.bad || b.score - a.score)[0];
+    if (dump) { mem.plan = null; return { t: 'place', slot: dump.slot, rot: dump.rot, x: dump.x, y: dump.y }; }
+    return { t: 'concede' };
+  }
   function playRound(run) {
-    let guard = 0, plan = null, stuck = 0;
+    let guard = 0;
+    const mem = { plan: null, stuck: 0 };
     while (run.phase === 'round' && guard++ < 600) {
-      const rd = run.round;
       if (run.items.length) useRoundItems(run);
       if (run.phase !== 'round') break;
-      const L = E.findLines(run);
-      if (!plan || stuck >= 2) { plan = choosePlan(run); stuck = 0; }
-      else {
-        // drop a plan that has become impossible
-        let need = 0;
-        for (const i of plan.M) if (!rd.board[i]) need++;
-        plan.need = need;
-        const cur = L.n ? E.classifyLines(run.w, run.h, L.rows, L.cols, L.diags) : null;
-        if (need > rd.ink || L.rows.some((y) => !plan.rc.rows.includes(y)) || L.cols.some((x) => !plan.rc.cols.includes(x))) plan = choosePlan(run);
-        else if (need === 0 && cur && cur.id !== plan.id) plan = choosePlan(run);
-      }
-      if (plan) {
-        let need = 0;
-        for (const i of plan.M) if (!rd.board[i]) need++;
-        if (need === 0) { if (rd.ignites > 0 && L.n) { E.ignite(run); plan = null; continue; } plan = null; }
-      }
-      if (!plan) {
-        if (L.n && rd.ignites > 0) { E.ignite(run); continue; }
-        if (!E.hasMove(run)) { E.concede(run); break; }
-        // nothing sensible: rinse or dump the smallest spill
-        if (rd.discards > 0 && rd.tray.some((t, s) => t && E.slotUsable(run, s))) { E.discardBlock(run, rd.tray.findIndex((t, s) => t && E.slotUsable(run, s))); continue; }
-        const dump = placements(run, { M: new Set(), rc: { rows: [], cols: [] } }).sort((a, b) => a.bad - b.bad || a.spill - b.spill)[0];
-        if (dump) { rd.tray[dump.slot].rot = dump.rot; E.placeBlock(run, dump.slot, dump.x, dump.y); continue; }
-        E.concede(run); break;
-      }
-      const moves = placements(run, plan);
-      let best = null;
-      for (const m of moves) if (m.gain > 0 && m.score > 0 && (!best || m.score > best.score)) best = m;
-      if (best) {
-        rd.tray[best.slot].rot = best.rot;
-        const r = E.placeBlock(run, best.slot, best.x, best.y);
+      const a = decide(run, mem);
+      if (a.t === 'ignite') E.ignite(run);
+      else if (a.t === 'discard') E.discardBlock(run, a.slot);
+      else if (a.t === 'place') {
+        run.round.tray[a.slot].rot = a.rot;
+        const r = E.placeBlock(run, a.slot, a.x, a.y);
         if (!r.ok) throw new Error('bot placement refused: ' + r.why);
-        stuck = 0;
-        continue;
-      }
-      // no clean move
-      if (rd.discards > 0) {
-        const per = {};
-        for (const m of moves) per[m.slot] = Math.max(per[m.slot] == null ? -1e9 : per[m.slot], m.score);
-        let slot = -1, worst = 1e9;
-        for (let s = 0; s < rd.tray.length; s++) if (rd.tray[s] && E.slotUsable(run, s)) { const v = per[s] == null ? -1e8 : per[s]; if (v < worst) { worst = v; slot = s; } }
-        if (slot >= 0) { E.discardBlock(run, slot); continue; }
-      }
-      // accept the least messy move that still makes progress, else cash in what we have
-      let ok = null;
-      for (const m of moves) if (m.gain > 0 && m.bad === 0 && (!ok || m.score > ok.score)) ok = m;
-      if (ok) { rd.tray[ok.slot].rot = ok.rot; E.placeBlock(run, ok.slot, ok.x, ok.y); stuck++; continue; }
-      if (L.n && rd.ignites > 0) { E.ignite(run); plan = null; continue; }
-      stuck = 2;
-      if (!E.hasMove(run)) { E.concede(run); break; }
-      const dump = moves.sort((a, b) => a.bad - b.bad || b.score - a.score)[0];
-      if (dump) { rd.tray[dump.slot].rot = dump.rot; E.placeBlock(run, dump.slot, dump.x, dump.y); plan = null; continue; }
-      E.concede(run); break;
+      } else { E.concede(run); break; }
     }
     if (run.phase === 'round') E.concede(run);
   }
@@ -407,7 +415,7 @@ function makeBot(E, profile) {
     }
     return run;
   }
-  return { playRound, shop, playRun };
+  return { playRound, shop, playRun, decide, useRoundItems };
 }
 
 module.exports = { makeBot };
