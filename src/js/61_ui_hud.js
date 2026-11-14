@@ -1,4 +1,5 @@
 // ---------- HUD: sheet info, score, the character being written, ink, seals and items ----------
+const strokesLabel = (n) => (n === 1 ? T('char.stroke1') : T('char.strokes', n));
 const edTag = (ed) => (LANG === 'zh' ? EDITIONS[ed].zh : EDITIONS[ed].te);
 const Hud = {
   el: {},
@@ -53,6 +54,7 @@ const Hud = {
   },
   view(name) {
     const E = this.el;
+    Tutorial.hide();
     for (const k of ['viewPick', 'viewCash', 'viewShop']) E[k].classList.remove('on');
     $('#playui').style.visibility = name ? 'hidden' : 'visible';
     $('#play').style.visibility = name ? 'hidden' : 'visible';
@@ -66,8 +68,9 @@ const Hud = {
     Play.poke();
     const rd = run.round;
     // blind card
-    const fa = FA[((run.ante - 1) % 8) + 1];
-    clear(E.fa).append(h('span.g', { text: fa.g }), h('span', { text: faName(run.ante) }));
+    const ante = run.phase === 'won' ? 8 : run.ante;
+    const fa = FA[((ante - 1) % 8) + 1];
+    clear(E.fa).append(h('span.g', { text: fa.g }), h('span', { text: faName(ante) }));
     const b = rd ? rd.blind : run.blind, bossId = rd ? rd.boss : (b === 2 ? run.boss : null);
     E.blind.classList.toggle('boss', !!bossId);
     if (bossId) { E.bname.textContent = '《' + nm(BOSSES[bossId]) + '》'; E.bfx.innerHTML = rich(dtx(BOSSES[bossId])); }
@@ -229,7 +232,7 @@ const Hud = {
     E.peek.classList.remove('hide');
     E.peek.appendChild(h('div.t', { text: T('hud.next') }));
     for (const p of list) {
-      const cv = Gfx.pieceCanvas(p.shape, p.ink, p.enh, 9, PROFILE.settings.marks);
+      const cv = Gfx.pieceCanvas(p.shape, p.ink, p.enh, 9, PROFILE.settings.marks, p.rot);
       E.peek.appendChild(cv);
     }
   },
@@ -241,7 +244,10 @@ const Hud = {
     const rd = run.round;
     // in portrait the seals share one strip: shrink them when there are many
     const shown = run.seals.length + Math.max(0, slots - used);
-    const size = UI.orient === 'p' ? clamp(Math.floor((UI.W - 250) / Math.max(5, shown)) - 12, 40, 74) : 62;
+    const roomL = (E.sealList.clientHeight || 520) / Math.max(1, shown);
+    const size = UI.orient === 'p' ? clamp(Math.floor((UI.W - 250) / Math.max(5, shown)) - 12, 40, 74) : clamp(Math.floor(roomL) - 14, 30, 62);
+    E.sealList.classList.toggle('tightseals', UI.orient === 'l' && size < 52);
+    E.sealList.classList.toggle('smallseals', UI.orient === 'p' && size < 58);
     E.sealList.style.setProperty('--ss', size + 'px');
     run.seals.forEach((s, i) => {
       const d = SEALS[s.id];
@@ -263,8 +269,10 @@ const Hud = {
       if (UI.busy || e.button > 0) return;
       start = { x: e.clientX, y: e.clientY, id: e.pointerId }; moved = false;
     });
+    el.addEventListener('pointerleave', () => { if (!moved) start = null; });
     el.addEventListener('pointermove', (e) => {
       if (!start || e.pointerId !== start.id) return;
+      if (e.pointerType === 'mouse' && e.buttons === 0) { start = null; moved = false; el.classList.remove('dragging'); return; }
       if (!moved && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 14 * Math.max(0.6, UI.s)) {
         moved = true; hidePop(); hideTip();
         try { el.setPointerCapture(e.pointerId); } catch (err) { /* not capturable */ }
@@ -276,10 +284,10 @@ const Hud = {
         if (tgt && tgt.el !== el) tgt.el.classList.add('dropbefore');
       }
     });
-    const end = (e) => {
+    const end = (e, cancelled) => {
       if (!start || e.pointerId !== start.id) return;
-      const wasMoved = moved;
-      start = null;
+      const wasMoved = moved && !cancelled;
+      start = null; moved = false;
       el.classList.remove('dragging');
       this.el.sealList.querySelectorAll('.dropbefore').forEach((x) => x.classList.remove('dropbefore'));
       if (!wasMoved) return;
@@ -292,7 +300,7 @@ const Hud = {
       }
     };
     el.addEventListener('pointerup', end);
-    el.addEventListener('pointercancel', end);
+    el.addEventListener('pointercancel', (e) => end(e, true));
   },
   sealAt(cx, cy) {
     const kids = [...this.el.sealList.querySelectorAll('.seal:not(.empty)')];
@@ -354,7 +362,7 @@ function sealCard(id, s, run, o) {
 function itemCard(id, run, o) {
   const d = ITEMS[id], opt = o || {};
   const actions = [];
-  if (opt.owned && run && !UI.busy) {
+  if (opt.owned && run && !UI.busy && ['shop', 'round', 'pick'].includes(run.phase)) {
     const u = itemUsable(run, d);
     actions.push({ label: T('use'), cls: 'red', disabled: !u.ok, snd: 'click', fn: () => Game.useItemFlow(opt.index) });
     actions.push({ label: T('sell') + ' ' + coinHtml(itemSellValue(id)), cls: 'gold', snd: 'sell', fn: () => Game.sellItem(opt.index) });
@@ -373,11 +381,11 @@ function charCard(id, run) {
   if (def.x !== 1) extra += (extra ? '　' : '') + `${T('char.x')} <b style="color:#b3261a">${fmtX(def.x)}</b>`;
   if (def.yi) extra += `<br><b>${T('hud.yi')}</b> ` + rich(dtx(YI[def.yi])) + ` <span style="opacity:.7">${T('char.yi.once')}</span>`;
   if (def.num) extra += `<br>${T('char.num', def.num)}`;
-  return { title: (id === 'sanbi' ? T('sanbi') : def.g) + (def.py ? ` <span style="font-family:var(--f-ui);font-size:16px;font-weight:400;opacity:.75">${def.py}${LANG === 'en' ? ' · ' + def.en : ''}</span>` : ''), tag: id === 'sanbi' ? '' : T('char.strokes', def.n), body, extra };
+  return { title: (id === 'sanbi' ? T('sanbi') : def.g) + (def.py ? ` <span style="font-family:var(--f-ui);font-size:16px;font-weight:400;opacity:.75">${def.py}${LANG === 'en' ? ' · ' + def.en : ''}</span>` : ''), tag: id === 'sanbi' ? '' : strokesLabel(id === 'xuan' && run ? run.w + run.h : def.n), body, extra };
 }
 function pieceCard(p) {
   const sh = SHAPES[p.shape];
-  let body = `${T('piece.cells', sh.n)}　${T('piece.ink')} <b class="rk rk-${p.ink}">${nm(INK[p.ink])}</b>`;
+  let body = `${sh.n === 1 ? T('piece.cell1') : T('piece.cells', sh.n)}　${T('piece.ink')} <b class="rk rk-${p.ink}">${nm(INK[p.ink])}</b>`;
   body += `<br><span class="rk-n rk">${rich(tx(INK[p.ink].pure))}</span>`;
   let extra = '';
   if (p.enh) extra = `<b>${nm(ENH[p.enh])}</b>：${rich(dtx(ENH[p.enh]))}`;

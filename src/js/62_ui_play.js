@@ -14,7 +14,21 @@ const Play = {
     cv.addEventListener('pointerup', (e) => this.onUp(e));
     cv.addEventListener('pointercancel', (e) => this.cancelDrag());
     cv.addEventListener('pointerleave', () => { this._hoverSlot = -1; if (!this.drag) this.hideSlotCard(); });
-    cv.addEventListener('wheel', (e) => { if (this.drag || this.slotAt(e) >= 0) { e.preventDefault(); this.rotate(this.drag ? this.drag.slot : this.slotAt(e), e.deltaY > 0 ? 1 : -1); } }, { passive: false });
+    cv.addEventListener('wheel', (e) => {
+      const slot = this.drag ? this.drag.slot : this.slotAt(e);
+      if (slot < 0) return;
+      e.preventDefault();
+      if (!e.deltaY) return;
+      // one notch, one turn: a trackpad sends a stream of small deltas, so they are gathered and rationed
+      const now = nowMs();
+      this._wheel = (now - (this._wheelT || 0) > 350 ? 0 : this._wheel || 0) + (e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY);
+      this._wheelT = now;
+      if (Math.abs(this._wheel) < 70 || now - (this._wheelTurn || 0) < 200) return;
+      const dir = this._wheel > 0 ? 1 : -1;
+      this._wheel = 0; this._wheelTurn = now;
+      this.rotate(slot, dir);
+    }, { passive: false });
+    window.addEventListener('blur', () => this.cancelDrag());
     Hud.el.ignite.addEventListener('click', () => Game.ignite());
     Hud.el.rinse.addEventListener('click', () => this.toggleRinse());
     if (!this.raf) this.raf = requestAnimationFrame((t) => this.frame(t));
@@ -85,20 +99,29 @@ const Play = {
     }
     if (this.drag) {
       // a second finger (or the other mouse button) turns the block in hand
-      if (e.pointerId !== this.drag.id || e.button === 2) this.rotate(this.drag.slot, e.button === 2 ? -1 : 1);
+      if (e.button === 2 || (e.pointerId !== this.drag.id && this.drag.moved)) this.rotate(this.drag.slot, e.button === 2 ? -1 : 1);
       return;
     }
     const slot = this.slotAt(e);
     const rd = UI.run.round;
-    if (slot < 0 || !rd.tray[slot]) { if (this.rinseMode) this.setRinse(false); this.kb = null; return; }
+    if (this.kb) { this.kb = null; this.setGhost(null); }
+    if (slot < 0 || !rd.tray[slot]) { if (this.rinseMode) this.setRinse(false); return; }
     if (e.button === 2) { this.rotate(slot, -1); return; }
     if (this.rinseMode) { this.setRinse(false); Game.discard(slot); return; }
     const p = this.local(e);
+    if (this.flipHit(slot, p)) { this.hideSlotCard(); this.flip(slot); return; }
     this.hideSlotCard();
     this.drag = { slot, id: e.pointerId, sx: p.x, sy: p.y, x: p.x, y: p.y, moved: false, touch: e.pointerType !== 'mouse', gx: 0, gy: 0, valid: false, onBoard: false, overRinse: false, held: false };
     if (this.drag.touch) this._hoverT = setTimeout(() => { const d = this.drag; if (d && !d.moved && d.slot === slot) { d.held = true; this.showSlotCard(slot); } }, 480);
-    this.kb = null;
     try { this.cv.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+  },
+  // the "Flip" tab in the corner of a tray slot (only with a seal that allows mirroring)
+  flipOn() { const run = UI.run; return !!run && run.phase === 'round' && stat(run, 'flip') > 0 && !flag(run, 'noRotate') && !this.rinseMode; },
+  flipRect(slot) { const s = this.slots[slot]; return s ? { x: s.x + s.w - 64, y: s.y + 15, w: 54, h: 28 } : null; },
+  flipHit(slot, p) {
+    if (!this.flipOn()) return false;
+    const r = this.flipRect(slot);
+    return !!r && p.x >= r.x - 6 && p.x <= r.x + r.w + 6 && p.y >= r.y - 8 && p.y <= r.y + r.h + 8;
   },
   // a card describing the block under the pointer (hover with a mouse, press-and-hold with a finger)
   showSlotCard(slot) {
@@ -128,6 +151,7 @@ const Play = {
     if (!d) { this.onHover(e); return; }
     this.poke();
     if (e.pointerId !== d.id) return;
+    if (e.pointerType === 'mouse' && e.buttons === 0) { this.cancelDrag(); return; }
     // with a mouse, pressing the other button mid-drag turns the block
     if (e.pointerType === 'mouse') { if ((e.buttons & 2) && !(d.btns & 2) && d.moved) this.rotate(d.slot, 1); d.btns = e.buttons; }
     const p = this.local(e);
@@ -238,6 +262,8 @@ const Play = {
   setRinse(v) { this.rinseMode = v && UI.run.round.discards > 0; Hud.el.rinse.classList.toggle('armed', this.rinseMode); },
 
   // ---- keyboard
+  // the block a turning key applies to: the one in hand, the one chosen by keyboard, or the one under the mouse
+  keySlot() { return this.drag ? this.drag.slot : this.kb ? this.kb.slot : (this._hoverSlot >= 0 && UI.run.round.tray[this._hoverSlot] ? this._hoverSlot : -1); },
   key(e) {
     this.poke();
     if (!this.canAct()) return false;
@@ -254,9 +280,9 @@ const Play = {
     };
     if (k >= '1' && k <= '9') { pickSlot(+k - 1); return true; }
     if (k === 'Tab') { const n = rd.tray.length; let s = this.kb ? this.kb.slot : -1; for (let i = 0; i < n; i++) { s = (s + (e.shiftKey ? n - 1 : 1)) % n; if (rd.tray[s] && slotUsable(run, s)) break; } pickSlot(s); return true; }
-    if (k === 'r' || k === 'R') { const s = this.drag ? this.drag.slot : this.kb ? this.kb.slot : -1; if (s >= 0) this.rotate(s, e.shiftKey ? -1 : 1); return true; }
-    if (k === 'e' || k === 'E') { const s = this.drag ? this.drag.slot : this.kb ? this.kb.slot : -1; if (s >= 0) this.rotate(s, -1); return true; }
-    if (k === 'f' || k === 'F') { const s = this.drag ? this.drag.slot : this.kb ? this.kb.slot : -1; if (s >= 0) this.flip(s); return true; }
+    if (k === 'r' || k === 'R') { const s = this.keySlot(); if (s >= 0) this.rotate(s, e.shiftKey ? -1 : 1); return true; }
+    if (k === 'e' || k === 'E') { const s = this.keySlot(); if (s >= 0) this.rotate(s, -1); return true; }
+    if (k === 'f' || k === 'F') { const s = this.keySlot(); if (s >= 0) this.flip(s); return true; }
     if (k === 'q' || k === 'Q') { this.toggleRinse(); return true; }
     if (k === 'Escape') { if (this.kb) { this.kb = null; this.setGhost(null); return true; } if (this.rinseMode) { this.setRinse(false); return true; } if (this.drag) { this.cancelDrag(); return true; } return false; }
     const dirs = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1], a: [-1, 0], d: [1, 0], w: [0, -1], s: [0, 1], A: [-1, 0], D: [1, 0], W: [0, -1], S: [0, 1] };
@@ -269,6 +295,7 @@ const Play = {
       return true;
     }
     if (k === ' ' || k === 'Enter') {
+      if (e.repeat) return true;
       if (this.kb) {
         const { slot, gx, gy } = this.kb;
         if (canPlace(run, slot, gx, gy)) { this.setGhost(null); const keep = { gx, gy }; this.kb = null; Game.place(slot, gx, gy); this._kbLast = keep; }
@@ -321,7 +348,7 @@ const Play = {
       this.shakeSlot >= 0 || this.rinseMode || this.target || now - (this.pokeT || 0) < 700;
     if (!busy) {
       // completed lines keep a slow sheen: half rate is plenty; otherwise just a rare safety refresh
-      if (this.lines.n > 0 ? this.fno % 2 : this.fno % 45) return;
+      if (this.lines.n > 0 && !PROFILE.settings.reduce ? this.fno % 2 : this.fno % 45) return;
     }
     this.draw();
   },
@@ -441,7 +468,7 @@ const Play = {
           for (const x of g.lines.cols) if (!L.cols.includes(x)) c.fillRect(bx + x * cs, by, cs, h * cs);
         }
         c.save();
-        c.globalAlpha = g.valid ? 0.5 + 0.12 * Math.sin(t * 0.008) : 0.3;
+        c.globalAlpha = g.valid ? 0.5 + (PROFILE.settings.reduce ? 0 : 0.12 * Math.sin(t * 0.008)) : 0.3;
         Gfx.piece(c, g.geom, p.ink, p.enh, bx + (g.gx + g.geom.w / 2) * cs, by + (g.gy + g.geom.h / 2) * cs, cs, { flat: true });
         c.restore();
         c.save();
@@ -499,7 +526,7 @@ const Play = {
     c.fillStyle = gr; c.fill();
     c.strokeStyle = this.rinseMode ? 'rgba(140,200,250,0.95)' : 'rgba(210,168,74,0.3)'; c.lineWidth = this.rinseMode ? 2.5 : 1; c.stroke();
     c.restore();
-    const queue = flag(run, 'queue'), lim = flag(run, 'pieceLimit');
+    const queue = flag(run, 'queue'), lim = flag(run, 'pieceLimit'), flipOn = this.flipOn();
     for (let i = 0; i < this.slots.length; i++) {
       const s = this.slots[i], tp = rd.tray[i];
       if (i > 0) { c.fillStyle = 'rgba(210,168,74,0.14)'; c.fillRect(s.x - 0.5, py + 12, 1, ph - 24); }
@@ -516,7 +543,7 @@ const Play = {
       const ap = clamp((t - (this.trayAppear[i] || 0)) / 260, 0, 1), e = 1 - Math.pow(1 - ap, 3);
       let cx = s.x + s.w / 2, cy = s.y + s.h / 2 - 9 + (1 - e) * 26;
       if (this.shakeSlot === i) { const u = (nowMs() - this.shakeT) / 300; if (u < 1) cx += Math.sin(u * 30) * 6 * (1 - u); else this.shakeSlot = -1; }
-      if (this.rinseMode) cy += Math.sin(t * 0.012 + i * 1.3) * 3;
+      if (this.rinseMode && !PROFILE.settings.reduce) cy += Math.sin(t * 0.012 + i * 1.3) * 3;
       if (kbSel) { rr(s.x + 6, py + 5, s.w - 12, ph - 10, 10); c.fillStyle = 'rgba(243,217,139,0.13)'; c.fill(); c.strokeStyle = 'rgba(243,217,139,0.8)'; c.lineWidth = 2; c.stroke(); }
       c.save();
       c.globalAlpha = (dragging ? 0.22 : 1) * e * (afford && usable ? 1 : 0.38);
@@ -533,6 +560,16 @@ const Play = {
       c.fillStyle = afford ? 'rgba(0,0,0,0.5)' : 'rgba(120,20,10,0.8)'; c.fill();
       c.fillStyle = afford ? '#d9cdb6' : '#ffb7a6'; c.fillText(label, s.x + s.w / 2, ly + 1);
       if (!UI.touch && !this.rinseMode) { c.globalAlpha = 0.4 * e; c.fillStyle = '#efe6d2'; c.font = `700 14px ${FONT_NUM}`; c.textAlign = 'left'; c.fillText(String(i + 1), s.x + 12, py + 15); }
+      if (flipOn && usable && !dragging) {
+        const fr = this.flipRect(i);
+        c.globalAlpha = 0.95 * e;
+        rr(fr.x, fr.y, fr.w, fr.h, 9);
+        c.fillStyle = tp.flip ? 'rgba(210,168,74,0.32)' : 'rgba(255,255,255,0.07)'; c.fill();
+        c.strokeStyle = 'rgba(243,217,139,0.75)'; c.lineWidth = 1.2; c.stroke();
+        c.fillStyle = '#f3d98b'; c.textAlign = 'center';
+        c.font = LANG === 'zh' ? `700 18px ${FONT_KAI}` : `700 14px ${FONT_NUM}`;
+        c.fillText(LANG === 'zh' ? '翻' : 'Flip', fr.x + fr.w / 2, fr.y + fr.h / 2 + 1);
+      }
       if (queue && i > 0) { c.globalAlpha = 0.8; c.fillStyle = '#ff9a82'; c.font = `700 ${Math.round(tcs)}px ${FONT_KAI}`; c.textAlign = 'center'; c.fillText(LANG === 'zh' ? '候' : '…', s.x + s.w / 2, s.y + s.h / 2 - 9); }
       c.restore();
     }

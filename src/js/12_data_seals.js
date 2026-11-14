@@ -46,7 +46,7 @@ defSeal('cangfeng', '藏锋', 'Hidden Tip', 1, 4, {
   dz: '纸面[k|四边]上的格计分时 [c|形+8]', de: 'Cells on the [k|outer edge] of the sheet: [c|+8 Form]',
   cell(sc, s, c) { if (c.edge) sc.c(8); } });
 defSeal('sanfen', '入木三分', 'Three Tenths Into the Wood', 1, 5, {
-  dz: '写出恰为[k|三画]的字时 [m|神+10]', de: 'When you write a character of exactly [k|3 strokes]: [m|+10 Spirit]',
+  dz: '一次挥毫恰为[k|三画]时 [m|神+10]', de: 'When a flourish has exactly [k|3 strokes]: [m|+10 Spirit]',
   end(sc) { if (sc.n === 3) sc.m(10); } });
 defSeal('ximo', '惜墨如金', 'Ink Dear as Gold', 1, 5, {
   dz: '过关时每剩余 8 墨 [g|+1 文]（至多 6 文）', de: 'On clearing a sheet: [g|+$1] per 8 Ink left (up to $6)',
@@ -63,7 +63,7 @@ defSeal('yinshou', '引首章', 'Opening Seal', 1, 4, {
   dz: '写出[k|顶行]之横时 [m|神+10]', de: 'When the [k|top row] is one of your strokes: [m|+10 Spirit]',
   end(sc) { if (sc.rows.includes(0)) sc.m(10); } });
 defSeal('yaozhang', '腰章', 'Waist Seal', 1, 4, {
-  dz: '位于纸面[k|正中]的横与竖，每条 [c|形+40]', de: 'Each stroke through the [k|middle] of the sheet: [c|+40 Form]',
+  dz: '位于纸面[k|正中]的横与竖，每条 [c|形+40]', de: 'Each row or column stroke through the [k|middle] of the sheet: [c|+40 Form]',
   stroke(sc, s, st) {
     if (st.kind === 'row' && midLines(sc.h).includes(st.i)) sc.c(40);
     else if (st.kind === 'col' && midLines(sc.w).includes(st.i)) sc.c(40);
@@ -82,7 +82,7 @@ defSeal('changqiang', '长枪大戟', 'Long Spears, Great Halberds', 1, 5, {
   dz: '每块参与计分的[k|长笔]（四格以上的直块）[m|神+4]', de: 'Each [k|long straight block] (4+ cells) that scores: [m|+4 Spirit]',
   end(sc) { for (const p of sc.pieces) if (hasTag(p.shape, 'long')) sc.m(4); } });
 defSeal('baijun', '百钧弩发', 'Hundredweight Crossbow', 1, 5, {
-  dz: '每块参与计分的[k|折]、[k|钩]形墨块 [m|神+3]\n[n|《笔阵图》：折如百钧弩发]', de: 'Each [k|Bend] or [k|Hook] block that scores: [m|+3 Spirit]\n[n|"A turn is a crossbow of a hundred weights let loose."]',
+  dz: '每块参与计分的[k|折]、[k|钩]、[k|凹]形墨块 [m|神+3]\n[n|《笔阵图》：折如百钧弩发]', de: 'Each [k|Bend], [k|Hook] or [k|Hollow] block that scores: [m|+3 Spirit]\n[n|"A turn is a crossbow of a hundred weights let loose."]',
   end(sc) { for (const p of sc.pieces) if (hasTag(p.shape, 'corner')) sc.m(3); } });
 defSeal('kaimen', '开门红', 'Auspicious Start', 1, 4, {
   dz: '每局[k|首次]挥毫 [c|形+100]', de: 'Your [k|first] flourish each round: [c|+100 Form]',
@@ -91,7 +91,7 @@ defSeal('shoubi', '收笔', 'Closing Stroke', 1, 4, {
   dz: '用掉[k|最后一次]挥毫时 [m|神+20]', de: 'When you spend your [k|last] flourish: [m|+20 Spirit]',
   end(sc) { if (sc.last) sc.m(20); } });
 defSeal('bizhou', '敝帚自珍', 'A Cherished Old Broom', 1, 4, {
-  dz: (s) => `每局结束时此印售价 [g|+3 文]（当前售价 [g|${s ? sealSellValue(s) : 2} 文]）`, de: (s) => `Gains [g|+$3] sell value at the end of each round (now [g|$${s ? sealSellValue(s) : 2}])`,
+  dz: (s) => `每局结束时此印售价 [g|+3 文]${s ? `（当前售价 [g|${sealSellValue(s)} 文]）` : ''}`, de: (s) => `Gains [g|+$3] sell value at the end of each round${s ? ` (now [g|$${sealSellValue(s)}])` : ''}`,
   roundEnd(run, s) { s.bonus = (s.bonus || 0) + 3; } });
 defSeal('dianshi', '点石成金', 'Stone into Gold', 1, 5, {
   dz: (s, run) => `每个[jin|金]色格计分时有 ${oddsTxt(run, 1, 8)} 概率 [g|+1 文]（每次挥毫至多 5 文）`, de: (s, run) => `Each [jin|Gold] cell: ${oddsTxt(run, 1, 8)} chance of [g|+$1] (up to $5 per flourish)`,
@@ -124,13 +124,13 @@ defSeal('manzhi', '满纸云烟', 'A Sheet of Cloud and Mist', 2, 6, {
   dz: '挥毫时纸上每个未写入笔画的[k|散墨]格 [m|神+1]（至多 +30）', de: 'When you flourish: [m|+1 Spirit] for every [k|stray cell] outside your strokes (up to +30)',
   end(sc) { if (sc.clutter > 0) sc.m(Math.min(30, sc.clutter)); } });
 defSeal('qianjin', '一字千金', 'One Word, a Thousand Gold', 2, 6, {
-  dz: '写出[k|一画]的字（一、丨）时 [c|形+150] 并 [g|+2 文]', de: 'When you write a [k|1-stroke] character (一, 丨): [c|+150 Form] and [g|+$2]',
+  dz: '一次挥毫[k|只有一画]时 [c|形+150] 并 [g|+2 文]', de: 'When a flourish is a [k|single stroke]: [c|+150 Form] and [g|+$2]',
   end(sc) { if (sc.n === 1) { sc.c(150); sc.cash(2); } } });
 defSeal('suanchou', '算筹', 'Counting Rods', 2, 7, {
   dz: '写出[k|数字]时，[m|神]增加其数值\n[n|一 1 · 二 2 · 三 3 · 亖四 4 · 十 10 · 廿 20 · 卅 30 · 卌 40]', de: 'When you write a [k|numeral], add its value to [m|Spirit]\n[n|一 1 · 二 2 · 三 3 · 亖/四 4 · 十 10 · 廿 20 · 卅 30 · 卌 40]',
   end(sc) { if (sc.num) sc.m(sc.num); } });
 defSeal('shiquan', '十全十美', 'Perfect in Every Way', 2, 6, {
-  dz: '每个横竖相交的[k|交点] [m|神+3]（至多 16 个交点）', de: '[m|+3 Spirit] for every [k|crossing] of a row and a column (up to 16 crossings)',
+  dz: '每个笔画相交的[k|交点] [m|神+3]（至多 16 个交点）', de: '[m|+3 Spirit] for every [k|crossing] of two strokes (up to 16 crossings)',
   end(sc) { if (sc.nodes > 0) sc.m(3 * Math.min(16, sc.nodes)); } });
 defSeal('wuse', '墨分五色', 'Five Shades of Ink', 2, 7, {
   dz: '计分的格中含[k|三种]墨色 [x|神×1.5]；[k|四种]俱全 [x|神×2]', de: 'If the scored cells include [k|3 inks]: [x|×1.5 Spirit]; all [k|4 inks]: [x|×2 Spirit]',
@@ -187,19 +187,20 @@ defSeal('gongyu', '工欲善其事', 'First Sharpen the Tools', 2, 6, {
   roundStart(run, s) { s.st.used = false; },
   end(sc, s) {
     if (!s.st.used && (sc.char === 'gong' || sc.char === 'gan' || sc.char === 'tu')) {
+      if (sc.run.items.length >= stat(sc.run, 'itemSlots')) return;
       s.st.used = true; sc.say({ zh: '利其器', en: 'Tools ready' });
       sc.later((run) => giveItem(run, rndPick(run, 'misc', ITEM_POOL.filter((i) => !ITEMS[i].rare))));
     }
   } });
 defSeal('xinxi', '喜新厌旧', 'Love the New', 2, 7, {
-  dz: '写出本局[k|尚未写过]的字时 [x|神×1.75]', de: 'When you write a character [k|not yet written] this round: [x|×1.75 Spirit]',
-  end(sc) { if (sc.newRound) sc.x(1.75); } });
+  dz: '写出本局[k|尚未写过]的字时 [x|神×1.75]\n[n|散笔不算字]', de: 'When you write a character [k|not yet written] this round: [x|×1.75 Spirit]\n[n|A scribble is not a character]',
+  end(sc) { if (sc.newRound && sc.isChar) sc.x(1.75); } });
 defSeal('wengu', '温故知新', 'Review the Old', 2, 7, {
-  dz: '写出本局[k|已写过]的字时 [x|神×2]', de: 'When you write a character [k|already written] this round: [x|×2 Spirit]',
-  end(sc) { if (!sc.newRound) sc.x(2); } });
+  dz: '写出本局[k|已写过]的字时 [x|神×2]\n[n|散笔不算字]', de: 'When you write a character [k|already written] this round: [x|×2 Spirit]\n[n|A scribble is not a character]',
+  end(sc) { if (!sc.newRound && sc.isChar) sc.x(2); } });
 defSeal('shuneng', '熟能生巧', 'Practice Makes Perfect', 2, 6, {
-  dz: '同一个字此卷每多写过一次，写它时 [c|形+15]', de: 'A character gains [c|+15 Form] for every earlier time you wrote it this run',
-  end(sc) { const k = sc.run.charCounts[sc.char] || 0; if (k > 0) sc.c(15 * k); } });
+  dz: '同一个字此卷每多写过一次，写它时 [c|形+15]\n[n|散笔不算字]', de: 'A character gains [c|+15 Form] for every earlier time you wrote it this run\n[n|A scribble is not a character]',
+  end(sc) { const k = sc.isChar ? sc.run.charCounts[sc.char] || 0 : 0; if (k > 0) sc.c(15 * k); } });
 defSeal('wanguan', '腰缠万贯', 'Girded with Strings of Cash', 2, 7, {
   dz: (s, run) => `每持有 8 文 [m|神+2]（至多 +30）${run ? `\n[n|当前 +${Math.min(30, 2 * Math.floor(Math.max(0, run.money) / 8))}]` : ''}`,
   de: (s, run) => `[m|+2 Spirit] per $8 you hold (up to +30)${run ? `\n[n|Now +${Math.min(30, 2 * Math.floor(Math.max(0, run.money) / 8))}]` : ''}`,
@@ -209,7 +210,7 @@ defSeal('yaji', '文人雅集', 'Gathering of Scholars', 2, 6, {
 defSeal('xiong', '胸有成竹', 'Bamboo Fully Formed in the Mind', 2, 5, {
   dz: '可预见接下来的 [k|3 块] 墨', de: 'Foresee the next [k|3 blocks]', mods: { peek: 3 } });
 defSeal('jinghua', '镜花水月', 'Flower in the Mirror', 2, 5, {
-  dz: '可以[k|镜像翻转]墨块', de: 'You may [k|mirror-flip] blocks', mods: { flip: 1 } });
+  dz: '可以[k|镜像翻转]墨块\n[n|点墨块下方的「翻」，或按 F]', de: 'You may [k|mirror-flip] blocks\n[n|Tap “Flip” under a block, or press F]', mods: { flip: 1 } });
 defSeal('kubi', '枯笔', 'Dry Brush', 2, 7, {
   dz: '[k|墨量−25]\n[x|神×1.75]', de: '[k|−25 Ink] each round\n[x|×1.75 Spirit]', mods: { inkMax: -25 },
   end(sc) { sc.x(1.75); } });
@@ -229,9 +230,9 @@ defSeal('jinshang', '锦上添花', 'Flowers upon Brocade', 2, 7, {
   dz: '落在[k|纸格]（乌丝栏、朱丝栏、云纹笺等）上的格再触发一次', de: 'Cells lying on a [k|special square] of your paper trigger once more',
   retrig(sc, s, c) { return c.sq ? 1 : 0; } });
 defSeal('shaoer', '少而精', 'Few but Fine', 2, 6, {
-  dz: (s, run) => `墨匣中每比 32 块少一块 [m|神+2]${run ? `\n[n|当前 +${2 * Math.max(0, 32 - run.deck.length)}]` : ''}`,
-  de: (s, run) => `[m|+2 Spirit] for each block fewer than 32 in your Ink Box${run ? `\n[n|Now +${2 * Math.max(0, 32 - run.deck.length)}]` : ''}`,
-  end(sc) { const v = 2 * Math.max(0, 32 - sc.run.deck.length); if (v > 0) sc.m(v); } });
+  dz: (s, run) => `墨匣中每比开卷时少一块 [m|神+2]${run ? `\n[n|开卷 ${run.deck0 || 32} 块，当前 +${2 * Math.max(0, (run.deck0 || 32) - run.deck.length)}]` : ''}`,
+  de: (s, run) => `[m|+2 Spirit] for each block fewer than your Ink Box began with${run ? `\n[n|Began with ${run.deck0 || 32}; now +${2 * Math.max(0, (run.deck0 || 32) - run.deck.length)}]` : ''}`,
+  end(sc) { const v = 2 * Math.max(0, (sc.run.deck0 || 32) - sc.run.deck.length); if (v > 0) sc.m(v); } });
 defSeal('juechu', '绝处逢生', 'Life at the Edge of Death', 2, 5, {
   dz: '挥毫用尽而未过关时，若得分已达目标的[k|一半]，仍算过关；此印随即销毁', de: 'If you run out of flourishes with at least [k|half] the target, you pass anyway; this seal is then destroyed',
   rescue: true });
@@ -252,16 +253,16 @@ defSeal('lianmian', '连绵不绝', 'Unbroken', 2, 7, {
   dz: '每一对[k|相邻]的并列笔画 [m|神+6]', de: '[m|+6 Spirit] for every pair of [k|adjacent] parallel strokes',
   end(sc) { if (sc.adjPairs > 0) sc.m(6 * sc.adjPairs); } });
 defSeal('luoyang', '洛阳纸贵', 'Paper Grows Dear in Luoyang', 2, 6, {
-  dz: '过关时，本局每写出一个不同的字 [g|+1 文]（至多 5 文）', de: 'On clearing a sheet: [g|+$1] for each different character written this round (up to $5)',
-  payout(run) { return Math.min(5, new Set(run.round.chars).size); } });
+  dz: '过关时，本局每写出一个不同的字 [g|+1 文]（至多 5 文）\n[n|散笔不算字]', de: 'On clearing a sheet: [g|+$1] for each different character written this round (up to $5)\n[n|A scribble is not a character]',
+  payout(run) { return Math.min(5, new Set(run.round.chars.filter((c) => c !== 'sanbi')).size); } });
 defSeal('xiongwu', '胸无点墨', 'Not a Drop of Ink Within', 2, 6, {
   dz: '挥毫时[k|墨已用尽]（剩余 0）则 [x|神×3]', de: 'If you flourish with [k|no Ink left] (exactly 0): [x|×3 Spirit]',
   end(sc) { if (sc.rd.ink === 0) sc.x(3); } });
 defSeal('chengshuang', '好事成双', 'Good Things Come in Pairs', 2, 6, {
-  dz: '写出恰为[k|二画]的字时 [x|神×2]', de: 'When you write a character of exactly [k|2 strokes]: [x|×2 Spirit]',
+  dz: '一次挥毫恰为[k|二画]时 [x|神×2]', de: 'When a flourish has exactly [k|2 strokes]: [x|×2 Spirit]',
   end(sc) { if (sc.n === 2) sc.x(2); } });
 defSeal('wuche', '学富五车', 'Five Cartloads of Learning', 2, 6, {
-  dz: '写出[k|五画以上]的字时 [m|神+15]', de: 'When you write a character of [k|5+ strokes]: [m|+15 Spirit]',
+  dz: '一次挥毫达[k|五画以上]时 [m|神+15]', de: 'When a flourish has [k|5 or more strokes]: [m|+15 Spirit]',
   end(sc) { if (sc.n >= 5) sc.m(15); } });
 defSeal('liushu', '六书', 'The Six Scripts', 2, 7, {
   dz: (s, run) => `此卷已写出 [k|6 个]不同的字时 [x|神×1.5]；[k|12 个]时 [x|神×2]${run ? `\n[n|已写出 ${distinctChars(run)} 个]` : ''}`,
@@ -274,6 +275,7 @@ defSeal('xijin', '洗尽铅华', 'All Powder Washed Away', 2, 6, {
   dz: (s) => `每次洗笔，本局 [m|神+4]${s && s.st.m ? `（本局 [m|+${s.st.m}]）` : ''}`, de: (s) => `Each rinse: [m|+4 Spirit] for the rest of the round${s && s.st.m ? ` (now [m|+${s.st.m}])` : ''}`,
   init(s) { s.st.m = 0; },
   roundStart(run, s) { s.st.m = 0; },
+  roundEnd(run, s) { s.st.m = 0; },
   discard(run, s) { s.st.m += 4; },
   end(sc, s) { if (s.st.m > 0) sc.m(s.st.m); } });
 defSeal('toubi', '投笔从戎', 'Cast Aside the Brush', 2, 6, {
@@ -283,7 +285,7 @@ defSeal('toubi', '投笔从戎', 'Cast Aside the Brush', 2, 6, {
 defSeal('pomo', '泼墨山水', 'Splashed-Ink Landscape', 2, 6, {
   dz: '[k|泼墨]块不再碎裂，其倍率由 ×1.5 提升为 [x|×2]', de: '[k|Splash] blocks never shatter and give [x|×2] instead of ×1.5', flags: { poSafe: 1 } });
 defSeal('jinsheng', '金声玉振', 'Bronze Bell, Jade Chime', 2, 7, {
-  dz: '本次挥毫中每获得 1 文 [m|神+3]\n[n|只计算排在它左侧已结算的润笔]', de: '[m|+3 Spirit] for every $1 earned during this flourish\n[n|Counts only what has been paid before this seal triggers]',
+  dz: '本次挥毫中每获得 1 文 [m|神+3]\n[n|只计算在它触发之前已到手的润笔]', de: '[m|+3 Spirit] for every $1 earned during this flourish\n[n|Counts only what has been paid before this seal triggers]',
   end(sc) { if (sc.money > 0) sc.m(3 * sc.money); } });
 defSeal('zhumo', '朱墨套印', 'Red-and-Black Printing', 2, 6, {
   dz: '计分的格中同时有[zhu|朱]与[mo|墨]时 [x|神×1.5]', de: 'If the scored cells include both [zhu|Vermilion] and [mo|Black]: [x|×1.5 Spirit]',
@@ -310,13 +312,14 @@ defSeal('sansheng', '三生万物', 'Three Begets All Things', 3, 8, {
   de: (s) => `Write [k|一], [k|二], [k|三] in that order within a round: from the 三 onward, every flourish this round gets [x|×4 Spirit]${s && s.st.p ? `\n[n|Progress: ${Math.min(3, s.st.p)}/3]` : ''}`,
   init(s) { s.st.p = 0; },
   roundStart(run, s) { s.st.p = 0; },
+  roundEnd(run, s) { s.st.p = 0; },
   end(sc, s) {
     const want = ['yi', 'er', 'san'][s.st.p];
     if (s.st.p < 3 && sc.char === want) { s.st.p++; if (s.st.p < 3) sc.say({ zh: ['', '道生一', '一生二'][s.st.p], en: ['', 'One', 'Two'][s.st.p] }); }
     if (s.st.p >= 3) sc.x(4);
   } });
 defSeal('linmo', '临摹', 'Faithful Copy', 3, 9, {
-  dz: (s, run) => `复制[k|右侧]那枚印的能力${copyNote(s, run, 'zh')}`, de: (s, run) => `Copies the ability of the seal to its [k|right]${copyNote(s, run, 'en')}`,
+  dz: (s, run) => `临摹排在它[k|后一位]的印：复制其[k|计分]时的能力${copyNote(s, run, 'zh')}`, de: (s, run) => `Copies the [k|scoring] ability of the seal placed [k|right after] it${copyNote(s, run, 'en')}`,
   copy: 'right' });
 defSeal('shenlai', '神来之笔', 'A Stroke of Genius', 3, 8, {
   dz: (s, run) => `每次挥毫有 ${oddsTxt(run, 1, 3)} 概率 [x|神×4]`, de: (s, run) => `Every flourish: ${oddsTxt(run, 1, 3)} chance of [x|×4 Spirit]`,
@@ -326,8 +329,8 @@ defSeal('yichui', '一锤定音', 'One Stroke of the Gavel', 3, 9, {
   mod(run, s, key, v) { return key === 'ignites' ? 1 : v; },
   end(sc) { sc.x(5); } });
 defSeal('langhao', '狼毫', 'Wolf-hair Brush', 3, 8, {
-  dz: '两条[k|对角线]填满时也成笔画：[k|撇]与[k|捺]\n[n|可写出 丿 乀 乂 米]', de: 'A filled main [k|diagonal] also becomes a stroke\n[n|Unlocks the characters 丿 乀 乂 米]',
-  mods: { diag: 1 } });
+  dz: '两条[k|对角线]填满时也成笔画：[k|撇]与[k|捺]\n[n|可写出 丿 乀 乂 米]', de: 'A filled [k|diagonal], either one, also becomes a stroke\n[n|Unlocks the characters 丿 乀 乂 米]',
+  mods: { diag: 1 }, square: true });
 defSeal('bamian', '八面出锋', 'A Tip on All Eight Sides', 3, 8, {
   dz: '纸面[k|四条边线]每写出一条 [x|神×1.3]', de: '[x|×1.3 Spirit] for each of the sheet\'s [k|four border lines] among your strokes',
   end(sc) {
@@ -359,7 +362,7 @@ defSeal('yisi', '一丝不苟', 'Not One Thread Out of Place', 3, 8, {
   dz: '所有笔画皆为[k|纯色]时 [x|神×2.5]', de: 'If every stroke is [k|pure] in ink: [x|×2.5 Spirit]',
   end(sc) { if (sc.strokes.every((st) => st.pure)) sc.x(2.5); } });
 defSeal('shina', '十拿九稳', 'Nine Chances in Ten', 3, 7, {
-  dz: '所有[k|概率]翻倍\n[n|1/4 变为 2/4]', de: 'All listed [k|chances] are doubled\n[n|1 in 4 becomes 2 in 4]', mods: { probMul: 1 } });
+  dz: '印与墨性上标明的[k|概率]全部翻倍\n[n|1/4 变为 2/4；名帖不受影响]', de: 'Every [k|chance] listed on a seal or an ink nature is doubled\n[n|1 in 4 becomes 2 in 4; masterworks are not affected]', mods: { probMul: 1 } });
 
 // ================= 田黄 · legendary =================
 defSeal('xizhi', '王羲之', 'Wang Xizhi', 4, 20, {
@@ -375,7 +378,7 @@ defSeal('huaisu', '怀素', 'Huaisu', 4, 20, {
   dz: '写出[k|散笔]时，[x|神×笔画数]\n[n|狂来轻世界，醉里得真如]', de: 'When you write a [k|scribble]: [x|× its stroke count]\n[n|The wild monk of cursive script]',
   end(sc) { if (!sc.isChar && sc.n >= 2) sc.x(sc.n); } });
 defSeal('mifu', '米芾', 'Mi Fu', 4, 20, {
-  dz: '每次挥毫后回复 [k|笔画数×4] 的墨\n[n|米颠刷字，八面出锋]', de: 'After every flourish, restore Ink equal to [k|4 × strokes]\n[n|"Others write; Mi Fu sweeps."]',
+  dz: '每次挥毫后添 [k|笔画数×4] 的墨\n[n|米颠刷字，八面出锋]', de: 'After every flourish, gain Ink equal to [k|4 × strokes]\n[n|"Others write; Mi Fu sweeps."]',
   end(sc) { const v = 4 * sc.n; sc.say({ zh: `回墨 ${v}`, en: `+${v} Ink` }); sc.later((run) => addInk(run, v)); } });
 defSeal('zhangxu', '张旭', 'Zhang Xu', 4, 20, {
   dz: '每次挥毫 [x|神×2 至 ×6]（随机）\n[n|脱帽露顶王公前，挥毫落纸如云烟]', de: 'Every flourish: [x|×2 to ×6 Spirit] at random\n[n|The drunken Sage of Cursive]',
@@ -387,8 +390,10 @@ defSeal('weifuren', '卫夫人', 'Lady Wei', 4, 20, {
 function copyNote(s, run, lang) {
   if (!s || !run) return '';
   const t = copyTarget(run, s);
-  if (!t) return lang === 'zh' ? '\n[n|右侧无可复制之印]' : '\n[n|Nothing to copy]';
-  return lang === 'zh' ? `\n[n|当前复制：${SEALS[t.id].zh}]` : `\n[n|Copying: ${SEALS[t.id].en}]`;
+  if (!t) return lang === 'zh' ? '\n[n|其后没有可临摹的印]' : '\n[n|Nothing after it to copy]';
+  const d = SEALS[t.id];
+  if (!(d.retrig || d.cell || d.stroke || d.end || d.charX)) return lang === 'zh' ? `\n[n|「${d.zh}」不在计分时起效，无从临摹]` : `\n[n|${d.en} does nothing while scoring: nothing to copy]`;
+  return lang === 'zh' ? `\n[n|当前临摹：${d.zh}]` : `\n[n|Copying: ${d.en}]`;
 }
 
 // 拓 (editions of a seal); `te` is the short English label shown on the corner tag

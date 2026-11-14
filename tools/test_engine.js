@@ -128,7 +128,7 @@ const score = (run) => E.ignite(run);
     const run = fresh(); const def = E.ITEMS[id];
     E.giveItem(run, id, true);
     let tg = {};
-    if (def.need && def.need.t === 'pieces') tg = { pieces: run.deck.slice(0, def.need.max).map((p) => p.uid) };
+    if (def.need && def.need.t === 'pieces') tg = { pieces: run.deck.filter((p) => !def.ok || def.ok(p)).slice(0, def.need.max).map((p) => p.uid) };
     if (def.need && (def.need.t === 'square' || def.need.t === 'cell')) { tg = { square: 27 }; if (!def.need.empty) run.round.board[27] = cell('mo'); }
     if (id === 'xinde') run.lastTier = 2;
     const n = run.deck.length;
@@ -158,6 +158,82 @@ const score = (run) => E.ignite(run);
   ok(E.leaveShop(run) && run.phase === 'pick', 'leave shop');
   const tag = E.skipBlind(run); ok(tag && run.blind === 2, 'skip to the masterwork');
   ok(E.skipBlind(run) === null, 'the masterwork cannot be skipped');
+}
+// ---- details of the rules that once went wrong
+{
+  const boss = (id, o) => { const run = E.newRun(Object.assign({ seed: 'D' + id }, o || {})); run.blind = 2; run.boss = id; E.startRound(run); run.round.target = 1e15; return run; };
+  // 寒食帖: rinses cannot be brought back by any means
+  let run = boss('hanshi');
+  E.giveItem(run, 'xiyan', true);
+  ok(!E.useItem(run, run.items.length - 1, {}).ok && run.round.discards === 0, '寒食帖: Inkstone Rinse cannot be used');
+  fill(run, [], [1, 3, 5]); const rc = score(run);
+  eq([rc.char, run.round.discards], ['chuan', 0], '寒食帖: 川 grants no rinse');
+  ok(!E.discardBlock(run, 0).ok, '寒食帖: no rinse is possible');
+  // 巾 wipes ink, not stones
+  run = fresh();
+  { const id = E.CH_ORDER.find((k) => E.CH[k].yi === 'wipe'); const L = E.charLayout(id, run.w, run.h); fill(run, L.rows, L.cols);
+    const free = []; for (let i = 0; i < 64; i++) if (!run.round.board[i]) free.push(i);
+    run.round.board[free[0]] = { stone: true, ink: 'mo', enh: null, pid: 0, shape: 'dot' }; run.round.board[free[1]] = cell('zhu');
+    const r = score(run); eq([r.char, run.round.board.filter((c) => c && c.stone).length, run.round.board.filter((c) => c && !c.stone).length], [id, 1, 0], '巾: stray ink is wiped, stones stay'); }
+  // a disabled seal neither grows nor withers
+  run = E.newRun({ seed: 'OFF' }); E.addSeal(run, 'tieyan'); E.addSeal(run, 'bizhou'); run.blind = 2; run.boss = 'liqi'; E.startRound(run); run.round.target = 5;
+  const st0 = JSON.stringify(run.seals[0].st), b1 = run.seals[1].bonus;
+  fill(run, [1], []); score(run);
+  eq([JSON.stringify(run.seals[0].st), run.seals[1].bonus], [st0, b1 + 3], '礼器碑: the disabled seal does not grow, the others do');
+  // a voided flourish is not remembered as a character
+  run = boss('duobao'); fill(run, [1], []); score(run);
+  eq([run.round.chars.length, run.charCounts.yi || 0, run.lastTier], [0, 0, 0], 'a voided flourish writes nothing into the record');
+  // the pure bonus needs a cell that scores
+  run = boss('taishan'); fill(run, [0], []);
+  eq(score(run).score, 10, '泰山刻石: a border stroke of dead cells earns no pure bonus');
+  // dead cells are not "scored cells"
+  run = E.newRun({ seed: 'DEAD' }); E.addSeal(run, 'zhumo'); run.blind = 2; run.boss = 'sangluan'; E.startRound(run); run.round.target = 1e15;
+  { const B = run.round.board; for (let x = 0; x < 8; x++) B[8 + x] = cell(x < 4 ? 'zhu' : 'mo'); }
+  eq(score(run).score, (10 + 4 * 5) * 1, '丧乱帖: dead black cells do not count for Red-and-Black Printing');
+  // splash blocks shatter only when the splash went off
+  run = boss('sangluan'); { const p = run.deck.find((q) => q.ink === 'mo'); p.enh = 'po'; let lost = 0; for (let k = 0; k < 60; k++) { for (let x = 0; x < 8; x++) run.round.board[8 + x] = cell('mo', { enh: 'po', pid: p.uid, q: k }); run.round.ignites = 4; const n0 = run.deck.length; score(run); if (run.deck.length < n0) lost++; } eq(lost, 0, 'a splash block that scored nothing cannot shatter'); }
+  // the same block placed twice counts as two blocks
+  run = fresh(); E.addSeal(run, 'changqiang'); { const B = run.round.board, u = run.deck[0].uid; for (let x = 0; x < 4; x++) B[8 + x] = cell('mo', { pid: u, q: 1, shape: 'i4' }); for (let x = 4; x < 8; x++) B[8 + x] = cell('mo', { pid: u, q: 2, shape: 'i4' }); }
+  eq(score(run).mult, 1 + 8, 'Long Spears counts both placements of one block');
+  // 收笔 does not fire on a free flourish
+  run = fresh(); E.addSeal(run, 'shoubi'); run.round.ignites = 1;
+  { const id = E.CH_ORDER.find((k) => E.CH[k].yi === 'ignite'); const L = E.charLayout(id, run.w, run.h); fill(run, L.rows, L.cols); const r = score(run); eq([r.char, run.round.ignites, r.ev.some((e) => e.t === 'add' && e.k === 'm' && e.v === 20)], [id, 1, false], 'Closing Stroke waits for a flourish that is really spent'); }
+  // a seal gained in the middle of a sheet brings its terms at once
+  run = fresh(); run.round.ignites = 4; E.addSeal(run, 'yichui'); eq(run.round.ignites, 1, 'One Stroke of the Gavel leaves one flourish at once');
+  run = fresh(); run.round.ink = 80; E.addSeal(run, 'pofu'); eq([run.round.inkMax, run.round.ink], [50, 30], 'Smash the Pots halves the Ink at once');
+  // scribbles are not characters
+  run = fresh(); E.addSeal(run, 'wengu'); fill(run, [1, 2], [1, 2, 3]); score(run); fill(run, [1, 2], [1, 2, 3]); const rs = score(run);
+  eq([rs.char, rs.ev.some((e) => e.t === 'add' && e.k === 'x' && e.v === 2)], ['sanbi', false], 'Review the Old ignores scribbles');
+  run = fresh(); E.addSeal(run, 'luoyang'); run.round.target = 5; fill(run, [1, 2], [1, 2, 3]); score(run);
+  ok(!run.cash.lines.some((l) => l.k === 'seal'), 'Paper Grows Dear pays nothing for a scribble');
+  // 工欲善其事 keeps its trigger when there is no room
+  run = fresh(); E.addSeal(run, 'gongyu'); E.giveItem(run, 'zhusha', true); E.giveItem(run, 'zhusha', true);
+  { const L = E.charLayout('gong', run.w, run.h); fill(run, L.rows, L.cols); score(run); ok(!run.seals[0].st.used && run.items.length === 2, 'First Sharpen the Tools waits for room'); }
+  // seals that need a square sheet are not offered on other sheets; vouchers that could do nothing are not offered
+  run = E.newRun({ seed: 'SQ', deck: 'changjuan' }); ok(!run.pool.includes('langhao') && E.newRun({ seed: 'SQ' }).pool.includes('langhao'), 'the Wolf-hair Brush stays off the handscroll');
+  run = E.newRun({ seed: 'SJ', deck: 'shoujin' }); { let bad = 0; for (let k = 0; k < 300; k++) { const v = E.rollVoucher(run); if (v === 'v_zhang1' || v === 'v_zhang2') bad++; } eq(bad, 0, 'no interest furnishings on the Slender Gold script'); }
+  // the look-ahead tells the truth under 爨宝子碑
+  run = boss('cuan'); { let wrong = 0; for (let k = 0; k < 60; k++) { const nx = E.peekList(run, 1)[0]; if (!nx) break; const before = run.round.tray.map((t) => t && t.uid); E.discardBlock(run, 0); run.round.discards = 3; const t = run.round.tray.find((q) => q && !before.includes(q.uid)) || run.round.tray[0]; const p = E.pieceByUid(run, t.uid); if (t.uid === nx.uid && (t.sh || p.shape) !== nx.shape) wrong++; } eq(wrong, 0, 'the look-ahead shows the block that really arrives'); }
+  // shop: furnishings act at once; buying and using pays first; the gift survives a reroll; stake prices compound
+  run = E.newRun({ seed: 'SHOP2' }); E.startRound(run); run.round.target = 5; fill(run, [1], []); score(run); E.collectCash(run);
+  run.money = 100; run.shop.voucher = 'v_jia3'; const p0 = run.shop.items.map((i) => i.price), k0 = run.shop.packs.map((i) => i.price);
+  ok(E.buyVoucher(run).ok, 'buy Haggling');
+  ok(run.shop.items.every((i, k) => i.price === Math.max(1, Math.round(i.base * 0.75)) && i.price <= p0[k]) && run.shop.packs.every((i, k) => i.price <= k0[k]), 'Haggling lowers the prices on display');
+  run.shop.voucher = 'v_huo1'; const n0 = run.shop.items.length; ok(E.buyVoucher(run).ok && run.shop.items.length === n0 + 1, 'Extra Shelf adds an item at once');
+  run.money = 10; run.shop.items[0] = { kind: 'wen', id: 'runge', base: 3, price: 3, sold: false };
+  ok(E.shopBuy(run, 0, true).ok, 'buy and use the Price List'); eq(run.money, 14, 'the Price List does not double the coins that pay for it');
+  run.money = 50; run.shop.items[0] = { kind: 'seal', id: 'xinshou', ed: null, price: 0, sold: false, gift: true }; E.shopReroll(run);
+  ok(run.shop.items[0].gift && run.shop.items.length === E.stat(run, 'shopSlots'), 'a gift stays on the shelf through a reroll');
+  run = E.newRun({ seed: 'YAJI' }); E.startRound(run); run.round.target = 5; fill(run, [1], []); score(run); E.collectCash(run);
+  run.money = 50; run.shop.items[0] = { kind: 'seal', id: 'yaji', ed: null, base: 6, price: 6, sold: false }; E.shopBuy(run, 0, false);
+  eq(E.rerollCost(run), 0, 'Gathering of Scholars gives its free reroll in the shop where it is bought');
+  run = E.newRun({ seed: 'ST5', stake: 5 }); eq([E.priceOf(run, 10), (run.vouchers.v_jia3 = 1, E.priceOf(run, 10)), (run.vouchers.v_jia4 = 1, E.priceOf(run, 10))], [12, 9, 6], 'discounts compound with the dearer prices of a high rank');
+  // items that would change nothing are refused
+  run = fresh(); E.giveItem(run, 'songyan', true); { const p = run.deck.find((q) => q.ink === 'mo'); ok(!E.useItem(run, run.items.length - 1, { pieces: [p.uid] }).ok && run.items.length === 1, 'Pine Soot is not spent on a block that is already black'); }
+  run = fresh(); run.money = 0; E.giveItem(run, 'runge', true); ok(!E.useItem(run, run.items.length - 1, {}).ok, 'the Price List is not spent on an empty purse');
+  // 少而精 measures from the opening size of the Ink Box
+  run = E.newRun({ seed: 'JG', deck: 'jiagu' }); E.addSeal(run, 'shaoer'); E.startRound(run); run.round.boss = null; run.round.target = 1e15; fill(run, [1], []);
+  eq(score(run).mult, 1, 'Few but Fine starts at nothing on the oracle-bone script');
 }
 // ---- every seal survives a rough round; every description renders
 {

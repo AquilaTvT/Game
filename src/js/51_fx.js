@@ -115,6 +115,7 @@ const FX = (() => {
     },
     rise(x, y, col, n, spread, size) {
       // embers drifting upward (score on fire)
+      if (reduce()) n = Math.ceil(n / 4);
       for (let i = 0; i < n; i++) {
         parts.push({ x: x + (Math.random() - 0.5) * spread, y, vx: (Math.random() - 0.5) * 40, vy: -(60 + Math.random() * 160), g: -40, drag: 0.97, r: (size || 3) * (0.5 + Math.random()), life: 0.5 + Math.random() * 0.8, max: 1.3, col, a: 0.9, shrink: true, fade: true, add: true });
       }
@@ -187,8 +188,12 @@ void main(){
       const loc = gl.getAttribLocation(prog, 'p');
       gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
       uR = gl.getUniformLocation(prog, 'r'); uT = gl.getUniformLocation(prog, 't'); uTint = gl.getUniformLocation(prog, 'tint'); uAmp = gl.getUniformLocation(prog, 'amp');
-      cv.addEventListener('webglcontextlost', (e) => { e.preventDefault(); alive = false; });
-      cv.addEventListener('webglcontextrestored', () => { gl = null; init(); });
+      if (!cv._bound) {
+        // registered once: a restored context must not pile up handlers
+        cv._bound = true;
+        cv.addEventListener('webglcontextlost', (e) => { e.preventDefault(); alive = false; });
+        cv.addEventListener('webglcontextrestored', () => { gl = null; init(); });
+      }
       alive = true;
       resize();
       t0 = nowMs() - Math.random() * 500000;

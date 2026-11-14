@@ -57,7 +57,7 @@ defBoss('kuaixue', '快雪时晴帖', 'Clearing After Snow', 1, {
   dz: '[k|墨量−25]\n[n|全帖仅二十八字]', de: '[k|−25 Ink]\n[n|The whole letter is only twenty-eight characters]', mods: { inkMax: -25 } });
 defBoss('pingfu', '平复帖', 'Letter on Recovery', 1, {
   author: { zh: '西晋 · 陆机', en: 'Lu Ji, Western Jin' },
-  dz: '纸上有 [k|3 处虫蛀]：无法落墨，其所在的行与列写不成笔画', de: 'The sheet has [k|3 wormholes]: their rows and columns can never be completed',
+  dz: '纸上有 [k|3 处虫蛀]：无法落墨，其所在的行与列写不成笔画', de: '[k|3 wormholes] take no ink: their rows and columns can never be completed',
   start(run) { scatter(run, 3, (i) => { run.round.holes[i] = 1; }, true); } });
 defBoss('sangluan', '丧乱帖', 'Letter in Turmoil', 1, {
   author: { zh: '东晋 · 王羲之', en: 'Wang Xizhi, Eastern Jin' },
@@ -107,7 +107,7 @@ defBoss('cuan', '爨宝子碑', 'Stele of Cuan Baozi', 3, {
   dz: '入架的墨块有 [k|1/3 概率]变为五格的异形块\n[n|非隶非楷，奇古难名]', de: 'Each block drawn has a [k|1 in 3 chance] of turning into a strange five-cell shape\n[n|Neither clerical nor regular: odd and ancient]', flags: { morph: 1 } });
 defBoss('liqi', '礼器碑', 'Stele of Ritual Vessels', 3, {
   author: { zh: '东汉 · 佚名', en: 'Anonymous, Eastern Han' },
-  dz: '[k|最左侧]的印在本局失效', de: 'Your [k|leftmost] seal is disabled this round', flags: { sealOff: 'left' } });
+  dz: '排在[k|首位]的印在本局失效', de: 'Your [k|first] seal is disabled this round', flags: { sealOff: 'left' } });
 defBoss('shiqi', '十七帖', 'The Seventeen Letters', 3, {
   author: { zh: '东晋 · 王羲之', en: 'Wang Xizhi, Eastern Jin' },
   dz: '本局至多落下 [k|17 块]墨', de: 'You may place at most [k|17 blocks] this round', flags: { pieceLimit: 17 } });
@@ -136,7 +136,7 @@ defBoss('yihe', '瘗鹤铭', 'Crane Burial Inscription', 4, {
 // finishers: the three greatest works in running script
 defBoss('lanting', '兰亭集序', 'Preface to the Orchid Pavilion', 8, {
   fin: true, author: { zh: '东晋 · 王羲之 · 天下第一行书', en: 'Wang Xizhi — "the finest running script under heaven"' },
-  dz: '本局[k|重复]写出的字不计分\n[n|二十余「之」字，无一雷同]', de: 'A character [k|repeated] within this round scores nothing\n[n|It writes 之 more than twenty times — never twice alike]', flags: { noRepeat: 1 } });
+  dz: '本局[k|重复]写出的字不计分（散笔亦然）\n[n|二十余「之」字，无一雷同]', de: 'A character [k|repeated] this round scores nothing (scribbles too)\n[n|It writes 之 more than twenty times — never twice alike]', flags: { noRepeat: 1 } });
 defBoss('jizhi', '祭侄文稿', 'Requiem for My Nephew', 8, {
   fin: true, author: { zh: '唐 · 颜真卿 · 天下第二行书', en: 'Yan Zhenqing — the second finest running script' },
   dz: '每落下 [k|3 块]墨，纸上便多一处[k|涂改]（顽石）\n[n|悲愤所至，涂抹满纸]', de: 'Every [k|3 blocks] you place, a [k|blot] (stone) appears on the sheet\n[n|Written in grief and fury, crossed out again and again]',
@@ -152,7 +152,7 @@ defBoss('jizhi', '祭侄文稿', 'Requiem for My Nephew', 8, {
   } });
 defBoss('hanshi', '寒食帖', 'Cold Food Observance', 8, {
   fin: true, author: { zh: '北宋 · 苏轼 · 天下第三行书', en: 'Su Shi — the third finest running script' },
-  dz: '[k|无法洗笔]，且 [k|墨量−20]\n[n|空庖煮寒菜，破灶烧湿苇]', de: '[k|No rinses], and [k|−20 Ink]\n[n|"In an empty kitchen I boil cold greens; in a broken stove I burn wet reeds."]', mods: { discards: -99, inkMax: -20 } });
+  dz: '[k|无法洗笔]，且 [k|墨量−20]\n[n|空庖煮寒菜，破灶烧湿苇]', de: '[k|No rinses], and [k|−20 Ink]\n[n|"In an empty kitchen I boil cold greens; in a broken stove I burn wet reeds."]', flags: { noDiscard: 1 }, mods: { inkMax: -20 } });
 
 // ---------- 书体 (starting decks) ----------
 const DECKS = {};
@@ -211,11 +211,11 @@ const STAKES = [
   { zh: '举人', en: 'Provincial Graduate', dz: '目标分数更高，且越往后越高', de: 'Higher targets, growing faster as the run goes on', flags: { scale: [1.25, 0.1] } },
   { zh: '贡士', en: 'Tribute Scholar', dz: '每局 墨量−10', de: '−10 Ink every round', mods: { inkMax: -10 } },
   { zh: '进士', en: 'Metropolitan Graduate', dz: '每局 洗笔−1', de: '−1 Rinse every round', mods: { discards: -1 } },
-  { zh: '探花', en: 'Third Laureate', dz: '铺中货物贵两成', de: 'Shop prices rise by 20%', mods: { discount: -20 } },
+  { zh: '探花', en: 'Third Laureate', dz: '铺中货物贵两成', de: 'Shop prices rise by 20%', mods: { markup: 20 } },
   { zh: '榜眼', en: 'Second Laureate', dz: '目标分数再度提高', de: 'Targets rise again, and steeply', flags: { scale: [1.5, 0.2] } },
   { zh: '状元', en: 'First Laureate', dz: '名帖的目标为平常的 1.4 倍', de: 'Masterwork targets ×1.4', flags: { bossMul: 1.4 } },
 ];
 const BASE_STATS = {
   inkMax: 100, ignites: 4, discards: 3, tray: 3, sealSlots: 5, itemSlots: 2, interestCap: 5, shopSlots: 2,
-  discount: 0, rerollOff: 0, freeRerolls: 0, peek: 0, flip: 0, diag: 0, costAdd: 0, probMul: 1, tieBonus: 0, edRate: 0,
+  discount: 0, markup: 0, rerollOff: 0, freeRerolls: 0, peek: 0, flip: 0, diag: 0, costAdd: 0, probMul: 1, tieBonus: 0, edRate: 0,
 };

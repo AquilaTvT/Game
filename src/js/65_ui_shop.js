@@ -128,7 +128,8 @@ const Shop = {
     if (!run.pack) return;
     const def = PACKS[run.pack.id];
     const m = this._packModal = openModal({
-      title: nm(def), sub: '', dismiss: false, width: Math.min(UI.W - 30, 190 * run.pack.choices.length + 60),
+      title: nm(def), sub: '&nbsp;', dismiss: false, width: Math.min(UI.W - 30, 190 * run.pack.choices.length + 60),
+      onClose: () => { if (this._packModal === m) { this._packModal = null; this._packRoot = null; } },
       body: (root) => { this._packRoot = root; },
       buttons: [{ label: T('pack.skip'), cls: 'ghost', keep: true, fn: () => { closePack(run); this.packDone(); } }],
     });
@@ -200,6 +201,9 @@ const Shop = {
 
 // ---- choosing what an item acts on
 const Targets = {
+  _cancel: null,
+  // leave square-picking mode, whoever started it
+  cancel() { if (this._cancel) this._cancel(); },
   choose(def) {
     if (!def.need) return Promise.resolve({});
     if (def.need.t === 'pieces') return this.pieces(def);
@@ -225,12 +229,16 @@ const Targets = {
           for (const p of list) {
             const el = h('div.pc', { data: { uid: p.uid } }, Gfx.pieceCanvas(p.shape, p.ink, p.enh, UI.orient === 'p' ? 19 : 15, PROFILE.settings.marks));
             if (p.enh) el.appendChild(h('span.tg', { text: ENH[p.enh].g }));
+            const able = !def.ok || def.ok(p);
+            if (!able) el.classList.add('off');
             el.addEventListener('click', () => {
+              if (el._suppressClick) return;
+              if (!able) { Snd.play('bad'); return; }
               if (sel.has(p.uid)) sel.delete(p.uid);
               else { if (nd.max === 1) sel.clear(); if (sel.size >= nd.max) { Snd.play('bad'); return; } sel.add(p.uid); }
               Snd.play('tick'); upd();
             });
-            bindCard(el, () => pieceCard(p), { noClick: true });
+            bindCard(el, () => pieceCard(p), { noClick: true, hold: true });
             grid.appendChild(el);
           }
           root.appendChild(grid);
@@ -251,10 +259,20 @@ const Targets = {
     };
     if (inRound && Play.active && !modalOpen()) {
       // pick straight on the sheet
+      this.cancel();
       return new Promise((res) => {
-        const bar = h('div.panel.stuckbar', { style: { borderColor: 'rgba(120,220,170,0.7)' } }, h('span', { text: T('target.square', nm(def)), style: { color: '#b6ecd4' } }),
+        const bar = h('div.panel.stuckbar.targetbar', { style: { borderColor: 'rgba(120,220,170,0.7)' } }, h('span', { text: T('target.square', nm(def)), style: { color: '#b6ecd4' } }),
           mkBtn(T('cancel'), 'ghost small', () => finish(null)));
-        const finish = (v) => { Play.target = null; bar.remove(); res(v == null ? null : { square: v }); };
+        const finish = (v) => {
+          if (this._cancel !== cancel) return;
+          this._cancel = null; Play.target = null; bar.remove(); Play.poke();
+          res(v == null ? null : { square: v });
+          if (v == null) Game.checkStuck();
+        };
+        const cancel = () => finish(null);
+        this._cancel = cancel;
+        Game.hideStuck();
+        Play.cancelDrag(); Play.kb = null; Play.setGhost(null); Play.setRinse(false);
         Hud.el.center.appendChild(bar);
         Play.target = { ok, pick: (i) => { Snd.play('click'); finish(i); } };
       });

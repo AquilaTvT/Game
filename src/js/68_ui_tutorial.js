@@ -15,29 +15,29 @@ const Tutorial = {
     if (!this.active()) return;
     const st = PROFILE.meta.tutorial;
     if (ev === 'pick') {
-      if (st === 0) this.show($('#btn-start'), T('tut.1'), [], T('tut.step', 1, 6));
+      if (st === 0) this.show($('#btn-start'), T('tut.1'), [], T('tut.step', 1, 8));
       else this.hide();
     } else if (ev === 'round') {
-      if (st <= 1) { this.set(1); this.show(Hud.el.traybox, T('tut.2'), [], T('tut.step', 2, 6)); }
+      if (st <= 1) { this.set(1); this.show(Hud.el.traybox, T('tut.2'), [], T('tut.step', 2, 8)); }
     } else if (ev === 'place') {
       if (st === 1 || st === 2) {
         if (data.lines.n >= 1) this.stepLine();
-        else if (st === 1) { this.set(2); this.show(Hud.el.boardbox, T('tut.3'), [], T('tut.step', 3, 6), 'in'); }
+        else if (st === 1) { this.set(2); this.show(Hud.el.boardbox, T('tut.3'), [], T('tut.step', 3, 8), 'in'); }
       }
     } else if (ev === 'ignite') {
       if (st < 5) {
         this.set(5);
         this.show(Hud.el.char.querySelector('.calc'), T('tut.6'), [{ label: T('tut.next'), fn: () => {
           this.show(Hud.el.rinse, T('tut.7'), [{ label: T('tut.next'), fn: () => {
-            this.show(Hud.el.bDict, T('tut.8'), [{ label: T('tut.done'), fn: () => { this.set(99); this.hide(); } }], T('tut.step', 6, 6));
-          } }], T('tut.step', 6, 6));
-        } }], T('tut.step', 5, 6));
+            this.show(Hud.el.bDict, T('tut.8'), [{ label: T('tut.done'), fn: () => { this.set(99); this.hide(); } }], T('tut.step', 8, 8));
+          } }], T('tut.step', 7, 8));
+        } }], T('tut.step', 6, 8));
       }
     } else if (ev === 'discard') { /* nothing to teach */ }
   },
   stepLine() {
     this.set(3);
-    this.show(Hud.el.char, T('tut.4'), [{ label: T('tut.next'), fn: () => { this.set(4); this.show(Hud.el.ignite, T('tut.5'), [], T('tut.step', 4, 6)); } }], T('tut.step', 4, 6));
+    this.show(Hud.el.char, T('tut.4'), [{ label: T('tut.next'), fn: () => { this.set(4); this.show(Hud.el.ignite, T('tut.5'), [], T('tut.step', 5, 8)); } }], T('tut.step', 4, 8));
   },
   show(target, html, btns, step, mode) {
     this.hide();

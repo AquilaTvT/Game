@@ -198,7 +198,12 @@ body[data-o="l"] .seallist { flex-direction: column; overflow-y: auto; overflow-
 body[data-o="l"] .seallist::-webkit-scrollbar { display: none; }
 body[data-o="p"] .seallist { flex-direction: row; align-items: center; }
 .seal { display: flex; align-items: center; gap: 10px; border-radius: 9px; padding: 4px 6px; cursor: pointer; position: relative; min-width: 0; border: 1px solid transparent; transition: background 0.12s, transform 0.12s; touch-action: none; }
-body[data-o="l"] .seal { flex: 0 0 auto; min-height: 70px; }
+body[data-o="l"] .seal { flex: 0 0 auto; min-height: calc(var(--ss, 62px) + 8px); }
+body[data-o="l"] .seal .sealface { width: var(--ss, 62px); height: var(--ss, 62px); }
+.seallist.tightseals .seal { gap: 8px; }
+.seallist.tightseals .seal .st .d { display: none; }
+.seallist.tightseals .edtag { left: auto; right: 4px; top: 50%; transform: translateY(-50%); }
+.seallist.smallseals .edtag { font-size: 11px; padding: 0 3px; left: 50%; top: -8px; transform: translateX(-50%); }
 .seal:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.08); }
 .seal .sealface { flex: none; width: 62px; height: 62px; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
 body[data-o="p"] .seal { padding: 2px; }
@@ -422,6 +427,9 @@ body.touch .actbtn .k { display: none; }
 .pc:hover { transform: translateY(-2px); }
 .pc.sel { box-shadow: 0 0 0 3px var(--gold2), 0 0 18px rgba(243, 217, 139, 0.7), 0 3px 8px rgba(0, 0, 0, 0.4); transform: translateY(-4px); }
 .pc.gone { opacity: 0.32; }
+.pc.off { opacity: 0.3; filter: grayscale(0.7); cursor: not-allowed; }
+.pc.off:hover { transform: none; }
+img.keepimg { display: block; -webkit-touch-callout: default; -webkit-user-select: auto; user-select: auto; }
 .pc .tg { position: absolute; left: 4px; top: 2px; font-family: var(--f-kai); font-size: 14px; color: #7a2a1e; font-weight: 700; }
 .pc .cnt { position: absolute; right: 5px; bottom: 2px; font-family: var(--f-num); font-size: 14px; color: #5d4a34; }
 .inkrow { display: flex; gap: 14px; margin-bottom: 10px; flex-wrap: wrap; font-size: 17px; color: var(--dim); align-items: center; }
@@ -588,6 +596,8 @@ body[data-o="p"] .decks { grid-template-columns: repeat(4, 1fr); }
 
 /* rotate hint for very small landscape phones is not needed: the stage always fits */
 @media (prefers-reduced-motion: reduce) { .packart::after, #btn-ignite.ready, .boot-seal { animation: none; } }
+/* the in-game "reduce motion" switch: no looping glows, no sliding entrances */
+body.calm *, body.calm *::before, body.calm *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition-duration: 0.01ms !important; }
 
 /* ---------- English layout tweaks ---------- */
 html[lang="en"] .btn { letter-spacing: 0.01em; font-family: var(--f-num); }

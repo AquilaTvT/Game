@@ -99,8 +99,8 @@ const Menu = {
     cv.title = AUTHOR;
     return cv;
   },
-  title() {
-    closeAllModals();
+  title(keep) {
+    if (!keep) closeAllModals();
     UI.screen('menu');
     BG.mood('title'); Snd.setMusic('title');
     Tutorial.hide();
@@ -111,7 +111,7 @@ const Menu = {
     const list = h('div.menulist');
     const add = (label, cls, fn, id) => { const b = mkBtn(label, cls, fn); if (id) b.id = id; list.appendChild(b); return b; };
     const run = PROFILE.run;
-    if (run) add(`${T('menu.continue')}<small>${T('menu.continue.d', nm(DECKS[run.deckId]), run.ante > 8 ? run.ante : T('num.' + run.ante))}</small>`, 'gold', () => {
+    if (run) add(`${T('menu.continue')}<small>${nm(DECKS[run.deckId])} · ${runWhere(run)}</small>`, 'gold', () => {
       try { Game.resume(); } catch (e) {
         // a save that can no longer be read should never trap the player
         PROFILE.run = null; UI.run = null; saveProfile(true); closeAllModals(); this.title();
@@ -197,7 +197,7 @@ const Menu = {
   endStats(run) {
     const box = h('div.endstats');
     const add = (k, v) => box.appendChild(h('div', k, h('b', { html: v })));
-    add(T('end.ante'), faName(run.ante));
+    add(T('end.ante'), runWhere(run));
     add(T('run.best'), fmtNum(run.stats.best) + (run.stats.bestChar ? ` <span class="kai" style="font-size:20px">${run.stats.bestChar === 'sanbi' ? T('sanbi') : CH[run.stats.bestChar].g}</span>` : ''));
     add(T('end.chars'), String(distinctChars(run)));
     add(T('run.ignites'), String(run.stats.ignites));
@@ -207,7 +207,7 @@ const Menu = {
   },
   endSeals(run) {
     const row = h('div.endseals');
-    for (const s of run.seals) { const el = Gfx.sealEl(s.id, 56, s.ed); bindCard(el, () => sealCard(s.id, s, run), { noClick: true }); row.appendChild(el); }
+    for (const s of run.seals) { const el = Gfx.sealEl(s.id, 56, s.ed); bindCard(el, () => sealCard(s.id, s, run)); row.appendChild(el); }
     return row;
   },
   // a keepsake of the run: one image to save or share
@@ -288,16 +288,20 @@ const Menu = {
   showKeepsake(run, won) {
     const cv = this.keepsake(run, won);
     const name = `方块字-${run.daily ? 'D' + run.daily : run.seed}.png`;
-    const blobOf = () => new Promise((res) => { if (cv.toBlob) cv.toBlob((b) => res(b), 'image/png'); else res(null); });
+    // the picture is made ready beforehand: sharing must start inside the tap itself
+    let blob = null;
+    if (cv.toBlob) cv.toBlob((b) => { blob = b; }, 'image/png');
     openModal({
       title: T('keep.title'), width: Math.min(UI.W - 30, 560),
       body: (root) => {
-        cv.style.width = '100%'; cv.style.height = 'auto'; cv.style.borderRadius = '6px'; cv.style.boxShadow = '0 8px 24px rgba(0,0,0,0.6)';
-        root.appendChild(cv);
+        // a real image (not a canvas), so the browser's own "save image" works on a long press or a right click
+        let shown = cv;
+        try { const img = h('img.keepimg', { alt: name }); img.src = cv.toDataURL('image/png'); shown = img; } catch (e) { shown = cv; }
+        shown.style.width = '100%'; shown.style.height = 'auto'; shown.style.borderRadius = '6px'; shown.style.boxShadow = '0 8px 24px rgba(0,0,0,0.6)';
+        root.appendChild(shown);
         root.appendChild(h('div.dim', { text: T('keep.tip'), style: { marginTop: '10px', fontSize: '16px', textAlign: 'center' } }));
       },
       buttons: [{ label: T('close'), cls: 'ghost' }, { label: T('keep.save'), cls: 'gold', keep: true, fn: async () => {
-        const blob = await blobOf();
         if (!blob) return;
         try {
           const file = typeof File === 'function' ? new File([blob], name, { type: 'image/png' }) : null;

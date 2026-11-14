@@ -98,7 +98,7 @@ const Overlays = {
       sec(LANG === 'zh' ? TIER_NAME.zh[n] : TIER_NAME.en[n], `Lv.${lvl} · ${T('form')} ${b.c} × ${T('spirit')} ${b.m}`, ids);
     }
     sec(T('dict.full'), '', groups.x);
-    sec(T('dict.diag'), T('dict.diag.sub'), groups.d);
+    sec(T('dict.diag'), w === hh ? T('dict.diag.sub') : T('dict.diag.no'), groups.d);
     root.appendChild(h('div.dsec', T('sanbi')));
     root.appendChild(h('div', { html: T('sanbi.desc'), style: { fontSize: '18px', color: '#e8dcc6' } }));
   },
@@ -257,7 +257,7 @@ const Overlays = {
           return el;
         };
         const onoff = (cur, fn) => seg([[true, T('on')], [false, T('off')]], !!cur, fn);
-        row(T('set.lang'), null, seg([['zh', '中文'], ['en', 'English']], S.lang, (v) => { S.lang = v; LANG = v; saveProfile(true); close(); App.relang(); }));
+        row(T('set.lang'), null, seg([['zh', '中文'], ['en', 'English']], S.lang, (v) => { S.lang = v; LANG = v; saveProfile(true); closeAllModals(); App.relang(); }));
         row(T('set.music'), null, slider(S.music, (v) => { S.music = v; }));
         row(T('set.sfx'), null, slider(S.sfx, (v) => { S.sfx = v; }));
         row(T('set.speed'), T('set.speed.d'), seg([[1, '1×'], [2, '2×'], [4, '4×']], S.speed, (v) => { S.speed = v; }));
@@ -265,7 +265,7 @@ const Overlays = {
         row(T('set.marks'), T('set.marks.d'), onoff(S.marks, (v) => { S.marks = v; Play.inkDirty = true; }));
         row(T('set.shake'), null, onoff(S.shake, (v) => { S.shake = v; }));
         if (navigator.vibrate) row(T('set.haptics'), T('set.haptics.d'), onoff(S.haptics !== false, (v) => { S.haptics = v; }));
-        row(T('set.reduce'), T('set.reduce.d'), onoff(S.reduce, (v) => { S.reduce = v; }));
+        row(T('set.reduce'), T('set.reduce.d'), onoff(S.reduce, (v) => { S.reduce = v; App.motion(); }));
         row(T('set.confirm'), T('set.confirm.d'), onoff(S.confirmIgnite, (v) => { S.confirmIgnite = v; }));
         if (document.fullscreenEnabled || document.webkitFullscreenEnabled) row(T('set.full'), null, mkBtn(T('set.full.b'), 'small', () => App.fullscreen()));
         row(T('set.data'), Store.ok ? T('set.data.d') : T('set.data.bad'), h('div', { style: { display: 'flex', gap: '8px' } }, mkBtn(T('set.export'), 'small', () => this.exportSave()), mkBtn(T('set.import'), 'small', () => this.importSave())));
@@ -289,8 +289,11 @@ const Overlays = {
       buttons: [{ label: T('set.copy'), cls: 'gold', keep: true, fn: () => {
         const done = () => toast({ icon: '存', title: T('set.copied'), ms: 1800 });
         const ta = document.querySelector('textarea.code');
-        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => { ta.select(); try { document.execCommand('copy'); done(); } catch (e) { /* manual copy */ } });
-        else { ta.select(); try { document.execCommand('copy'); done(); } catch (e) { /* manual copy */ } }
+        const pick = () => { ta.readOnly = false; ta.focus(); ta.select(); try { ta.setSelectionRange(0, ta.value.length); } catch (e) { /* ignore */ } ta.readOnly = true; };
+        // only claim success when the browser really took the text
+        const legacy = () => { pick(); let took = false; try { took = document.execCommand('copy'); } catch (e) { took = false; } if (took) done(); else toast({ icon: '存', title: T('set.copyfail'), ms: 3600 }); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, legacy);
+        else legacy();
       } }, { label: T('close'), cls: 'ghost' }],
     });
   },

@@ -3,12 +3,13 @@ const Game = {
   _tick: 0,
   save() {
     const run = UI.run;
+    // with nothing in play (the title screen) the stored run is left exactly as it is
     if (run) {
       const now = nowMs();
       if (this._tick) run.stats.time += Math.min(60, (now - this._tick) / 1000);
       this._tick = now;
+      PROFILE.run = run.phase !== 'over' ? run : null;
     }
-    PROFILE.run = run && run.phase !== 'over' ? run : null;
     saveProfile();
   },
   begin(opts) {
@@ -29,6 +30,7 @@ const Game = {
   enter() {
     UI.busy = false;
     UI.screen('game');
+    Targets.cancel();
     Play.cancelDrag(); Play.kb = null; Play.rinseMode = false; Play.target = null; Play.viewBoard = null; Play.strokes.length = 0; Play.hidden.clear(); Play.pops.clear(); Play.flashCells.clear(); Play.lineFlash.length = 0; Play.trayUid = [];
     FX.clear();
     Hud._patKey = ''; Hud._score = 0;
@@ -137,6 +139,8 @@ const Game = {
       const ok = await confirmBox(T('ignite'), T('confirm.ignite', pat.id === 'sanbi' ? T('sanbi') : CH[pat.id].g), T('ignite'), T('cancel'));
       if (!ok) return;
     }
+    Targets.cancel();
+    Tutorial.hide();
     Play.cancelDrag(); Play.kb = null; Play.setGhost(null); Play.setRinse(false);
     this.hideStuck();
     const snapshot = rd.board.slice();
@@ -155,12 +159,15 @@ const Game = {
     for (const id of seq) { if (id === ['yi', 'er', 'san'][k]) k++; if (k === 3) break; }
     res.seq123 = k === 3;
     const isNew = metaOnIgnite(run, res);
+    // the outcome goes into the record before the ceremony, so closing the page during it loses nothing
+    if (res.won && rd.boss) metaOnBoss(run, rd.boss);
+    if (res.lost && !run.recorded) { run.recorded = true; metaOnRunEnd(run, false); }
     this.save();
+    if (res.won || res.lost) saveProfile(true);
     await Score.play(res);
     if (isNew) toast({ iconEl: Gfx.glyphCanvas(res.char, 34, '#1b1918'), title: T('fx.newchar', CH[res.char].g + (LANG === 'en' ? ' · ' + CH[res.char].en : '')), text: escHtml(LANG === 'zh' ? CH[res.char].gz : CH[res.char].ge), ms: 4800, snd: 'newchar' });
     metaOnState(run);
     if (res.won) {
-      if (rd.boss) metaOnBoss(run, rd.boss);
       showAchievements();
       Snd.play('win');
       FX.flash('#fff3d0', 0.2);
@@ -182,7 +189,7 @@ const Game = {
   },
   checkStuck() {
     const run = UI.run;
-    if (run.phase !== 'round' || UI.busy) { this.hideStuck(); return; }
+    if (run.phase !== 'round' || UI.busy || Play.target) { this.hideStuck(); return; }
     if (hasMove(run)) { this.hideStuck(); return; }
     if (this._stuck) return;
     const bar = h('div.panel.stuckbar', h('span', { text: T('stuck') }), mkBtn(T('stuck.end'), 'red small', () => this.giveUp()));
@@ -190,11 +197,16 @@ const Game = {
     Hud.el.center.appendChild(bar);
   },
   hideStuck() { if (this._stuck) { this._stuck.remove(); this._stuck = null; } },
-  giveUp() {
+  async giveUp() {
     const run = UI.run;
-    if (run.phase !== 'round' || UI.busy) return;
+    if (run.phase !== 'round' || UI.busy || modalOpen()) return;
+    // only the things that act on the sheet in hand can still turn it around
+    const usable = run.items.some((it) => { const d = ITEMS[it.id]; return (d.round || (d.need && d.need.t === 'cell')) && itemUsable(run, d).ok; });
+    const sure = await confirmBox(T('stuck.end'), T('stuck.sure') + (usable ? '<br><span style="color:#ffd9a0">' + T('stuck.items') + '</span>' : ''), T('stuck.end'), T('cancel'), true);
+    if (!sure || UI.run !== run || run.phase !== 'round' || UI.busy) return;
     this.hideStuck();
     concede(run);
+    if (run.phase === 'over' && !run.recorded) { run.recorded = true; metaOnRunEnd(run, false); }
     this.save();
     if (run.phase === 'cash') { Snd.play('win'); this.showCash(); } else this.finish();
   },
@@ -324,6 +336,7 @@ const Game = {
   },
   startRound() {
     const run = UI.run;
+    Targets.cancel();
     if (!startRound(run)) return;
     this.save();
     Play.trayUid = []; Play._kbLast = null;

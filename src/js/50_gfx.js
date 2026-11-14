@@ -319,8 +319,8 @@ const Gfx = {
     }));
     this.paintCells(c, list, cs, cx - (geom.w * cs) / 2, cy - (geom.h * cs) / 2, o);
   },
-  pieceCanvas(shape, ink, enh, cs, marks) {
-    const g = geomOf(shape, 0, 0), k = Math.min(2, window.devicePixelRatio || 1) * 1.3;
+  pieceCanvas(shape, ink, enh, cs, marks, rot) {
+    const g = geomOf(shape, rot || 0, 0), k = Math.min(2, window.devicePixelRatio || 1) * 1.3;
     const cv = mkCanvas((g.w * cs + cs) * k, (g.h * cs + cs) * k), c = cv.getContext('2d');
     c.scale(k, k);
     this.piece(c, g, ink, enh, (g.w * cs + cs) / 2, (g.h * cs + cs) / 2, cs, { marks });

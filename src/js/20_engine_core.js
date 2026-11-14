@@ -34,7 +34,8 @@ function stat(run, key) {
   if (key === 'ignites' || key === 'tray') return Math.max(1, v);
   if (key === 'discards' || key === 'itemSlots' || key === 'shopSlots' || key === 'freeRerolls' || key === 'peek') return Math.max(0, v);
   if (key === 'sealSlots') return Math.max(1, v);
-  if (key === 'discount') return clamp(v, -100, 75);
+  if (key === 'discount') return clamp(v, 0, 75);
+  if (key === 'markup') return clamp(v, 0, 300);
   return v;
 }
 function prob(run, a, b) {
@@ -69,11 +70,23 @@ function syncRound(run) {
 // ---- seals
 const sealRoom = (run) => run.seals.filter((s) => s.ed !== 'xian').length < stat(run, 'sealSlots');
 function addSeal(run, id, ed) {
+  const rd = run.round, live = !!rd && run.phase === 'round';
+  const was = live ? [stat(run, 'inkMax'), stat(run, 'ignites'), stat(run, 'discards')] : null;
+  const shop = run.phase === 'shop' ? run.shop : null, free0 = shop ? stat(run, 'freeRerolls') : 0;
   const s = { uid: run.uid++, id, ed: ed || null, st: {}, bonus: 0 };
   const d = SEALS[id];
   if (d.init) d.init(s);
   run.seals.push(s);
   run.seen[id] = 1;
+  if (live) {
+    // a seal that arrives in the middle of a sheet brings its terms with it at once
+    const dInk = stat(run, 'inkMax') - was[0], dIg = stat(run, 'ignites') - was[1], dDc = stat(run, 'discards') - was[2];
+    if (dInk) { rd.inkMax = Math.max(0, rd.inkMax + dInk); rd.ink = Math.max(0, rd.ink + dInk); }
+    if (dIg) rd.ignites = Math.max(1, rd.ignites + dIg);
+    if (dDc) addDiscards(run, dDc);
+  }
+  // a free reroll earned inside a shop counts there too, as long as nothing has been rerolled yet
+  if (shop && shop.rerolls === 0) { const d2 = stat(run, 'freeRerolls') - free0; if (d2 > 0) shop.free = (shop.free || 0) + d2; }
   return s;
 }
 function destroySeal(run, uid) {
@@ -144,6 +157,12 @@ function favTier(run) {
 }
 const distinctChars = (run) => Object.keys(run.charCounts).filter((k) => k !== 'sanbi' && run.charCounts[k] > 0).length;
 function addInk(run, v) { if (run.round) run.round.ink = Math.max(0, run.round.ink + v); }
+function addDiscards(run, v) {
+  const rd = run.round;
+  if (!rd || flag(run, 'noDiscard')) return false;
+  rd.discards = Math.max(0, rd.discards + v);
+  return true;
+}
 
 // ---- new run
 function newRun(opts) {
@@ -171,6 +190,8 @@ function newRun(opts) {
     const p = addPiece(run, shape, ink, null);
     if (deck.randomEnh) p.enh = rndPick(run, 'misc', ENH_IDS);
   }
+  run.deck0 = run.deck.length;
+  if (deck.w !== deck.h) run.pool = run.pool.filter((id) => !SEALS[id].square);
   if (deck.items) for (const id of deck.items) giveItem(run, id, true);
   if (deck.seals) for (const id of deck.seals) addSeal(run, id, null);
   beginAnte(run);
@@ -186,7 +207,8 @@ function pickBoss(run, ante) {
   return id;
 }
 function rollVoucher(run) {
-  const pool = VOUCHER_ORDER.filter((id) => !run.vouchers[id] && (!VOUCHERS[id].req || run.vouchers[VOUCHERS[id].req]));
+  const dead = (id) => flag(run, 'noInterest') && VOUCHERS[id].mods && VOUCHERS[id].mods.interestCap != null;
+  const pool = VOUCHER_ORDER.filter((id) => !run.vouchers[id] && !dead(id) && (!VOUCHERS[id].req || run.vouchers[VOUCHERS[id].req]));
   return pool.length ? rndPick(run, 'shop', pool) : null;
 }
 function beginAnte(run) {
@@ -231,7 +253,7 @@ function startRound(run) {
   rd.inkMax = stat(run, 'inkMax');
   rd.ink = rd.inkMax;
   rd.ignites = stat(run, 'ignites');
-  rd.discards = stat(run, 'discards');
+  rd.discards = flag(run, 'noDiscard') ? 0 : stat(run, 'discards');
   if (rd.boss && BOSSES[rd.boss].start) BOSSES[rd.boss].start(run);
   for (const s of run.seals) { const d = SEALS[s.id]; if (d.roundStart) d.roundStart(run, s); }
   fillTray(run);
@@ -243,16 +265,32 @@ function drawOne(run) {
     const held = new Set(rd.tray.filter(Boolean).map((t) => t.uid));
     rd.draw = run.deck.map((p) => p.uid).filter((u) => !held.has(u));
     rndShuffle(run, 'shuffle', rd.draw);
+    // what a masterwork does to a block is settled when the bag is shuffled, so a look-ahead shows the truth
+    rd.pre = {};
+    const turn = flag(run, 'noRotate'), morph = flag(run, 'morph');
+    if (turn || morph) for (let i = rd.draw.length - 1; i >= 0; i--) {
+      const e = {};
+      if (turn) e.rot = rndInt(run, 'shuffle', 4);
+      if (morph && rnd(run, 'shuffle') < 1 / 3) e.sh = rndPick(run, 'shuffle', MORPH_SHAPES);
+      rd.pre[rd.draw[i]] = e;
+    }
   }
   if (!rd.draw.length) return null;
   const uid = rd.draw.pop();
   const t = { uid, rot: 0, flip: 0 };
-  if (flag(run, 'noRotate')) t.rot = rndInt(run, 'shuffle', 4);
-  if (flag(run, 'morph') && rnd(run, 'shuffle') < 1 / 3) {
-    t.sh = rndPick(run, 'shuffle', ['l5', 'j5', 'v5', 't5', 'p5', 'q5', 'u5', 'x5', 'w5', 'y5', 'n5', 'z5']);
+  const pre = rd.pre && rd.pre[uid];
+  if (pre) {
+    if (pre.rot != null) t.rot = pre.rot;
+    if (pre.sh) t.sh = pre.sh;
+    delete rd.pre[uid];
+  } else if (!rd.pre) {
+    // a sheet saved by an earlier version: decide on the spot
+    if (flag(run, 'noRotate')) t.rot = rndInt(run, 'shuffle', 4);
+    if (flag(run, 'morph') && rnd(run, 'shuffle') < 1 / 3) t.sh = rndPick(run, 'shuffle', MORPH_SHAPES);
   }
   return t;
 }
+const MORPH_SHAPES = ['l5', 'j5', 'v5', 't5', 'p5', 'q5', 'u5', 'x5', 'w5', 'y5', 'n5', 'z5'];
 function fillTray(run) {
   const rd = run.round;
   const size = stat(run, 'tray');
@@ -353,7 +391,7 @@ function flipTray(run, slot) {
 }
 function discardBlock(run, slot) {
   const rd = run.round;
-  if (run.phase !== 'round' || !slotUsable(run, slot) || rd.discards <= 0) return { ok: false };
+  if (run.phase !== 'round' || !slotUsable(run, slot) || rd.discards <= 0 || flag(run, 'noDiscard')) return { ok: false };
   rd.discards--; rd.discardsUsed++; run.stats.discards++;
   for (const s of run.seals) {
     if (rd.sealOff[s.uid]) continue;
@@ -366,7 +404,12 @@ function discardBlock(run, slot) {
 }
 function peekList(run, n) {
   const rd = run.round, out = [];
-  for (let i = rd.draw.length - 1; i >= 0 && out.length < n; i--) { const p = pieceByUid(run, rd.draw[i]); if (p) out.push(p); }
+  for (let i = rd.draw.length - 1; i >= 0 && out.length < n; i--) {
+    const p = pieceByUid(run, rd.draw[i]);
+    if (!p) continue;
+    const pre = (rd.pre && rd.pre[p.uid]) || {};
+    out.push({ uid: p.uid, shape: pre.sh || p.shape, ink: p.ink, enh: p.enh, rot: pre.rot || 0 });
+  }
   return out;
 }
 
@@ -432,7 +475,7 @@ function ignite(run) {
     const i = +k, c = B[i], x = i % w, y = Math.floor(i / w);
     const edge = x === 0 || y === 0 || x === w - 1 || y === h - 1;
     info[i] = {
-      idx: i, x, y, ink: c.ink, enh: c.enh, pid: c.pid, shape: c.shape, stone: !!c.stone,
+      idx: i, x, y, ink: c.ink, enh: c.enh, pid: c.pid, q: c.q || 0, shape: c.shape, stone: !!c.stone, live: 0,
       node: hit[k] >= 2, edge, corner: (x === 0 || x === w - 1) && (y === 0 || y === h - 1),
       center: x >= cx0 && x <= cx1 && y >= cy0 && y <= cy1, sq: run.paper[i] || null,
       dead: !!c.stone || (inkDead && c.ink === inkDead) || (edgeDead && edge),
@@ -440,6 +483,8 @@ function ignite(run) {
   }
   for (const st of strokes) {
     st.cells = st.idxs.map((i) => info[i]);
+    st.dead = (st.kind === 'row' && rowsDead) || (st.kind === 'col' && colsDead);
+    for (const c of st.cells) if (!c.dead && !st.dead) c.live++;
     let ink = null, pure = true;
     for (const c of st.cells) {
       if (c.stone) { pure = false; break; }
@@ -448,15 +493,16 @@ function ignite(run) {
     }
     st.pure = pure ? (ink || 'mo') : null;
   }
-  // aggregates
+  // aggregates: crossings are a matter of shape; inks and blocks are counted only where a cell really scores
   const inkCount = {}, pieces = [], seenP = {};
   let nodes = 0;
   for (const k in info) {
     const c = info[k];
     if (c.node) nodes++;
-    if (c.stone) continue;
+    if (!c.live) continue;
     inkCount[c.ink] = (inkCount[c.ink] || 0) + 1;
-    if (c.pid && !seenP[c.pid]) { seenP[c.pid] = 1; pieces.push({ pid: c.pid, shape: c.shape, ink: c.ink, enh: c.enh }); }
+    const pk = c.pid + '.' + c.q;
+    if (c.pid && !seenP[pk]) { seenP[pk] = 1; pieces.push({ pid: c.pid, q: c.q, shape: c.shape, ink: c.ink, enh: c.enh }); }
   }
   let empty = 0, clutter = 0, remain = 0;
   const strays = [];
@@ -471,7 +517,7 @@ function ignite(run) {
   const sc = {
     run, rd, w, h, char: pat.id, def, n, tier: pat.tier, lvl: pat.lvl, rows: L.rows, cols: L.cols, diags: L.diags, strokes,
     chips: pat.base.c, mult: pat.base.m, money: 0, tmp: {}, src: null, laters: [],
-    first: rd.igniteCount === 0, igniteIdx: rd.igniteCount, last: rd.ignites === 1,
+    first: rd.igniteCount === 0, igniteIdx: rd.igniteCount, last: rd.ignites === 1 && !(def.yi === 'ignite' && !rd.yiUsed[pat.id] && !pat.nul),
     isChar: pat.id !== 'sanbi', num: def.num || 0, nodes, empty, clutter, cleanAfter: remain === 0,
     inkCount, pieces, adjPairs: pr + pc, maxRun: Math.max(mr, mc),
     newRound: !rd.chars.includes(pat.id), newRun: !(run.charCounts[pat.id] > 0),
@@ -485,6 +531,7 @@ function ignite(run) {
   const nul = pat.nul;
   ev.push({ t: 'begin', char: pat.id, n, tier: pat.tier, lvl: pat.lvl, c: sc.chips, m: sc.mult, x: def.x, rows: L.rows, cols: L.cols, diags: L.diags, nul, newRun: sc.newRun });
   const seals = scoringSeals(run);
+  const splashed = {};
   let charX = def.x;
   if (!nul) {
     if (rd.buff > 0) { sc.src = { k: 'buff' }; sc.m(rd.buff); }
@@ -492,7 +539,7 @@ function ignite(run) {
     const once = {};
     for (const st of strokes) {
       ev.push({ t: 'stroke', si: st.si, kind: st.kind, i: st.i, idxs: st.idxs });
-      const lineDead = (st.kind === 'row' && rowsDead) || (st.kind === 'col' && colsDead);
+      const lineDead = st.dead;
       for (let pos = 0; pos < st.cells.length; pos++) {
         const c = st.cells[pos];
         if (c.dead || lineDead) { ev.push({ t: 'cell', si: st.si, i: c.idx, pos, rep: 0, dead: true }); continue; }
@@ -504,8 +551,8 @@ function ignite(run) {
           sc.c(CELL_CHIPS);
           if (c.enh === 'nong') sc.c(12);
           else if (c.enh === 'fei') sc.m(1);
-          else if (c.enh === 'po' && !once['po' + c.pid]) { once['po' + c.pid] = 1; sc.x(poSafe ? 2 : 1.5); }
-          else if (c.enh === 'sa' && !once['sa' + c.pid]) { once['sa' + c.pid] = 1; sc.cash(1); }
+          else if (c.enh === 'po' && !once['po' + c.pid + '.' + c.q]) { once['po' + c.pid + '.' + c.q] = 1; splashed[c.pid] = 1; sc.x(poSafe ? 2 : 1.5); }
+          else if (c.enh === 'sa' && !once['sa' + c.pid + '.' + c.q]) { once['sa' + c.pid + '.' + c.q] = 1; sc.cash(1); }
           if (c.sq) {
             sc.src = { k: 'sq', i: c.idx };
             if (c.sq === 'wusi') sc.c(25);
@@ -516,7 +563,7 @@ function ignite(run) {
           for (const e of seals) if (e.def.cell) { sc.src = { k: 'seal', u: e.u }; e.def.cell(sc, e.s, c, st, pos); }
         }
       }
-      if (st.pure && !lineDead && st.pure !== inkDead) {
+      if (st.pure && !lineDead && st.pure !== inkDead && st.cells.some((c) => c.live)) {
         ev.push({ t: 'pure', si: st.si, ink: st.pure });
         sc.src = { k: 'pure', si: st.si, ink: st.pure };
         if (st.pure === 'mo') sc.c(PURE.mo);
@@ -555,9 +602,11 @@ function ignite(run) {
   if (sc.cleanAfter) run.stats.clean++;
   // splash blocks may shatter
   if (!nul && !flag(run, 'poSafe')) {
-    for (const p of pieces) if (p.enh === 'po' && pieceByUid(run, p.pid) && run.deck.length > 4 && prob(run, 1, 4)) {
-      const i = run.deck.findIndex((q) => q.uid === p.pid);
-      run.deck.splice(i, 1);
+    // only a block whose splash really went off can shatter
+    for (const k of Object.keys(splashed)) {
+      const p = pieceByUid(run, +k);
+      if (!p || run.deck.length <= 4 || !prob(run, 1, 4)) continue;
+      run.deck.splice(run.deck.indexOf(p), 1);
       ev.push({ t: 'shatter', shape: p.shape, ink: p.ink });
     }
   }
@@ -569,7 +618,7 @@ function ignite(run) {
     const y = { t: 'yi', char: pat.id, yi: def.yi };
     switch (def.yi) {
       case 'ink': addInk(run, 16); break;
-      case 'discard': case 'sweep': rd.discards += 1; break;
+      case 'discard': case 'sweep': y.void = !addDiscards(run, 1); break;
       case 'money2': run.money += 2; run.stats.earned += 2; y.v = 2; break;
       case 'money4': run.money += 4; run.stats.earned += 4; y.v = 4; break;
       case 'tierUp': y.tier = 1 + rndInt(run, 'misc', TIER_MAX); levelUp(run, y.tier, 1); break;
@@ -579,7 +628,7 @@ function ignite(run) {
       case 'item': y.item = rndPick(run, 'misc', ITEM_POOL.filter((i) => !ITEMS[i].rare)); y.got = giveItem(run, y.item); break;
       case 'tie': y.item = rndPick(run, 'misc', TIE_IDS); y.got = giveItem(run, y.item); break;
       case 'peek': rd.tmp.peek = Math.max(rd.tmp.peek || 0, 5); break;
-      case 'wipe': { const cells = []; for (let i = 0; i < B.length; i++) if (B[i]) { B[i] = null; cells.push(i); } y.cells = cells; break; }
+      case 'wipe': { const cells = []; for (let i = 0; i < B.length; i++) if (B[i] && !B[i].stone) { B[i] = null; cells.push(i); } y.cells = cells; break; }
       case 'ignite': free = true; break;
       case 'allTier': for (let t = 1; t <= TIER_MAX; t++) levelUp(run, t, 1); break;
     }
@@ -595,10 +644,13 @@ function ignite(run) {
   // bookkeeping
   rd.igniteCount++;
   if (!free) rd.ignites--;
-  rd.chars.push(pat.id);
-  run.charCounts[pat.id] = (run.charCounts[pat.id] || 0) + 1;
-  run.tierCounts[pat.tier]++;
-  run.lastTier = pat.tier;
+  // a flourish that a masterwork voided wrote nothing: it is not remembered as a character
+  if (!nul) {
+    rd.chars.push(pat.id);
+    run.charCounts[pat.id] = (run.charCounts[pat.id] || 0) + 1;
+    run.tierCounts[pat.tier]++;
+    run.lastTier = pat.tier;
+  }
   rd.placedSince = 0; rd.lastPlaced = null;
   run.stats.ignites++;
   syncRound(run);

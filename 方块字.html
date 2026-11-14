@@ -215,7 +215,12 @@ body[data-o="l"] .seallist { flex-direction: column; overflow-y: auto; overflow-
 body[data-o="l"] .seallist::-webkit-scrollbar { display: none; }
 body[data-o="p"] .seallist { flex-direction: row; align-items: center; }
 .seal { display: flex; align-items: center; gap: 10px; border-radius: 9px; padding: 4px 6px; cursor: pointer; position: relative; min-width: 0; border: 1px solid transparent; transition: background 0.12s, transform 0.12s; touch-action: none; }
-body[data-o="l"] .seal { flex: 0 0 auto; min-height: 70px; }
+body[data-o="l"] .seal { flex: 0 0 auto; min-height: calc(var(--ss, 62px) + 8px); }
+body[data-o="l"] .seal .sealface { width: var(--ss, 62px); height: var(--ss, 62px); }
+.seallist.tightseals .seal { gap: 8px; }
+.seallist.tightseals .seal .st .d { display: none; }
+.seallist.tightseals .edtag { left: auto; right: 4px; top: 50%; transform: translateY(-50%); }
+.seallist.smallseals .edtag { font-size: 11px; padding: 0 3px; left: 50%; top: -8px; transform: translateX(-50%); }
 .seal:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.08); }
 .seal .sealface { flex: none; width: 62px; height: 62px; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
 body[data-o="p"] .seal { padding: 2px; }
@@ -439,6 +444,9 @@ body.touch .actbtn .k { display: none; }
 .pc:hover { transform: translateY(-2px); }
 .pc.sel { box-shadow: 0 0 0 3px var(--gold2), 0 0 18px rgba(243, 217, 139, 0.7), 0 3px 8px rgba(0, 0, 0, 0.4); transform: translateY(-4px); }
 .pc.gone { opacity: 0.32; }
+.pc.off { opacity: 0.3; filter: grayscale(0.7); cursor: not-allowed; }
+.pc.off:hover { transform: none; }
+img.keepimg { display: block; -webkit-touch-callout: default; -webkit-user-select: auto; user-select: auto; }
 .pc .tg { position: absolute; left: 4px; top: 2px; font-family: var(--f-kai); font-size: 14px; color: #7a2a1e; font-weight: 700; }
 .pc .cnt { position: absolute; right: 5px; bottom: 2px; font-family: var(--f-num); font-size: 14px; color: #5d4a34; }
 .inkrow { display: flex; gap: 14px; margin-bottom: 10px; flex-wrap: wrap; font-size: 17px; color: var(--dim); align-items: center; }
@@ -605,6 +613,8 @@ body[data-o="p"] .decks { grid-template-columns: repeat(4, 1fr); }
 
 /* rotate hint for very small landscape phones is not needed: the stage always fits */
 @media (prefers-reduced-motion: reduce) { .packart::after, #btn-ignite.ready, .boot-seal { animation: none; } }
+/* the in-game "reduce motion" switch: no looping glows, no sliding entrances */
+body.calm *, body.calm *::before, body.calm *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition-duration: 0.01ms !important; }
 
 /* ---------- English layout tweaks ---------- */
 html[lang="en"] .btn { letter-spacing: 0.01em; font-family: var(--f-num); }
@@ -1104,7 +1114,7 @@ CH.sanbi.g = '';
 
 // 字义 (a character's own meaning-effect, triggers the first time it is written each round)
 const YI = {
-  ink:     { dz: '汲水：回复 [k|16 墨]', de: 'Draw water: restore [k|16 Ink]' },
+  ink:     { dz: '汲水：添 [k|16 墨]', de: 'Draw water: [k|+16 Ink]' },
   discard: { dz: '川流：本局 [k|洗笔+1]', de: 'Flow: [k|+1 Rinse] this round' },
   sweep:   { dz: '洒扫：本局 [k|洗笔+1]', de: 'Sweep: [k|+1 Rinse] this round' },
   money2:  { dz: '所获：[g|+2 文]', de: 'Earnings: [g|+$2]' },
@@ -1113,8 +1123,8 @@ const YI = {
   tier2:   { dz: '上进：二画等级 [k|+1]', de: 'Ascend: the 2-stroke tier gains [k|+1 level]' },
   buff:    { dz: '日新：本局此后每次挥毫 [m|神+6]', de: 'Daybreak: [m|+6 Spirit] on every later flourish this round' },
   tray:    { dz: '洞察：本局 [k|笔架+1 格]', de: 'Insight: [k|+1 tray slot] this round' },
-  item:    { dz: '致用：获得一件随机文房', de: 'Put to use: gain a random studio item' },
-  tie:     { dz: '开卷：获得一张随机字帖', de: 'Open a book: gain a random copybook' },
+  item:    { dz: '致用：获得一件随机文房（须有空位）', de: 'Put to use: gain a random studio item (needs room)' },
+  tie:     { dz: '开卷：获得一张随机字帖（须有空位）', de: 'Open a book: gain a random copybook (needs room)' },
   peek:    { dz: '问卜：本局可预见接下来的 [k|5 块] 墨', de: 'Divine: foresee the next [k|5 blocks] this round' },
   wipe:    { dz: '拂拭：拭去纸上所有散墨', de: 'Wipe: clear all stray ink from the paper' },
   ignite:  { dz: '藏锋：本次挥毫不消耗次数', de: 'Concealed tip: this flourish is free' },
@@ -1252,7 +1262,7 @@ defSeal('cangfeng', '藏锋', 'Hidden Tip', 1, 4, {
   dz: '纸面[k|四边]上的格计分时 [c|形+8]', de: 'Cells on the [k|outer edge] of the sheet: [c|+8 Form]',
   cell(sc, s, c) { if (c.edge) sc.c(8); } });
 defSeal('sanfen', '入木三分', 'Three Tenths Into the Wood', 1, 5, {
-  dz: '写出恰为[k|三画]的字时 [m|神+10]', de: 'When you write a character of exactly [k|3 strokes]: [m|+10 Spirit]',
+  dz: '一次挥毫恰为[k|三画]时 [m|神+10]', de: 'When a flourish has exactly [k|3 strokes]: [m|+10 Spirit]',
   end(sc) { if (sc.n === 3) sc.m(10); } });
 defSeal('ximo', '惜墨如金', 'Ink Dear as Gold', 1, 5, {
   dz: '过关时每剩余 8 墨 [g|+1 文]（至多 6 文）', de: 'On clearing a sheet: [g|+$1] per 8 Ink left (up to $6)',
@@ -1269,7 +1279,7 @@ defSeal('yinshou', '引首章', 'Opening Seal', 1, 4, {
   dz: '写出[k|顶行]之横时 [m|神+10]', de: 'When the [k|top row] is one of your strokes: [m|+10 Spirit]',
   end(sc) { if (sc.rows.includes(0)) sc.m(10); } });
 defSeal('yaozhang', '腰章', 'Waist Seal', 1, 4, {
-  dz: '位于纸面[k|正中]的横与竖，每条 [c|形+40]', de: 'Each stroke through the [k|middle] of the sheet: [c|+40 Form]',
+  dz: '位于纸面[k|正中]的横与竖，每条 [c|形+40]', de: 'Each row or column stroke through the [k|middle] of the sheet: [c|+40 Form]',
   stroke(sc, s, st) {
     if (st.kind === 'row' && midLines(sc.h).includes(st.i)) sc.c(40);
     else if (st.kind === 'col' && midLines(sc.w).includes(st.i)) sc.c(40);
@@ -1288,7 +1298,7 @@ defSeal('changqiang', '长枪大戟', 'Long Spears, Great Halberds', 1, 5, {
   dz: '每块参与计分的[k|长笔]（四格以上的直块）[m|神+4]', de: 'Each [k|long straight block] (4+ cells) that scores: [m|+4 Spirit]',
   end(sc) { for (const p of sc.pieces) if (hasTag(p.shape, 'long')) sc.m(4); } });
 defSeal('baijun', '百钧弩发', 'Hundredweight Crossbow', 1, 5, {
-  dz: '每块参与计分的[k|折]、[k|钩]形墨块 [m|神+3]\n[n|《笔阵图》：折如百钧弩发]', de: 'Each [k|Bend] or [k|Hook] block that scores: [m|+3 Spirit]\n[n|"A turn is a crossbow of a hundred weights let loose."]',
+  dz: '每块参与计分的[k|折]、[k|钩]、[k|凹]形墨块 [m|神+3]\n[n|《笔阵图》：折如百钧弩发]', de: 'Each [k|Bend], [k|Hook] or [k|Hollow] block that scores: [m|+3 Spirit]\n[n|"A turn is a crossbow of a hundred weights let loose."]',
   end(sc) { for (const p of sc.pieces) if (hasTag(p.shape, 'corner')) sc.m(3); } });
 defSeal('kaimen', '开门红', 'Auspicious Start', 1, 4, {
   dz: '每局[k|首次]挥毫 [c|形+100]', de: 'Your [k|first] flourish each round: [c|+100 Form]',
@@ -1297,7 +1307,7 @@ defSeal('shoubi', '收笔', 'Closing Stroke', 1, 4, {
   dz: '用掉[k|最后一次]挥毫时 [m|神+20]', de: 'When you spend your [k|last] flourish: [m|+20 Spirit]',
   end(sc) { if (sc.last) sc.m(20); } });
 defSeal('bizhou', '敝帚自珍', 'A Cherished Old Broom', 1, 4, {
-  dz: (s) => `每局结束时此印售价 [g|+3 文]（当前售价 [g|${s ? sealSellValue(s) : 2} 文]）`, de: (s) => `Gains [g|+$3] sell value at the end of each round (now [g|$${s ? sealSellValue(s) : 2}])`,
+  dz: (s) => `每局结束时此印售价 [g|+3 文]${s ? `（当前售价 [g|${sealSellValue(s)} 文]）` : ''}`, de: (s) => `Gains [g|+$3] sell value at the end of each round${s ? ` (now [g|$${sealSellValue(s)}])` : ''}`,
   roundEnd(run, s) { s.bonus = (s.bonus || 0) + 3; } });
 defSeal('dianshi', '点石成金', 'Stone into Gold', 1, 5, {
   dz: (s, run) => `每个[jin|金]色格计分时有 ${oddsTxt(run, 1, 8)} 概率 [g|+1 文]（每次挥毫至多 5 文）`, de: (s, run) => `Each [jin|Gold] cell: ${oddsTxt(run, 1, 8)} chance of [g|+$1] (up to $5 per flourish)`,
@@ -1330,13 +1340,13 @@ defSeal('manzhi', '满纸云烟', 'A Sheet of Cloud and Mist', 2, 6, {
   dz: '挥毫时纸上每个未写入笔画的[k|散墨]格 [m|神+1]（至多 +30）', de: 'When you flourish: [m|+1 Spirit] for every [k|stray cell] outside your strokes (up to +30)',
   end(sc) { if (sc.clutter > 0) sc.m(Math.min(30, sc.clutter)); } });
 defSeal('qianjin', '一字千金', 'One Word, a Thousand Gold', 2, 6, {
-  dz: '写出[k|一画]的字（一、丨）时 [c|形+150] 并 [g|+2 文]', de: 'When you write a [k|1-stroke] character (一, 丨): [c|+150 Form] and [g|+$2]',
+  dz: '一次挥毫[k|只有一画]时 [c|形+150] 并 [g|+2 文]', de: 'When a flourish is a [k|single stroke]: [c|+150 Form] and [g|+$2]',
   end(sc) { if (sc.n === 1) { sc.c(150); sc.cash(2); } } });
 defSeal('suanchou', '算筹', 'Counting Rods', 2, 7, {
   dz: '写出[k|数字]时，[m|神]增加其数值\n[n|一 1 · 二 2 · 三 3 · 亖四 4 · 十 10 · 廿 20 · 卅 30 · 卌 40]', de: 'When you write a [k|numeral], add its value to [m|Spirit]\n[n|一 1 · 二 2 · 三 3 · 亖/四 4 · 十 10 · 廿 20 · 卅 30 · 卌 40]',
   end(sc) { if (sc.num) sc.m(sc.num); } });
 defSeal('shiquan', '十全十美', 'Perfect in Every Way', 2, 6, {
-  dz: '每个横竖相交的[k|交点] [m|神+3]（至多 16 个交点）', de: '[m|+3 Spirit] for every [k|crossing] of a row and a column (up to 16 crossings)',
+  dz: '每个笔画相交的[k|交点] [m|神+3]（至多 16 个交点）', de: '[m|+3 Spirit] for every [k|crossing] of two strokes (up to 16 crossings)',
   end(sc) { if (sc.nodes > 0) sc.m(3 * Math.min(16, sc.nodes)); } });
 defSeal('wuse', '墨分五色', 'Five Shades of Ink', 2, 7, {
   dz: '计分的格中含[k|三种]墨色 [x|神×1.5]；[k|四种]俱全 [x|神×2]', de: 'If the scored cells include [k|3 inks]: [x|×1.5 Spirit]; all [k|4 inks]: [x|×2 Spirit]',
@@ -1393,19 +1403,20 @@ defSeal('gongyu', '工欲善其事', 'First Sharpen the Tools', 2, 6, {
   roundStart(run, s) { s.st.used = false; },
   end(sc, s) {
     if (!s.st.used && (sc.char === 'gong' || sc.char === 'gan' || sc.char === 'tu')) {
+      if (sc.run.items.length >= stat(sc.run, 'itemSlots')) return;
       s.st.used = true; sc.say({ zh: '利其器', en: 'Tools ready' });
       sc.later((run) => giveItem(run, rndPick(run, 'misc', ITEM_POOL.filter((i) => !ITEMS[i].rare))));
     }
   } });
 defSeal('xinxi', '喜新厌旧', 'Love the New', 2, 7, {
-  dz: '写出本局[k|尚未写过]的字时 [x|神×1.75]', de: 'When you write a character [k|not yet written] this round: [x|×1.75 Spirit]',
-  end(sc) { if (sc.newRound) sc.x(1.75); } });
+  dz: '写出本局[k|尚未写过]的字时 [x|神×1.75]\n[n|散笔不算字]', de: 'When you write a character [k|not yet written] this round: [x|×1.75 Spirit]\n[n|A scribble is not a character]',
+  end(sc) { if (sc.newRound && sc.isChar) sc.x(1.75); } });
 defSeal('wengu', '温故知新', 'Review the Old', 2, 7, {
-  dz: '写出本局[k|已写过]的字时 [x|神×2]', de: 'When you write a character [k|already written] this round: [x|×2 Spirit]',
-  end(sc) { if (!sc.newRound) sc.x(2); } });
+  dz: '写出本局[k|已写过]的字时 [x|神×2]\n[n|散笔不算字]', de: 'When you write a character [k|already written] this round: [x|×2 Spirit]\n[n|A scribble is not a character]',
+  end(sc) { if (!sc.newRound && sc.isChar) sc.x(2); } });
 defSeal('shuneng', '熟能生巧', 'Practice Makes Perfect', 2, 6, {
-  dz: '同一个字此卷每多写过一次，写它时 [c|形+15]', de: 'A character gains [c|+15 Form] for every earlier time you wrote it this run',
-  end(sc) { const k = sc.run.charCounts[sc.char] || 0; if (k > 0) sc.c(15 * k); } });
+  dz: '同一个字此卷每多写过一次，写它时 [c|形+15]\n[n|散笔不算字]', de: 'A character gains [c|+15 Form] for every earlier time you wrote it this run\n[n|A scribble is not a character]',
+  end(sc) { const k = sc.isChar ? sc.run.charCounts[sc.char] || 0 : 0; if (k > 0) sc.c(15 * k); } });
 defSeal('wanguan', '腰缠万贯', 'Girded with Strings of Cash', 2, 7, {
   dz: (s, run) => `每持有 8 文 [m|神+2]（至多 +30）${run ? `\n[n|当前 +${Math.min(30, 2 * Math.floor(Math.max(0, run.money) / 8))}]` : ''}`,
   de: (s, run) => `[m|+2 Spirit] per $8 you hold (up to +30)${run ? `\n[n|Now +${Math.min(30, 2 * Math.floor(Math.max(0, run.money) / 8))}]` : ''}`,
@@ -1415,7 +1426,7 @@ defSeal('yaji', '文人雅集', 'Gathering of Scholars', 2, 6, {
 defSeal('xiong', '胸有成竹', 'Bamboo Fully Formed in the Mind', 2, 5, {
   dz: '可预见接下来的 [k|3 块] 墨', de: 'Foresee the next [k|3 blocks]', mods: { peek: 3 } });
 defSeal('jinghua', '镜花水月', 'Flower in the Mirror', 2, 5, {
-  dz: '可以[k|镜像翻转]墨块', de: 'You may [k|mirror-flip] blocks', mods: { flip: 1 } });
+  dz: '可以[k|镜像翻转]墨块\n[n|点墨块下方的「翻」，或按 F]', de: 'You may [k|mirror-flip] blocks\n[n|Tap “Flip” under a block, or press F]', mods: { flip: 1 } });
 defSeal('kubi', '枯笔', 'Dry Brush', 2, 7, {
   dz: '[k|墨量−25]\n[x|神×1.75]', de: '[k|−25 Ink] each round\n[x|×1.75 Spirit]', mods: { inkMax: -25 },
   end(sc) { sc.x(1.75); } });
@@ -1435,9 +1446,9 @@ defSeal('jinshang', '锦上添花', 'Flowers upon Brocade', 2, 7, {
   dz: '落在[k|纸格]（乌丝栏、朱丝栏、云纹笺等）上的格再触发一次', de: 'Cells lying on a [k|special square] of your paper trigger once more',
   retrig(sc, s, c) { return c.sq ? 1 : 0; } });
 defSeal('shaoer', '少而精', 'Few but Fine', 2, 6, {
-  dz: (s, run) => `墨匣中每比 32 块少一块 [m|神+2]${run ? `\n[n|当前 +${2 * Math.max(0, 32 - run.deck.length)}]` : ''}`,
-  de: (s, run) => `[m|+2 Spirit] for each block fewer than 32 in your Ink Box${run ? `\n[n|Now +${2 * Math.max(0, 32 - run.deck.length)}]` : ''}`,
-  end(sc) { const v = 2 * Math.max(0, 32 - sc.run.deck.length); if (v > 0) sc.m(v); } });
+  dz: (s, run) => `墨匣中每比开卷时少一块 [m|神+2]${run ? `\n[n|开卷 ${run.deck0 || 32} 块，当前 +${2 * Math.max(0, (run.deck0 || 32) - run.deck.length)}]` : ''}`,
+  de: (s, run) => `[m|+2 Spirit] for each block fewer than your Ink Box began with${run ? `\n[n|Began with ${run.deck0 || 32}; now +${2 * Math.max(0, (run.deck0 || 32) - run.deck.length)}]` : ''}`,
+  end(sc) { const v = 2 * Math.max(0, (sc.run.deck0 || 32) - sc.run.deck.length); if (v > 0) sc.m(v); } });
 defSeal('juechu', '绝处逢生', 'Life at the Edge of Death', 2, 5, {
   dz: '挥毫用尽而未过关时，若得分已达目标的[k|一半]，仍算过关；此印随即销毁', de: 'If you run out of flourishes with at least [k|half] the target, you pass anyway; this seal is then destroyed',
   rescue: true });
@@ -1458,16 +1469,16 @@ defSeal('lianmian', '连绵不绝', 'Unbroken', 2, 7, {
   dz: '每一对[k|相邻]的并列笔画 [m|神+6]', de: '[m|+6 Spirit] for every pair of [k|adjacent] parallel strokes',
   end(sc) { if (sc.adjPairs > 0) sc.m(6 * sc.adjPairs); } });
 defSeal('luoyang', '洛阳纸贵', 'Paper Grows Dear in Luoyang', 2, 6, {
-  dz: '过关时，本局每写出一个不同的字 [g|+1 文]（至多 5 文）', de: 'On clearing a sheet: [g|+$1] for each different character written this round (up to $5)',
-  payout(run) { return Math.min(5, new Set(run.round.chars).size); } });
+  dz: '过关时，本局每写出一个不同的字 [g|+1 文]（至多 5 文）\n[n|散笔不算字]', de: 'On clearing a sheet: [g|+$1] for each different character written this round (up to $5)\n[n|A scribble is not a character]',
+  payout(run) { return Math.min(5, new Set(run.round.chars.filter((c) => c !== 'sanbi')).size); } });
 defSeal('xiongwu', '胸无点墨', 'Not a Drop of Ink Within', 2, 6, {
   dz: '挥毫时[k|墨已用尽]（剩余 0）则 [x|神×3]', de: 'If you flourish with [k|no Ink left] (exactly 0): [x|×3 Spirit]',
   end(sc) { if (sc.rd.ink === 0) sc.x(3); } });
 defSeal('chengshuang', '好事成双', 'Good Things Come in Pairs', 2, 6, {
-  dz: '写出恰为[k|二画]的字时 [x|神×2]', de: 'When you write a character of exactly [k|2 strokes]: [x|×2 Spirit]',
+  dz: '一次挥毫恰为[k|二画]时 [x|神×2]', de: 'When a flourish has exactly [k|2 strokes]: [x|×2 Spirit]',
   end(sc) { if (sc.n === 2) sc.x(2); } });
 defSeal('wuche', '学富五车', 'Five Cartloads of Learning', 2, 6, {
-  dz: '写出[k|五画以上]的字时 [m|神+15]', de: 'When you write a character of [k|5+ strokes]: [m|+15 Spirit]',
+  dz: '一次挥毫达[k|五画以上]时 [m|神+15]', de: 'When a flourish has [k|5 or more strokes]: [m|+15 Spirit]',
   end(sc) { if (sc.n >= 5) sc.m(15); } });
 defSeal('liushu', '六书', 'The Six Scripts', 2, 7, {
   dz: (s, run) => `此卷已写出 [k|6 个]不同的字时 [x|神×1.5]；[k|12 个]时 [x|神×2]${run ? `\n[n|已写出 ${distinctChars(run)} 个]` : ''}`,
@@ -1480,6 +1491,7 @@ defSeal('xijin', '洗尽铅华', 'All Powder Washed Away', 2, 6, {
   dz: (s) => `每次洗笔，本局 [m|神+4]${s && s.st.m ? `（本局 [m|+${s.st.m}]）` : ''}`, de: (s) => `Each rinse: [m|+4 Spirit] for the rest of the round${s && s.st.m ? ` (now [m|+${s.st.m}])` : ''}`,
   init(s) { s.st.m = 0; },
   roundStart(run, s) { s.st.m = 0; },
+  roundEnd(run, s) { s.st.m = 0; },
   discard(run, s) { s.st.m += 4; },
   end(sc, s) { if (s.st.m > 0) sc.m(s.st.m); } });
 defSeal('toubi', '投笔从戎', 'Cast Aside the Brush', 2, 6, {
@@ -1489,7 +1501,7 @@ defSeal('toubi', '投笔从戎', 'Cast Aside the Brush', 2, 6, {
 defSeal('pomo', '泼墨山水', 'Splashed-Ink Landscape', 2, 6, {
   dz: '[k|泼墨]块不再碎裂，其倍率由 ×1.5 提升为 [x|×2]', de: '[k|Splash] blocks never shatter and give [x|×2] instead of ×1.5', flags: { poSafe: 1 } });
 defSeal('jinsheng', '金声玉振', 'Bronze Bell, Jade Chime', 2, 7, {
-  dz: '本次挥毫中每获得 1 文 [m|神+3]\n[n|只计算排在它左侧已结算的润笔]', de: '[m|+3 Spirit] for every $1 earned during this flourish\n[n|Counts only what has been paid before this seal triggers]',
+  dz: '本次挥毫中每获得 1 文 [m|神+3]\n[n|只计算在它触发之前已到手的润笔]', de: '[m|+3 Spirit] for every $1 earned during this flourish\n[n|Counts only what has been paid before this seal triggers]',
   end(sc) { if (sc.money > 0) sc.m(3 * sc.money); } });
 defSeal('zhumo', '朱墨套印', 'Red-and-Black Printing', 2, 6, {
   dz: '计分的格中同时有[zhu|朱]与[mo|墨]时 [x|神×1.5]', de: 'If the scored cells include both [zhu|Vermilion] and [mo|Black]: [x|×1.5 Spirit]',
@@ -1516,13 +1528,14 @@ defSeal('sansheng', '三生万物', 'Three Begets All Things', 3, 8, {
   de: (s) => `Write [k|一], [k|二], [k|三] in that order within a round: from the 三 onward, every flourish this round gets [x|×4 Spirit]${s && s.st.p ? `\n[n|Progress: ${Math.min(3, s.st.p)}/3]` : ''}`,
   init(s) { s.st.p = 0; },
   roundStart(run, s) { s.st.p = 0; },
+  roundEnd(run, s) { s.st.p = 0; },
   end(sc, s) {
     const want = ['yi', 'er', 'san'][s.st.p];
     if (s.st.p < 3 && sc.char === want) { s.st.p++; if (s.st.p < 3) sc.say({ zh: ['', '道生一', '一生二'][s.st.p], en: ['', 'One', 'Two'][s.st.p] }); }
     if (s.st.p >= 3) sc.x(4);
   } });
 defSeal('linmo', '临摹', 'Faithful Copy', 3, 9, {
-  dz: (s, run) => `复制[k|右侧]那枚印的能力${copyNote(s, run, 'zh')}`, de: (s, run) => `Copies the ability of the seal to its [k|right]${copyNote(s, run, 'en')}`,
+  dz: (s, run) => `临摹排在它[k|后一位]的印：复制其[k|计分]时的能力${copyNote(s, run, 'zh')}`, de: (s, run) => `Copies the [k|scoring] ability of the seal placed [k|right after] it${copyNote(s, run, 'en')}`,
   copy: 'right' });
 defSeal('shenlai', '神来之笔', 'A Stroke of Genius', 3, 8, {
   dz: (s, run) => `每次挥毫有 ${oddsTxt(run, 1, 3)} 概率 [x|神×4]`, de: (s, run) => `Every flourish: ${oddsTxt(run, 1, 3)} chance of [x|×4 Spirit]`,
@@ -1532,8 +1545,8 @@ defSeal('yichui', '一锤定音', 'One Stroke of the Gavel', 3, 9, {
   mod(run, s, key, v) { return key === 'ignites' ? 1 : v; },
   end(sc) { sc.x(5); } });
 defSeal('langhao', '狼毫', 'Wolf-hair Brush', 3, 8, {
-  dz: '两条[k|对角线]填满时也成笔画：[k|撇]与[k|捺]\n[n|可写出 丿 乀 乂 米]', de: 'A filled main [k|diagonal] also becomes a stroke\n[n|Unlocks the characters 丿 乀 乂 米]',
-  mods: { diag: 1 } });
+  dz: '两条[k|对角线]填满时也成笔画：[k|撇]与[k|捺]\n[n|可写出 丿 乀 乂 米]', de: 'A filled [k|diagonal], either one, also becomes a stroke\n[n|Unlocks the characters 丿 乀 乂 米]',
+  mods: { diag: 1 }, square: true });
 defSeal('bamian', '八面出锋', 'A Tip on All Eight Sides', 3, 8, {
   dz: '纸面[k|四条边线]每写出一条 [x|神×1.3]', de: '[x|×1.3 Spirit] for each of the sheet\'s [k|four border lines] among your strokes',
   end(sc) {
@@ -1565,7 +1578,7 @@ defSeal('yisi', '一丝不苟', 'Not One Thread Out of Place', 3, 8, {
   dz: '所有笔画皆为[k|纯色]时 [x|神×2.5]', de: 'If every stroke is [k|pure] in ink: [x|×2.5 Spirit]',
   end(sc) { if (sc.strokes.every((st) => st.pure)) sc.x(2.5); } });
 defSeal('shina', '十拿九稳', 'Nine Chances in Ten', 3, 7, {
-  dz: '所有[k|概率]翻倍\n[n|1/4 变为 2/4]', de: 'All listed [k|chances] are doubled\n[n|1 in 4 becomes 2 in 4]', mods: { probMul: 1 } });
+  dz: '印与墨性上标明的[k|概率]全部翻倍\n[n|1/4 变为 2/4；名帖不受影响]', de: 'Every [k|chance] listed on a seal or an ink nature is doubled\n[n|1 in 4 becomes 2 in 4; masterworks are not affected]', mods: { probMul: 1 } });
 
 // ================= 田黄 · legendary =================
 defSeal('xizhi', '王羲之', 'Wang Xizhi', 4, 20, {
@@ -1581,7 +1594,7 @@ defSeal('huaisu', '怀素', 'Huaisu', 4, 20, {
   dz: '写出[k|散笔]时，[x|神×笔画数]\n[n|狂来轻世界，醉里得真如]', de: 'When you write a [k|scribble]: [x|× its stroke count]\n[n|The wild monk of cursive script]',
   end(sc) { if (!sc.isChar && sc.n >= 2) sc.x(sc.n); } });
 defSeal('mifu', '米芾', 'Mi Fu', 4, 20, {
-  dz: '每次挥毫后回复 [k|笔画数×4] 的墨\n[n|米颠刷字，八面出锋]', de: 'After every flourish, restore Ink equal to [k|4 × strokes]\n[n|"Others write; Mi Fu sweeps."]',
+  dz: '每次挥毫后添 [k|笔画数×4] 的墨\n[n|米颠刷字，八面出锋]', de: 'After every flourish, gain Ink equal to [k|4 × strokes]\n[n|"Others write; Mi Fu sweeps."]',
   end(sc) { const v = 4 * sc.n; sc.say({ zh: `回墨 ${v}`, en: `+${v} Ink` }); sc.later((run) => addInk(run, v)); } });
 defSeal('zhangxu', '张旭', 'Zhang Xu', 4, 20, {
   dz: '每次挥毫 [x|神×2 至 ×6]（随机）\n[n|脱帽露顶王公前，挥毫落纸如云烟]', de: 'Every flourish: [x|×2 to ×6 Spirit] at random\n[n|The drunken Sage of Cursive]',
@@ -1593,8 +1606,10 @@ defSeal('weifuren', '卫夫人', 'Lady Wei', 4, 20, {
 function copyNote(s, run, lang) {
   if (!s || !run) return '';
   const t = copyTarget(run, s);
-  if (!t) return lang === 'zh' ? '\n[n|右侧无可复制之印]' : '\n[n|Nothing to copy]';
-  return lang === 'zh' ? `\n[n|当前复制：${SEALS[t.id].zh}]` : `\n[n|Copying: ${SEALS[t.id].en}]`;
+  if (!t) return lang === 'zh' ? '\n[n|其后没有可临摹的印]' : '\n[n|Nothing after it to copy]';
+  const d = SEALS[t.id];
+  if (!(d.retrig || d.cell || d.stroke || d.end || d.charX)) return lang === 'zh' ? `\n[n|「${d.zh}」不在计分时起效，无从临摹]` : `\n[n|${d.en} does nothing while scoring: nothing to copy]`;
+  return lang === 'zh' ? `\n[n|当前临摹：${d.zh}]` : `\n[n|Copying: ${d.en}]`;
 }
 
 // 拓 (editions of a seal); `te` is the short English label shown on the corner tag
@@ -1626,7 +1641,7 @@ for (let t = 1; t <= TIER_MAX; t++) {
     },
     de: (run) => {
       const lv = run ? run.tiers[t] : 1, b = tierBase(t, lv), tr = TIERS[t], k = 1 + (run ? stat(run, 'tieBonus') : 0);
-      return `[k|${TIER_NAME.en[t]}] characters gain [k|+${k} level${k > 1 ? 's' : ''}]\n[n|Now Lv.${lv}: ${b.c} Form × ${b.m} Spirit · each level +${tr.dc} / +${tr.dm}]`;
+      return `Characters of [k|${TIER_NAME.en[t]}] gain [k|+${k} level${k > 1 ? 's' : ''}]\n[n|Now Lv.${lv}: ${b.c} Form × ${b.m} Spirit · each level +${tr.dc} / +${tr.dm}]`;
     },
     use(run) { levelUp(run, t, 1 + stat(run, 'tieBonus')); return true; } });
 }
@@ -1634,18 +1649,19 @@ const TIE_IDS = range(TIER_MAX).map((i) => 'tie' + (i + 1));
 
 // --- pigments: recolour blocks
 const dye = (ink) => function (run, tg) { for (const u of tg.pieces) { const p = pieceByUid(run, u); if (p) p.ink = ink; } return true; };
+const notInk = (ink) => (p) => p.ink !== ink;
 defItem('zhusha', '朱砂', 'Cinnabar', 'wen', 3, { need: { t: 'pieces', max: 3 },
-  dz: '将墨匣中至多 [k|3 块] 墨染为[zhu|朱]色', de: 'Dye up to [k|3 blocks] in your Ink Box [zhu|Vermilion]', use: dye('zhu') });
+  dz: '将墨匣中至多 [k|3 块] 墨染为[zhu|朱]色', de: 'Dye up to [k|3 blocks] in your Ink Box [zhu|Vermilion]', use: dye('zhu'), ok: notInk('zhu') });
 defItem('shiqing', '石青', 'Azurite', 'wen', 3, { need: { t: 'pieces', max: 3 },
-  dz: '将墨匣中至多 [k|3 块] 墨染为[qing|青]色', de: 'Dye up to [k|3 blocks] in your Ink Box [qing|Azure]', use: dye('qing') });
+  dz: '将墨匣中至多 [k|3 块] 墨染为[qing|青]色', de: 'Dye up to [k|3 blocks] in your Ink Box [qing|Azure]', use: dye('qing'), ok: notInk('qing') });
 defItem('nijin', '泥金', 'Gold Paste', 'wen', 3, { need: { t: 'pieces', max: 3 },
-  dz: '将墨匣中至多 [k|3 块] 墨染为[jin|金]色', de: 'Dye up to [k|3 blocks] in your Ink Box [jin|Gold]', use: dye('jin') });
+  dz: '将墨匣中至多 [k|3 块] 墨染为[jin|金]色', de: 'Dye up to [k|3 blocks] in your Ink Box [jin|Gold]', use: dye('jin'), ok: notInk('jin') });
 defItem('songyan', '松烟', 'Pine Soot', 'wen', 3, { need: { t: 'pieces', max: 3 },
-  dz: '将墨匣中至多 [k|3 块] 墨染为[mo|墨]色', de: 'Dye up to [k|3 blocks] in your Ink Box [mo|Black]', use: dye('mo') });
+  dz: '将墨匣中至多 [k|3 块] 墨染为[mo|墨]色', de: 'Dye up to [k|3 blocks] in your Ink Box [mo|Black]', use: dye('mo'), ok: notInk('mo') });
 // --- ink natures
 const enhance = (e) => function (run, tg) { for (const u of tg.pieces) { const p = pieceByUid(run, u); if (p) p.enh = e; } return true; };
 const enhItem = (id, zh, en, e, max, w) => defItem(id, zh, en, 'wen', 3, { need: { t: 'pieces', max }, w: w || 1, enh: e,
-  dz: `赋予墨匣中至多 [k|${max} 块] 墨[k|「${ENH[e].zh}」]之性\n[n|${plain(ENH[e].dz)}]`, de: `Give up to [k|${max} block${max > 1 ? 's' : ''}] in your Ink Box the [k|${ENH[e].en}] nature\n[n|${plain(ENH[e].de)}]`, use: enhance(e) });
+  dz: `赋予墨匣中至多 [k|${max} 块] 墨[k|「${ENH[e].zh}」]之性\n[n|${plain(ENH[e].dz)}]`, de: `Give up to [k|${max} block${max > 1 ? 's' : ''}] in your Ink Box the [k|${ENH[e].en}] nature\n[n|${plain(ENH[e].de)}]`, use: enhance(e), ok: (p) => p.enh !== e });
 enhItem('e_nong', '浓墨', 'Thick Ink', 'nong', 2);
 enhItem('e_fei', '飞白', 'Flying White', 'fei', 2);
 enhItem('e_po', '泼墨', 'Splashed Ink', 'po', 1, 0.8);
@@ -1663,6 +1679,7 @@ defItem('kedao', '刻刀', 'Carving Knife', 'wen', 3, { need: { t: 'pieces', max
   use(run, tg) { let ok = false; for (const u of tg.pieces) { if (run.deck.length <= 8) break; removePiece(run, u); ok = true; } return ok; } });
 defItem('jiechi', '戒尺', 'The Ruler', 'wen', 3, { need: { t: 'pieces', max: 2, min: 1 },
   dz: '将墨匣中至多 2 块墨[k|捋直]：变为同格数的直笔', de: '[k|Straighten] up to 2 blocks: each becomes a straight stroke of the same size',
+  ok: (p) => !SHAPES[p.shape].tags.includes('straight'),
   use(run, tg) { for (const u of tg.pieces) { const p = pieceByUid(run, u); if (p) p.shape = straightOf(SHAPES[p.shape].n); } return true; } });
 defItem('suimo', '碎墨', 'Crushed Ink', 'wen', 3, { need: { t: 'pieces', max: 1, min: 1 },
   dz: '将墨匣中的 1 块墨碾碎，化为 [k|2 个「点」]（同墨色）', de: 'Crush 1 block into [k|2 Dots] of the same ink',
@@ -1678,7 +1695,7 @@ sqItem('g_sajin', '洒金笺', 'Gold-Flecked Paper', 'sajin', 0.8);
 sqItem('g_die', '叠影格', 'Echo Square', 'die', 0.6);
 // --- in-round tools
 defItem('yanmo', '墨锭', 'Ink Stick', 'wen', 3, { round: true,
-  dz: '研墨：本局回复 [k|25 墨]', de: 'Grind fresh ink: restore [k|25 Ink] this round',
+  dz: '研墨：本局添 [k|25 墨]\n[n|可以超出墨量上限]', de: 'Grind fresh ink: [k|+25 Ink] this round\n[n|May go above your maximum]',
   use(run) { addInk(run, 25); return true; } });
 defItem('dianjing_i', '点睛笔', 'Eye-Dotting Brush', 'wen', 4, { round: true, need: { t: 'cell', empty: true },
   dz: '在纸上任选一个空格，点上一格[k|留白]之墨（不耗墨）', de: 'Fill any one empty square with a [k|Blank] cell (costs no Ink)',
@@ -1705,11 +1722,13 @@ defItem('huifeng_i', '回锋笔', 'Return-Tip Brush', 'wen', 4, { round: true, w
   use(run) { run.round.ignites += 1; return true; } });
 defItem('xiyan', '洗砚水', 'Inkstone Rinse', 'wen', 3, { round: true,
   dz: '本局 [k|洗笔+2]', de: '[k|+2 Rinses] this round',
-  use(run) { run.round.discards += 2; return true; } });
+  can(run) { return !flag(run, 'noDiscard'); },
+  use(run) { return addDiscards(run, 2); } });
 // --- fortune
 defItem('runge', '润格', 'Price List', 'wen', 3, { w: 0.8,
   dz: (run) => `润笔翻倍（至多 [g|+20 文]）${run ? `\n[n|现在使用可得 ${Math.min(20, Math.max(0, run.money))} 文]` : ''}`,
   de: (run) => `Double your money (up to [g|+$20])${run ? `\n[n|Would give $${Math.min(20, Math.max(0, run.money))} now]` : ''}`,
+  can(run) { return run.money > 0; },
   use(run) { run.money += Math.min(20, Math.max(0, run.money)); return true; } });
 defItem('xinde', '心得', 'Reflections', 'wen', 3, {
   dz: (run) => `你最近写出的字所属的画数等级 [k|+1]${run && run.lastTier ? `\n[n|当前：${TIER_NAME.zh[run.lastTier]}]` : ''}`,
@@ -1848,7 +1867,7 @@ defBoss('kuaixue', '快雪时晴帖', 'Clearing After Snow', 1, {
   dz: '[k|墨量−25]\n[n|全帖仅二十八字]', de: '[k|−25 Ink]\n[n|The whole letter is only twenty-eight characters]', mods: { inkMax: -25 } });
 defBoss('pingfu', '平复帖', 'Letter on Recovery', 1, {
   author: { zh: '西晋 · 陆机', en: 'Lu Ji, Western Jin' },
-  dz: '纸上有 [k|3 处虫蛀]：无法落墨，其所在的行与列写不成笔画', de: 'The sheet has [k|3 wormholes]: their rows and columns can never be completed',
+  dz: '纸上有 [k|3 处虫蛀]：无法落墨，其所在的行与列写不成笔画', de: '[k|3 wormholes] take no ink: their rows and columns can never be completed',
   start(run) { scatter(run, 3, (i) => { run.round.holes[i] = 1; }, true); } });
 defBoss('sangluan', '丧乱帖', 'Letter in Turmoil', 1, {
   author: { zh: '东晋 · 王羲之', en: 'Wang Xizhi, Eastern Jin' },
@@ -1898,7 +1917,7 @@ defBoss('cuan', '爨宝子碑', 'Stele of Cuan Baozi', 3, {
   dz: '入架的墨块有 [k|1/3 概率]变为五格的异形块\n[n|非隶非楷，奇古难名]', de: 'Each block drawn has a [k|1 in 3 chance] of turning into a strange five-cell shape\n[n|Neither clerical nor regular: odd and ancient]', flags: { morph: 1 } });
 defBoss('liqi', '礼器碑', 'Stele of Ritual Vessels', 3, {
   author: { zh: '东汉 · 佚名', en: 'Anonymous, Eastern Han' },
-  dz: '[k|最左侧]的印在本局失效', de: 'Your [k|leftmost] seal is disabled this round', flags: { sealOff: 'left' } });
+  dz: '排在[k|首位]的印在本局失效', de: 'Your [k|first] seal is disabled this round', flags: { sealOff: 'left' } });
 defBoss('shiqi', '十七帖', 'The Seventeen Letters', 3, {
   author: { zh: '东晋 · 王羲之', en: 'Wang Xizhi, Eastern Jin' },
   dz: '本局至多落下 [k|17 块]墨', de: 'You may place at most [k|17 blocks] this round', flags: { pieceLimit: 17 } });
@@ -1927,7 +1946,7 @@ defBoss('yihe', '瘗鹤铭', 'Crane Burial Inscription', 4, {
 // finishers: the three greatest works in running script
 defBoss('lanting', '兰亭集序', 'Preface to the Orchid Pavilion', 8, {
   fin: true, author: { zh: '东晋 · 王羲之 · 天下第一行书', en: 'Wang Xizhi — "the finest running script under heaven"' },
-  dz: '本局[k|重复]写出的字不计分\n[n|二十余「之」字，无一雷同]', de: 'A character [k|repeated] within this round scores nothing\n[n|It writes 之 more than twenty times — never twice alike]', flags: { noRepeat: 1 } });
+  dz: '本局[k|重复]写出的字不计分（散笔亦然）\n[n|二十余「之」字，无一雷同]', de: 'A character [k|repeated] this round scores nothing (scribbles too)\n[n|It writes 之 more than twenty times — never twice alike]', flags: { noRepeat: 1 } });
 defBoss('jizhi', '祭侄文稿', 'Requiem for My Nephew', 8, {
   fin: true, author: { zh: '唐 · 颜真卿 · 天下第二行书', en: 'Yan Zhenqing — the second finest running script' },
   dz: '每落下 [k|3 块]墨，纸上便多一处[k|涂改]（顽石）\n[n|悲愤所至，涂抹满纸]', de: 'Every [k|3 blocks] you place, a [k|blot] (stone) appears on the sheet\n[n|Written in grief and fury, crossed out again and again]',
@@ -1943,7 +1962,7 @@ defBoss('jizhi', '祭侄文稿', 'Requiem for My Nephew', 8, {
   } });
 defBoss('hanshi', '寒食帖', 'Cold Food Observance', 8, {
   fin: true, author: { zh: '北宋 · 苏轼 · 天下第三行书', en: 'Su Shi — the third finest running script' },
-  dz: '[k|无法洗笔]，且 [k|墨量−20]\n[n|空庖煮寒菜，破灶烧湿苇]', de: '[k|No rinses], and [k|−20 Ink]\n[n|"In an empty kitchen I boil cold greens; in a broken stove I burn wet reeds."]', mods: { discards: -99, inkMax: -20 } });
+  dz: '[k|无法洗笔]，且 [k|墨量−20]\n[n|空庖煮寒菜，破灶烧湿苇]', de: '[k|No rinses], and [k|−20 Ink]\n[n|"In an empty kitchen I boil cold greens; in a broken stove I burn wet reeds."]', flags: { noDiscard: 1 }, mods: { inkMax: -20 } });
 
 // ---------- 书体 (starting decks) ----------
 const DECKS = {};
@@ -2002,13 +2021,13 @@ const STAKES = [
   { zh: '举人', en: 'Provincial Graduate', dz: '目标分数更高，且越往后越高', de: 'Higher targets, growing faster as the run goes on', flags: { scale: [1.25, 0.1] } },
   { zh: '贡士', en: 'Tribute Scholar', dz: '每局 墨量−10', de: '−10 Ink every round', mods: { inkMax: -10 } },
   { zh: '进士', en: 'Metropolitan Graduate', dz: '每局 洗笔−1', de: '−1 Rinse every round', mods: { discards: -1 } },
-  { zh: '探花', en: 'Third Laureate', dz: '铺中货物贵两成', de: 'Shop prices rise by 20%', mods: { discount: -20 } },
+  { zh: '探花', en: 'Third Laureate', dz: '铺中货物贵两成', de: 'Shop prices rise by 20%', mods: { markup: 20 } },
   { zh: '榜眼', en: 'Second Laureate', dz: '目标分数再度提高', de: 'Targets rise again, and steeply', flags: { scale: [1.5, 0.2] } },
   { zh: '状元', en: 'First Laureate', dz: '名帖的目标为平常的 1.4 倍', de: 'Masterwork targets ×1.4', flags: { bossMul: 1.4 } },
 ];
 const BASE_STATS = {
   inkMax: 100, ignites: 4, discards: 3, tray: 3, sealSlots: 5, itemSlots: 2, interestCap: 5, shopSlots: 2,
-  discount: 0, rerollOff: 0, freeRerolls: 0, peek: 0, flip: 0, diag: 0, costAdd: 0, probMul: 1, tieBonus: 0, edRate: 0,
+  discount: 0, markup: 0, rerollOff: 0, freeRerolls: 0, peek: 0, flip: 0, diag: 0, costAdd: 0, probMul: 1, tieBonus: 0, edRate: 0,
 };
 
 // ---------- engine: state, stats, the sheet, and scoring ----------
@@ -2047,7 +2066,8 @@ function stat(run, key) {
   if (key === 'ignites' || key === 'tray') return Math.max(1, v);
   if (key === 'discards' || key === 'itemSlots' || key === 'shopSlots' || key === 'freeRerolls' || key === 'peek') return Math.max(0, v);
   if (key === 'sealSlots') return Math.max(1, v);
-  if (key === 'discount') return clamp(v, -100, 75);
+  if (key === 'discount') return clamp(v, 0, 75);
+  if (key === 'markup') return clamp(v, 0, 300);
   return v;
 }
 function prob(run, a, b) {
@@ -2082,11 +2102,23 @@ function syncRound(run) {
 // ---- seals
 const sealRoom = (run) => run.seals.filter((s) => s.ed !== 'xian').length < stat(run, 'sealSlots');
 function addSeal(run, id, ed) {
+  const rd = run.round, live = !!rd && run.phase === 'round';
+  const was = live ? [stat(run, 'inkMax'), stat(run, 'ignites'), stat(run, 'discards')] : null;
+  const shop = run.phase === 'shop' ? run.shop : null, free0 = shop ? stat(run, 'freeRerolls') : 0;
   const s = { uid: run.uid++, id, ed: ed || null, st: {}, bonus: 0 };
   const d = SEALS[id];
   if (d.init) d.init(s);
   run.seals.push(s);
   run.seen[id] = 1;
+  if (live) {
+    // a seal that arrives in the middle of a sheet brings its terms with it at once
+    const dInk = stat(run, 'inkMax') - was[0], dIg = stat(run, 'ignites') - was[1], dDc = stat(run, 'discards') - was[2];
+    if (dInk) { rd.inkMax = Math.max(0, rd.inkMax + dInk); rd.ink = Math.max(0, rd.ink + dInk); }
+    if (dIg) rd.ignites = Math.max(1, rd.ignites + dIg);
+    if (dDc) addDiscards(run, dDc);
+  }
+  // a free reroll earned inside a shop counts there too, as long as nothing has been rerolled yet
+  if (shop && shop.rerolls === 0) { const d2 = stat(run, 'freeRerolls') - free0; if (d2 > 0) shop.free = (shop.free || 0) + d2; }
   return s;
 }
 function destroySeal(run, uid) {
@@ -2157,6 +2189,12 @@ function favTier(run) {
 }
 const distinctChars = (run) => Object.keys(run.charCounts).filter((k) => k !== 'sanbi' && run.charCounts[k] > 0).length;
 function addInk(run, v) { if (run.round) run.round.ink = Math.max(0, run.round.ink + v); }
+function addDiscards(run, v) {
+  const rd = run.round;
+  if (!rd || flag(run, 'noDiscard')) return false;
+  rd.discards = Math.max(0, rd.discards + v);
+  return true;
+}
 
 // ---- new run
 function newRun(opts) {
@@ -2184,6 +2222,8 @@ function newRun(opts) {
     const p = addPiece(run, shape, ink, null);
     if (deck.randomEnh) p.enh = rndPick(run, 'misc', ENH_IDS);
   }
+  run.deck0 = run.deck.length;
+  if (deck.w !== deck.h) run.pool = run.pool.filter((id) => !SEALS[id].square);
   if (deck.items) for (const id of deck.items) giveItem(run, id, true);
   if (deck.seals) for (const id of deck.seals) addSeal(run, id, null);
   beginAnte(run);
@@ -2199,7 +2239,8 @@ function pickBoss(run, ante) {
   return id;
 }
 function rollVoucher(run) {
-  const pool = VOUCHER_ORDER.filter((id) => !run.vouchers[id] && (!VOUCHERS[id].req || run.vouchers[VOUCHERS[id].req]));
+  const dead = (id) => flag(run, 'noInterest') && VOUCHERS[id].mods && VOUCHERS[id].mods.interestCap != null;
+  const pool = VOUCHER_ORDER.filter((id) => !run.vouchers[id] && !dead(id) && (!VOUCHERS[id].req || run.vouchers[VOUCHERS[id].req]));
   return pool.length ? rndPick(run, 'shop', pool) : null;
 }
 function beginAnte(run) {
@@ -2244,7 +2285,7 @@ function startRound(run) {
   rd.inkMax = stat(run, 'inkMax');
   rd.ink = rd.inkMax;
   rd.ignites = stat(run, 'ignites');
-  rd.discards = stat(run, 'discards');
+  rd.discards = flag(run, 'noDiscard') ? 0 : stat(run, 'discards');
   if (rd.boss && BOSSES[rd.boss].start) BOSSES[rd.boss].start(run);
   for (const s of run.seals) { const d = SEALS[s.id]; if (d.roundStart) d.roundStart(run, s); }
   fillTray(run);
@@ -2256,16 +2297,32 @@ function drawOne(run) {
     const held = new Set(rd.tray.filter(Boolean).map((t) => t.uid));
     rd.draw = run.deck.map((p) => p.uid).filter((u) => !held.has(u));
     rndShuffle(run, 'shuffle', rd.draw);
+    // what a masterwork does to a block is settled when the bag is shuffled, so a look-ahead shows the truth
+    rd.pre = {};
+    const turn = flag(run, 'noRotate'), morph = flag(run, 'morph');
+    if (turn || morph) for (let i = rd.draw.length - 1; i >= 0; i--) {
+      const e = {};
+      if (turn) e.rot = rndInt(run, 'shuffle', 4);
+      if (morph && rnd(run, 'shuffle') < 1 / 3) e.sh = rndPick(run, 'shuffle', MORPH_SHAPES);
+      rd.pre[rd.draw[i]] = e;
+    }
   }
   if (!rd.draw.length) return null;
   const uid = rd.draw.pop();
   const t = { uid, rot: 0, flip: 0 };
-  if (flag(run, 'noRotate')) t.rot = rndInt(run, 'shuffle', 4);
-  if (flag(run, 'morph') && rnd(run, 'shuffle') < 1 / 3) {
-    t.sh = rndPick(run, 'shuffle', ['l5', 'j5', 'v5', 't5', 'p5', 'q5', 'u5', 'x5', 'w5', 'y5', 'n5', 'z5']);
+  const pre = rd.pre && rd.pre[uid];
+  if (pre) {
+    if (pre.rot != null) t.rot = pre.rot;
+    if (pre.sh) t.sh = pre.sh;
+    delete rd.pre[uid];
+  } else if (!rd.pre) {
+    // a sheet saved by an earlier version: decide on the spot
+    if (flag(run, 'noRotate')) t.rot = rndInt(run, 'shuffle', 4);
+    if (flag(run, 'morph') && rnd(run, 'shuffle') < 1 / 3) t.sh = rndPick(run, 'shuffle', MORPH_SHAPES);
   }
   return t;
 }
+const MORPH_SHAPES = ['l5', 'j5', 'v5', 't5', 'p5', 'q5', 'u5', 'x5', 'w5', 'y5', 'n5', 'z5'];
 function fillTray(run) {
   const rd = run.round;
   const size = stat(run, 'tray');
@@ -2366,7 +2423,7 @@ function flipTray(run, slot) {
 }
 function discardBlock(run, slot) {
   const rd = run.round;
-  if (run.phase !== 'round' || !slotUsable(run, slot) || rd.discards <= 0) return { ok: false };
+  if (run.phase !== 'round' || !slotUsable(run, slot) || rd.discards <= 0 || flag(run, 'noDiscard')) return { ok: false };
   rd.discards--; rd.discardsUsed++; run.stats.discards++;
   for (const s of run.seals) {
     if (rd.sealOff[s.uid]) continue;
@@ -2379,7 +2436,12 @@ function discardBlock(run, slot) {
 }
 function peekList(run, n) {
   const rd = run.round, out = [];
-  for (let i = rd.draw.length - 1; i >= 0 && out.length < n; i--) { const p = pieceByUid(run, rd.draw[i]); if (p) out.push(p); }
+  for (let i = rd.draw.length - 1; i >= 0 && out.length < n; i--) {
+    const p = pieceByUid(run, rd.draw[i]);
+    if (!p) continue;
+    const pre = (rd.pre && rd.pre[p.uid]) || {};
+    out.push({ uid: p.uid, shape: pre.sh || p.shape, ink: p.ink, enh: p.enh, rot: pre.rot || 0 });
+  }
   return out;
 }
 
@@ -2445,7 +2507,7 @@ function ignite(run) {
     const i = +k, c = B[i], x = i % w, y = Math.floor(i / w);
     const edge = x === 0 || y === 0 || x === w - 1 || y === h - 1;
     info[i] = {
-      idx: i, x, y, ink: c.ink, enh: c.enh, pid: c.pid, shape: c.shape, stone: !!c.stone,
+      idx: i, x, y, ink: c.ink, enh: c.enh, pid: c.pid, q: c.q || 0, shape: c.shape, stone: !!c.stone, live: 0,
       node: hit[k] >= 2, edge, corner: (x === 0 || x === w - 1) && (y === 0 || y === h - 1),
       center: x >= cx0 && x <= cx1 && y >= cy0 && y <= cy1, sq: run.paper[i] || null,
       dead: !!c.stone || (inkDead && c.ink === inkDead) || (edgeDead && edge),
@@ -2453,6 +2515,8 @@ function ignite(run) {
   }
   for (const st of strokes) {
     st.cells = st.idxs.map((i) => info[i]);
+    st.dead = (st.kind === 'row' && rowsDead) || (st.kind === 'col' && colsDead);
+    for (const c of st.cells) if (!c.dead && !st.dead) c.live++;
     let ink = null, pure = true;
     for (const c of st.cells) {
       if (c.stone) { pure = false; break; }
@@ -2461,15 +2525,16 @@ function ignite(run) {
     }
     st.pure = pure ? (ink || 'mo') : null;
   }
-  // aggregates
+  // aggregates: crossings are a matter of shape; inks and blocks are counted only where a cell really scores
   const inkCount = {}, pieces = [], seenP = {};
   let nodes = 0;
   for (const k in info) {
     const c = info[k];
     if (c.node) nodes++;
-    if (c.stone) continue;
+    if (!c.live) continue;
     inkCount[c.ink] = (inkCount[c.ink] || 0) + 1;
-    if (c.pid && !seenP[c.pid]) { seenP[c.pid] = 1; pieces.push({ pid: c.pid, shape: c.shape, ink: c.ink, enh: c.enh }); }
+    const pk = c.pid + '.' + c.q;
+    if (c.pid && !seenP[pk]) { seenP[pk] = 1; pieces.push({ pid: c.pid, q: c.q, shape: c.shape, ink: c.ink, enh: c.enh }); }
   }
   let empty = 0, clutter = 0, remain = 0;
   const strays = [];
@@ -2484,7 +2549,7 @@ function ignite(run) {
   const sc = {
     run, rd, w, h, char: pat.id, def, n, tier: pat.tier, lvl: pat.lvl, rows: L.rows, cols: L.cols, diags: L.diags, strokes,
     chips: pat.base.c, mult: pat.base.m, money: 0, tmp: {}, src: null, laters: [],
-    first: rd.igniteCount === 0, igniteIdx: rd.igniteCount, last: rd.ignites === 1,
+    first: rd.igniteCount === 0, igniteIdx: rd.igniteCount, last: rd.ignites === 1 && !(def.yi === 'ignite' && !rd.yiUsed[pat.id] && !pat.nul),
     isChar: pat.id !== 'sanbi', num: def.num || 0, nodes, empty, clutter, cleanAfter: remain === 0,
     inkCount, pieces, adjPairs: pr + pc, maxRun: Math.max(mr, mc),
     newRound: !rd.chars.includes(pat.id), newRun: !(run.charCounts[pat.id] > 0),
@@ -2498,6 +2563,7 @@ function ignite(run) {
   const nul = pat.nul;
   ev.push({ t: 'begin', char: pat.id, n, tier: pat.tier, lvl: pat.lvl, c: sc.chips, m: sc.mult, x: def.x, rows: L.rows, cols: L.cols, diags: L.diags, nul, newRun: sc.newRun });
   const seals = scoringSeals(run);
+  const splashed = {};
   let charX = def.x;
   if (!nul) {
     if (rd.buff > 0) { sc.src = { k: 'buff' }; sc.m(rd.buff); }
@@ -2505,7 +2571,7 @@ function ignite(run) {
     const once = {};
     for (const st of strokes) {
       ev.push({ t: 'stroke', si: st.si, kind: st.kind, i: st.i, idxs: st.idxs });
-      const lineDead = (st.kind === 'row' && rowsDead) || (st.kind === 'col' && colsDead);
+      const lineDead = st.dead;
       for (let pos = 0; pos < st.cells.length; pos++) {
         const c = st.cells[pos];
         if (c.dead || lineDead) { ev.push({ t: 'cell', si: st.si, i: c.idx, pos, rep: 0, dead: true }); continue; }
@@ -2517,8 +2583,8 @@ function ignite(run) {
           sc.c(CELL_CHIPS);
           if (c.enh === 'nong') sc.c(12);
           else if (c.enh === 'fei') sc.m(1);
-          else if (c.enh === 'po' && !once['po' + c.pid]) { once['po' + c.pid] = 1; sc.x(poSafe ? 2 : 1.5); }
-          else if (c.enh === 'sa' && !once['sa' + c.pid]) { once['sa' + c.pid] = 1; sc.cash(1); }
+          else if (c.enh === 'po' && !once['po' + c.pid + '.' + c.q]) { once['po' + c.pid + '.' + c.q] = 1; splashed[c.pid] = 1; sc.x(poSafe ? 2 : 1.5); }
+          else if (c.enh === 'sa' && !once['sa' + c.pid + '.' + c.q]) { once['sa' + c.pid + '.' + c.q] = 1; sc.cash(1); }
           if (c.sq) {
             sc.src = { k: 'sq', i: c.idx };
             if (c.sq === 'wusi') sc.c(25);
@@ -2529,7 +2595,7 @@ function ignite(run) {
           for (const e of seals) if (e.def.cell) { sc.src = { k: 'seal', u: e.u }; e.def.cell(sc, e.s, c, st, pos); }
         }
       }
-      if (st.pure && !lineDead && st.pure !== inkDead) {
+      if (st.pure && !lineDead && st.pure !== inkDead && st.cells.some((c) => c.live)) {
         ev.push({ t: 'pure', si: st.si, ink: st.pure });
         sc.src = { k: 'pure', si: st.si, ink: st.pure };
         if (st.pure === 'mo') sc.c(PURE.mo);
@@ -2568,9 +2634,11 @@ function ignite(run) {
   if (sc.cleanAfter) run.stats.clean++;
   // splash blocks may shatter
   if (!nul && !flag(run, 'poSafe')) {
-    for (const p of pieces) if (p.enh === 'po' && pieceByUid(run, p.pid) && run.deck.length > 4 && prob(run, 1, 4)) {
-      const i = run.deck.findIndex((q) => q.uid === p.pid);
-      run.deck.splice(i, 1);
+    // only a block whose splash really went off can shatter
+    for (const k of Object.keys(splashed)) {
+      const p = pieceByUid(run, +k);
+      if (!p || run.deck.length <= 4 || !prob(run, 1, 4)) continue;
+      run.deck.splice(run.deck.indexOf(p), 1);
       ev.push({ t: 'shatter', shape: p.shape, ink: p.ink });
     }
   }
@@ -2582,7 +2650,7 @@ function ignite(run) {
     const y = { t: 'yi', char: pat.id, yi: def.yi };
     switch (def.yi) {
       case 'ink': addInk(run, 16); break;
-      case 'discard': case 'sweep': rd.discards += 1; break;
+      case 'discard': case 'sweep': y.void = !addDiscards(run, 1); break;
       case 'money2': run.money += 2; run.stats.earned += 2; y.v = 2; break;
       case 'money4': run.money += 4; run.stats.earned += 4; y.v = 4; break;
       case 'tierUp': y.tier = 1 + rndInt(run, 'misc', TIER_MAX); levelUp(run, y.tier, 1); break;
@@ -2592,7 +2660,7 @@ function ignite(run) {
       case 'item': y.item = rndPick(run, 'misc', ITEM_POOL.filter((i) => !ITEMS[i].rare)); y.got = giveItem(run, y.item); break;
       case 'tie': y.item = rndPick(run, 'misc', TIE_IDS); y.got = giveItem(run, y.item); break;
       case 'peek': rd.tmp.peek = Math.max(rd.tmp.peek || 0, 5); break;
-      case 'wipe': { const cells = []; for (let i = 0; i < B.length; i++) if (B[i]) { B[i] = null; cells.push(i); } y.cells = cells; break; }
+      case 'wipe': { const cells = []; for (let i = 0; i < B.length; i++) if (B[i] && !B[i].stone) { B[i] = null; cells.push(i); } y.cells = cells; break; }
       case 'ignite': free = true; break;
       case 'allTier': for (let t = 1; t <= TIER_MAX; t++) levelUp(run, t, 1); break;
     }
@@ -2608,10 +2676,13 @@ function ignite(run) {
   // bookkeeping
   rd.igniteCount++;
   if (!free) rd.ignites--;
-  rd.chars.push(pat.id);
-  run.charCounts[pat.id] = (run.charCounts[pat.id] || 0) + 1;
-  run.tierCounts[pat.tier]++;
-  run.lastTier = pat.tier;
+  // a flourish that a masterwork voided wrote nothing: it is not remembered as a character
+  if (!nul) {
+    rd.chars.push(pat.id);
+    run.charCounts[pat.id] = (run.charCounts[pat.id] || 0) + 1;
+    run.tierCounts[pat.tier]++;
+    run.lastTier = pat.tier;
+  }
   rd.placedSince = 0; rd.lastPlaced = null;
   run.stats.ignites++;
   syncRound(run);
@@ -2674,6 +2745,7 @@ function finishRound(run, ev) {
   const rd = run.round;
   const out = ev || [];
   for (const s of run.seals.slice()) {
+    if (rd.sealOff[s.uid]) continue;
     const d = SEALS[s.id];
     if (d.roundEnd) d.roundEnd(run, s, out);
   }
@@ -2735,27 +2807,35 @@ function skipBlind(run) {
 }
 
 // ---- shop
-const priceOf = (run, base) => Math.max(1, Math.round((base * (100 - stat(run, 'discount'))) / 100));
+const priceOf = (run, base) => Math.max(1, Math.round((base * (100 + stat(run, 'markup')) * (100 - stat(run, 'discount'))) / 10000));
+// prices follow the shop's terms as they stand now (a furnishing bought here counts at once)
+function repriceShop(run) {
+  const sh = run.shop;
+  if (!sh) return;
+  for (const it of sh.items.concat(sh.packs)) if (!it.sold && !it.gift && it.base != null) it.price = priceOf(run, it.base);
+}
 function rollShopItem(run, exclude) {
   const x = rnd(run, 'shop');
   if (x < 0.62) {
     const id = rollSealId(run, 'shop', 0, exclude);
     const ed = rollEdition(run, 'shop');
-    return { kind: 'seal', id, ed, price: priceOf(run, SEALS[id].cost + (ed ? EDITIONS[ed].add : 0)), sold: false };
+    const base = SEALS[id].cost + (ed ? EDITIONS[ed].add : 0);
+    return { kind: 'seal', id, ed, base, price: priceOf(run, base), sold: false };
   }
   if (x < 0.78) {
     const id = rnd(run, 'shop') < 0.35 ? 'tie' + favTier(run) : rndPick(run, 'shop', TIE_IDS);
-    return { kind: 'tie', id, price: priceOf(run, ITEMS[id].cost), sold: false };
+    return { kind: 'tie', id, base: ITEMS[id].cost, price: priceOf(run, ITEMS[id].cost), sold: false };
   }
   const id = rndWeighted(run, 'shop', ITEM_POOL, (i) => ITEMS[i].w);
-  return { kind: 'wen', id, price: priceOf(run, ITEMS[id].cost), sold: false };
+  return { kind: 'wen', id, base: ITEMS[id].cost, price: priceOf(run, ITEMS[id].cost), sold: false };
 }
 function fillShopItems(run) {
   const sh = run.shop;
   const n = stat(run, 'shopSlots');
-  sh.items = [];
-  const ex = [];
-  for (let i = 0; i < n; i++) {
+  // a gift on the shelf is not swept away by a reroll
+  sh.items = (sh.items || []).filter((i) => i.gift && !i.sold);
+  const ex = sh.items.filter((i) => i.kind === 'seal').map((i) => i.id);
+  for (let i = sh.items.length; i < n; i++) {
     const it = rollShopItem(run, ex);
     if (it.kind === 'seal') ex.push(it.id);
     sh.items.push(it);
@@ -2773,7 +2853,7 @@ function enterShop(run) {
   }
   for (let i = 0; i < 2; i++) {
     const id = rndWeighted(run, 'shop', PACK_IDS, (k) => PACKS[k].w);
-    sh.packs.push({ id, price: priceOf(run, PACKS[id].cost), sold: false });
+    sh.packs.push({ id, base: PACKS[id].cost, price: priceOf(run, PACKS[id].cost), sold: false });
   }
   for (const id of run.tags.packs) sh.packs.push({ id, price: 0, sold: false, gift: true });
   run.tags.packs = [];
@@ -2795,6 +2875,7 @@ function shopBuy(run, i, useNow) {
   const it = run.shop.items[i];
   if (!it || it.sold) return { ok: false, why: 'gone' };
   if (run.money < it.price) return { ok: false, why: 'money' };
+  let paid = false;
   if (it.kind === 'seal') {
     if (it.ed !== 'xian' && !sealRoom(run)) return { ok: false, why: 'room' };
     addSeal(run, it.id, it.ed);
@@ -2802,10 +2883,13 @@ function shopBuy(run, i, useNow) {
     const def = ITEMS[it.id];
     if (useNow) {
       if (!noTargetUse(def) || (def.can && !def.can(run))) return { ok: false, why: 'use' };
-      if (!applyItem(run, def, {})) return { ok: false, why: 'use' };
+      // pay first: the item must not count the coins that buy it
+      run.money -= it.price;
+      if (!applyItem(run, def, {})) { run.money += it.price; return { ok: false, why: 'use' }; }
+      paid = true;
     } else if (!giveItem(run, it.id)) return { ok: false, why: 'room' };
   }
-  run.money -= it.price;
+  if (!paid) run.money -= it.price;
   it.sold = true;
   run.stats.bought++;
   return { ok: true };
@@ -2821,6 +2905,10 @@ function buyVoucher(run) {
   run.shop.voucher = null;
   run.shopVoucher = null;
   run.stats.bought++;
+  // a furnishing takes effect in the very shop where it is bought
+  repriceShop(run);
+  const sh = run.shop, ex = sh.items.filter((i) => i.kind === 'seal').map((i) => i.id);
+  while (sh.items.length < stat(run, 'shopSlots')) { const it = rollShopItem(run, ex); if (it.kind === 'seal') ex.push(it.id); sh.items.push(it); }
   return { ok: true };
 }
 function sellSeal(run, uid) {
@@ -2931,6 +3019,7 @@ function itemUsable(run, def) {
   if (def.round && run.phase !== 'round') return { ok: false, why: 'round' };
   if (def.need && def.need.t === 'cell' && run.phase !== 'round') return { ok: false, why: 'round' };
   if (def.can && !def.can(run)) return { ok: false, why: 'cannot' };
+  if (def.ok && !run.deck.some(def.ok)) return { ok: false, why: 'cannot' };
   if (!['round', 'shop', 'pick'].includes(run.phase)) return { ok: false, why: 'phase' };
   return { ok: true };
 }
@@ -2941,6 +3030,8 @@ function applyItem(run, def, target) {
     if (nd.t === 'pieces') {
       if (!tg.pieces || tg.pieces.length < (nd.min || 1) || tg.pieces.length > nd.max) return false;
       if (tg.pieces.some((u) => !pieceByUid(run, u))) return false;
+      // every chosen block must be one the item can actually change
+      if (def.ok && tg.pieces.some((u) => !def.ok(pieceByUid(run, u)))) return false;
     } else if (nd.t === 'square' || nd.t === 'cell') {
       if (tg.square == null || tg.square < 0 || tg.square >= run.w * run.h) return false;
       if (nd.t === 'cell') {
@@ -2952,6 +3043,7 @@ function applyItem(run, def, target) {
   }
   if (!def.use(run, tg)) return false;
   for (const s of run.seals) {
+    if (run.round && run.round.sealOff[s.uid]) continue;
     const d = SEALS[s.id];
     if (d.useItem) d.useItem(run, s, def);
   }
@@ -3078,7 +3170,8 @@ function migrateProfile(p) {
       const rd = r.round;
       const okRound = r.phase !== 'round' && r.phase !== 'cash' ? true : !!rd && Array.isArray(rd.board) && rd.board.length === r.w * r.h && Array.isArray(rd.tray) && Array.isArray(rd.draw) && (!rd.boss || !!BOSSES[rd.boss]);
       const okShop = r.phase !== 'shop' || (!!r.shop && Array.isArray(r.shop.items) && r.shop.items.every((i) => (i.kind === 'seal' ? SEALS[i.id] : ITEMS[i.id])) && r.shop.packs.every((k) => PACKS[k.id]));
-      const okMisc = r.deck.length >= 4 && Array.isArray(r.paper) && r.paper.length === r.w * r.h && Array.isArray(r.tiers) && !!BOSSES[r.boss] && !!STAKES[r.stake] && (r.phase !== 'cash' || !!r.cash);
+      const okText = typeof r.seed === 'string' && /^[A-Z0-9]{1,24}$/.test(r.seed) && Number.isInteger(r.ante) && r.ante >= 1 && [0, 1, 2].includes(r.blind) && typeof r.money === 'number' && isFinite(r.money) && Number.isInteger(r.w) && Number.isInteger(r.h);
+      const okMisc = okText && r.deck.length >= 4 && Array.isArray(r.paper) && r.paper.length === r.w * r.h && Array.isArray(r.tiers) && !!BOSSES[r.boss] && !!STAKES[r.stake] && (r.phase !== 'cash' || !!r.cash);
       if (!okPhase || !okRound || !okShop || !okMisc) p.run = null;
     } catch (e) { p.run = null; }
   }
@@ -3113,7 +3206,10 @@ function importProfile(str) {
   try {
     const s = String(str).trim();
     if (!s.startsWith('FKZ1:')) return false;
-    const obj = JSON.parse(decodeURIComponent(escape(atob(s.slice(5)))));
+    const text = decodeURIComponent(escape(atob(s.slice(5))));
+    // a save holds only plain names and numbers: anything that looks like markup is refused outright
+    if (/[<>]/.test(text)) return false;
+    const obj = JSON.parse(text);
     if (!obj || !obj.meta || !obj.settings) return false;
     PROFILE = migrateProfile(obj);
     LANG = PROFILE.settings.lang === 'en' ? 'en' : 'zh';
@@ -3316,9 +3412,9 @@ const STR = {
     'hud.tier': '{0}画 · Lv.{1}', 'hud.yi': '字义', 'hud.yi.used': '（本局已用）',
     'num.1': '一', 'num.2': '二', 'num.3': '三', 'num.4': '四', 'num.5': '五', 'num.6': '六', 'num.7': '七', 'num.8': '八',
     'nul.san': '散笔不计分', 'nul.min': '画数不足，不计分', 'nul.repeat': '重复的字不计分',
-    'char.num': '数字，其值为 {0}', 'char.strokes': '{0} 画', 'char.x': '字格', 'char.yi.once': '（每局首次写出时）',
+    'char.num': '数字，其值为 {0}', 'char.strokes': '{0} 画', 'char.stroke1': '1 画', 'char.x': '字格', 'char.yi.once': '（每局首次写出时）',
     'kind.block': '墨块', 'kind.pack': '匣', 'kind.square': '纸格', 'kind.tie': '字帖', 'kind.voucher': '陈设', 'kind.wen': '文房',
-    'piece.cells': '{0} 格', 'piece.ink': '墨色',
+    'piece.cells': '{0} 格', 'piece.cell1': '1 格', 'piece.ink': '墨色',
     'item.roundonly': '只能在对局中使用',
     'seal.empty': '空', 'seal.locked': '解锁条件：{0}', 'seal.unlocked': '新印可得 · {0}', 'seal.unlocked.d': '此后会出现在铺子与印匣中',
     'deck.unlocked': '新书体 · {0}', 'deck.unlocked.d': '开新卷时可以选用',
@@ -3327,7 +3423,7 @@ const STR = {
     'say.cannot': '现在用不了', 'say.limit': '本局落墨已达上限', 'say.noflip': '须有「镜花水月」才能翻转', 'say.noink': '墨不够了', 'say.nolines': '还没有成笔的横或竖',
     'say.norinse': '洗笔的次数用完了', 'say.norotate': '此帖之下无法旋转', 'say.rinse': '点选要洗去的墨块', 'say.roundonly': '只能在对局中使用', 'say.wash': '江水冲走了底行',
     'say.nomoney': '润笔不够', 'say.noroom': '没有空位了',
-    stuck: '已无可落之墨', 'stuck.end': '结束此局',
+    stuck: '已无可落之墨', 'stuck.end': '结束此局', 'stuck.sure': '就此收笔？若分数未达目标，此卷便到此为止。', 'stuck.items': '文房里还有可用之物，不妨先试一试。',
     'boss.limit': '已落 {0} / {1} 块', 'boss.tide': '再落 {0} 块，江水至', 'boss.blot': '再落 {0} 块，添一处涂改',
     'confirm.ignite': '现在挥毫，写下「{0}」？',
     'pick.start': '开始', 'pick.skip': '跳过', 'pick.skipfor': '跳过此局可得题签', 'pick.skipped': '题签 · {0}', 'pick.done': '已过', 'pick.reward': '润笔 {0}', 'pick.noreward': '无润笔',
@@ -3340,8 +3436,8 @@ const STR = {
     'pack.keep': '收下', 'pack.left': '还可选 {0}', 'pack.pick': '{1} 选 {0}', 'pack.skip': '不要了', 'pack.study': '研习', 'pack.take': '选取',
     'target.pieces': '至多选择 {0} 块', 'target.square': '{0}：在纸上选一格', 'target.square.sub': '选择一格',
     'deck.title': '墨匣', 'deck.sub': '共 {0} 块 · {1} 格', 'deck.left': '袋中尚余 {0} 块', 'deck.intray': '架上', 'deck.note': '颜色变淡的墨块已经取用过；整袋取完后会重新洗混。',
-    'dict.title': '字典', 'dict.sub': '已收录 {0} / {1}', 'dict.count': '写过 {0} 次', 'dict.unwritten': '尚未写过', 'dict.secret': '隐藏的字', 'dict.full': '满纸', 'dict.diag': '撇与捺', 'dict.diag.sub': '须有「狼毫」之印',
-    'dict.intro': '填满的整行是「横」，整列是「竖」。挥毫时，纸上所有的横竖一同成字：<b style="color:var(--gold2)">画数</b>决定基础的形与神，<b style="color:#ff8a73">字格</b>是这个字额外的倍率。须与图样完全吻合才算成字——多一笔、少一笔、挪一个位置，都是另一回事。',
+    'dict.title': '字典', 'dict.sub': '已收录 {0} / {1}', 'dict.count': '写过 {0} 次', 'dict.unwritten': '尚未写过', 'dict.secret': '隐藏的字', 'dict.full': '满纸', 'dict.diag': '撇与捺', 'dict.diag.sub': '须有「狼毫」之印', 'dict.diag.no': '此纸不方，写不成对角', 'fx.void': '此帖之下不行',
+    'dict.intro': '填满的整行是「横」，整列是「竖」。挥毫时，纸上所有的横竖一同成字：<b style="color:var(--gold2)">画数</b>决定基础的形与神，<b style="color:#ff8a73">字格</b>是这个字额外的倍率。须与图样完全吻合才算成字——多一笔、少一笔，靠在纸边还是落在中间，都是另一回事。',
     'dict.recipe': '写法', 'dict.base': '基础', 'dict.plain': '（无额外倍率）', 'dict.xuan.base': '按七画以上计：',
     'recipe.full': '把整张纸填满', 'recipe.san': '凑不成任何字的笔画',
     'sanbi.desc': '横竖凑不成任何一个字时，称为<b>散笔</b>：没有字格倍率，只按画数计分。',
@@ -3357,7 +3453,7 @@ const STR = {
     'setup.title': '开卷', 'setup.deck': '书体', 'setup.stake': '难度 · 科第', 'setup.stake.unlock': '以某种书体通关后，可为它开启更高一重的难度。', 'setup.go': '开卷',
     'setup.seed': '卷号', 'setup.seed.ph': '随机', 'setup.seed.d': '留空则随机；相同的卷号会得到一模一样的一卷',
     'end.lose': '卷终', 'end.lose.at': '止步于 {0}　　{1} / {2}', 'end.win': '八法皆成', 'end.win.d': '以「{0}」·「{1}」写完了这一卷。', 'end.win.next': '更高一重的难度「{0}」已为此书体开启。', 'end.win.top': '已是最高的难度。池水尽墨。',
-    'keep.btn': '留影', 'keep.title': '留影', 'keep.save': '保存图片', 'keep.saved': '已保存', 'keep.tip': '把这一卷留作纪念；手机上也可长按图片保存。',
+    'keep.btn': '留影', 'keep.title': '留影', 'keep.save': '保存图片', 'keep.saved': '已保存', 'keep.tip': '把这一卷留作纪念；也可长按（或右键）图片保存。',
     'end.again': '再开一卷', 'end.title': '回到标题', 'end.endless': '续写 · 无尽之卷', 'end.ante': '行至', 'end.chars': '写出的字', 'end.rounds': '过关',
     'col.tab.seals': '印', 'col.tab.chars': '字', 'col.tab.bosses': '名帖', 'col.tab.ach': '成就', 'col.tab.stats': '生平',
     'col.seals': '已得见 {0} / {1} 枚印', 'col.locked': '未解锁', 'col.unseen': '尚未在卷中得过这枚印', 'col.beaten': '已胜 {0} 次', 'col.ach': '已达成 {0} / {1}', 'col.unlocks': '解锁：{0}',
@@ -3366,7 +3462,7 @@ const STR = {
     'set.lang': '语言 · Language', 'set.music': '配乐', 'set.sfx': '音效', 'set.speed': '计分速度', 'set.speed.d': '计分时点击任意处也可加速', 'set.hints': '可成之字', 'set.hints.d': '提示再添一两笔就能写成的字',
     'set.marks': '墨色记号', 'set.marks.d': '在墨块上标出 ● ▲ ◆ ★，便于分辨四种墨色', 'set.shake': '震屏', 'set.haptics': '触感', 'set.haptics.d': '落墨与成字时轻震（视设备而定）', 'set.reduce': '减弱动效', 'set.reduce.d': '减少闪光与粒子，放缓背景',
     'set.confirm': '挥毫前确认', 'set.confirm.d': '防止误触', 'set.full': '全屏', 'set.full.b': '切换', 'set.data': '存档', 'set.data.d': '存于本机的浏览器中；可导出为文字备份', 'set.data.bad': '此浏览器无法写入存档，请及时导出备份',
-    'set.export': '导出', 'set.export.d': '复制下面这段文字并妥善保存；在任何设备上导入即可恢复。', 'set.copy': '复制', 'set.copied': '已复制', 'set.import': '导入', 'set.import.d': '粘贴此前导出的存档文字。当前的进度将被覆盖。',
+    'set.export': '导出', 'set.export.d': '复制下面这段文字并妥善保存；在任何设备上导入即可恢复。', 'set.copy': '复制', 'set.copied': '已复制', 'set.copyfail': '未能自动复制：文字已选中，请手动复制', 'set.import': '导入', 'set.import.d': '粘贴此前导出的存档文字。当前的进度将被覆盖。',
     'set.import.bad': '这段文字不是有效的存档', 'set.imported': '存档已导入', 'set.reset': '清除全部进度', 'set.reset.b': '清除', 'set.reset.d': '图鉴、解锁与战绩都会清空', 'set.reset.q': '所有的图鉴、解锁与战绩都将清空，且无法恢复。', 'set.reset.y': '全部清除',
     'tut.step': '教学 {0}/{1}', 'tut.ok': '知道了', 'tut.next': '下一步', 'tut.done': '开始习字', 'tut.skip': '跳过教学',
     'tut.1': '每一局是一张纸。在<b>挥毫</b>的次数用完之前，达到<b>目标分数</b>就能过关。点「开始」铺纸。',
@@ -3379,7 +3475,7 @@ const STR = {
     'tut.8': '这是<b>字典</b>，收着所有能写的字与写法。去吧——落墨成笔，积笔成字。',
     'tut.shop': '过关得<b>润笔</b>，可在铺中添置<b>印</b>、<b>字帖</b>与<b>文房</b>。印是一卷的根本——点一下货物看清效果，再决定买不买。留着的润笔还会生<b>利息</b>。',
     'help.1': '<h3>落墨成笔</h3><p>把墨块拖到纸上（轻点可旋转）。填满的<b>整行</b>是一「横」，<b>整列</b>是一「竖」。每块墨耗去与格数相同的<b>墨</b>，墨尽则不能再落。</p><h3>积笔成字</h3><p>按下<b>挥毫</b>，纸上所有成笔的横竖一同计分并消去——它们合起来写成一个<b>字</b>。须与字的图样<b>完全吻合</b>：在纸边还是在中间都有讲究；多一笔、少一笔，就成了另一个字，或是不成字的<b>散笔</b>。</p>',
-    'help.2': '<h3>形 × 神</h3><p>得分 = <b>形 × 神</b>。</p><ul><li>字的<b>画数</b>定下基础的形与神，可用<b>字帖</b>提升等级；</li><li>每个计分的墨格 <b>形+5</b>；横竖<b>交点</b>上的格会计两次；</li><li>一条笔画若全由同一种墨写成（<b>纯色</b>）：墨 形+40、朱 神+4、青 神×1.2、金 +1 文；</li><li>最后再乘这个字的<b>字格</b>（王 ×3、田 ×4……）。</li></ul><h3>一卷八法</h3><p>一卷共八「法」，每法三局：<b>习字</b>、<b>课业</b>，与一张自带规矩的<b>名帖</b>。在挥毫的次数用完之前达到目标分数即可过关。过关得<b>润笔</b>，可在文房铺添置：</p><ul><li><b>印</b>——至多五枚，自左至右依次生效，是一卷的根本；</li><li><b>字帖</b>——提升某一画数的等级；</li><li><b>文房</b>——为墨块染色、赋予墨性、拓印、销毁，或在纸上制格；</li><li><b>陈设</b>——整卷有效的添置。</li></ul><h3>操作</h3><ul><li>拖动落墨；轻点、右键、滚轮或 <b>R</b> 旋转；拖到「洗笔」上换块。</li><li>键盘：<b>1–4</b> 选块，方向键移动，<b>空格</b>落墨或挥毫，<b>Q</b> 洗笔，<b>Z / X / C</b> 字典、墨匣、卷况，<b>Esc</b> 暂歇。</li><li>计分时点击任意处可加速。</li></ul>',
+    'help.2': '<h3>形 × 神</h3><p>得分 = <b>形 × 神</b>。</p><ul><li>字的<b>画数</b>定下基础的形与神，可用<b>字帖</b>提升等级；</li><li>每个计分的墨格 <b>形+5</b>；横竖<b>交点</b>上的格会计两次；</li><li>一条笔画若全由同一种墨写成（<b>纯色</b>）：墨 形+40、朱 神+4、青 神×1.2、金 +1 文；</li><li>最后再乘这个字的<b>字格</b>（王 ×3、田 ×4……）。</li></ul><h3>一卷八法</h3><p>一卷共八「法」，每法三局：<b>习字</b>、<b>课业</b>，与一张自带规矩的<b>名帖</b>。在挥毫的次数用完之前达到目标分数即可过关。过关得<b>润笔</b>，可在文房铺添置：</p><ul><li><b>印</b>——至多五枚，按排列的先后依次生效，是一卷的根本；</li><li><b>字帖</b>——提升某一画数的等级；</li><li><b>文房</b>——为墨块染色、赋予墨性、拓印、销毁，或在纸上制格；</li><li><b>陈设</b>——整卷有效的添置。</li></ul><h3>操作</h3><ul><li>拖动落墨；轻点、右键、滚轮或 <b>R</b> 旋转；拖到「洗笔」上换块。</li><li>键盘：<b>1–4</b> 选块，方向键移动，<b>空格</b>落墨或挥毫，<b>Q</b> 洗笔，<b>Z / X / C</b> 字典、墨匣、卷况，<b>Esc</b> 暂歇。</li><li>计分时点击任意处可加速。</li></ul>',
   },
   en: {
     form: 'Form', spirit: 'Spirit', ink: 'Ink', money: 'Coins', ignite: 'Flourish', rinse: 'Rinse', seals: 'Seals', items: 'Items', sanbi: 'Scribble',
@@ -3392,9 +3488,9 @@ const STR = {
     'hud.tier': '{0}-stroke · Lv.{1}', 'hud.yi': 'Meaning', 'hud.yi.used': '(used this round)',
     'num.1': 'I', 'num.2': 'II', 'num.3': 'III', 'num.4': 'IV', 'num.5': 'V', 'num.6': 'VI', 'num.7': 'VII', 'num.8': 'VIII',
     'nul.san': 'Scribbles score nothing', 'nul.min': 'Too few strokes — no score', 'nul.repeat': 'Repeated character — no score',
-    'char.num': 'A numeral worth {0}', 'char.strokes': '{0} strokes', 'char.x': 'Character ×', 'char.yi.once': '(the first time each round)',
+    'char.num': 'A numeral worth {0}', 'char.strokes': '{0} strokes', 'char.stroke1': '1 stroke', 'char.x': 'Character ×', 'char.yi.once': '(the first time each round)',
     'kind.block': 'Block', 'kind.pack': 'Case', 'kind.square': 'Square', 'kind.tie': 'Copybook', 'kind.voucher': 'Furnishing', 'kind.wen': 'Studio item',
-    'piece.cells': '{0} cells', 'piece.ink': 'Ink:',
+    'piece.cells': '{0} cells', 'piece.cell1': '1 cell', 'piece.ink': 'Ink:',
     'item.roundonly': 'Can only be used during a round',
     'seal.empty': 'empty', 'seal.locked': 'To unlock: {0}', 'seal.unlocked': 'New seal — {0}', 'seal.unlocked.d': 'It can now turn up in shops and cases',
     'deck.unlocked': 'New script — {0}', 'deck.unlocked.d': 'Choose it when you start a run',
@@ -3403,7 +3499,7 @@ const STR = {
     'say.cannot': 'Cannot be used now', 'say.limit': 'Block limit reached', 'say.noflip': 'Flipping needs the Flower in the Mirror seal', 'say.noink': 'Not enough Ink', 'say.nolines': 'No complete row or column yet',
     'say.norinse': 'No rinses left', 'say.norotate': 'Blocks cannot be rotated here', 'say.rinse': 'Pick a block to rinse away', 'say.roundonly': 'Only usable during a round', 'say.wash': 'The river washed the bottom row away',
     'say.nomoney': 'Not enough coins', 'say.noroom': 'No free slot',
-    stuck: 'Nothing more can be done', 'stuck.end': 'End the round',
+    stuck: 'Nothing more can be done', 'stuck.end': 'End the round', 'stuck.sure': 'Lay down the brush? If the target has not been reached, the run ends here.', 'stuck.items': 'You still hold an item that could help — try it first.',
     'boss.limit': '{0} / {1} blocks placed', 'boss.tide': '{0} more until the river rises', 'boss.blot': '{0} more until the next blot',
     'confirm.ignite': 'Flourish now and write {0}?',
     'pick.start': 'Begin', 'pick.skip': 'Skip', 'pick.skipfor': 'Skip this sheet for the tag', 'pick.skipped': 'Tag — {0}', 'pick.done': 'Cleared', 'pick.reward': 'Fee {0}', 'pick.noreward': 'No fee',
@@ -3416,8 +3512,8 @@ const STR = {
     'pack.keep': 'Take', 'pack.left': '{0} more to choose', 'pack.pick': 'pick {0} of {1}', 'pack.skip': 'Skip', 'pack.study': 'Study', 'pack.take': 'Take',
     'target.pieces': 'choose up to {0}', 'target.square': '{0}: pick a square on the sheet', 'target.square.sub': 'choose a square',
     'deck.title': 'Ink Box', 'deck.sub': '{0} blocks · {1} cells', 'deck.left': '{0} left to draw', 'deck.intray': 'tray', 'deck.note': 'Faded blocks have already been drawn; when the bag is empty it is shuffled again.',
-    'dict.title': 'Lexicon', 'dict.sub': '{0} of {1} collected', 'dict.count': 'Written ×{0}', 'dict.unwritten': 'Not yet written', 'dict.secret': 'Hidden', 'dict.full': 'The Whole Sheet', 'dict.diag': 'The Diagonals', 'dict.diag.sub': 'needs the Wolf-hair Brush seal',
-    'dict.intro': 'A full row is a horizontal stroke, a full column a vertical one. When you flourish, every complete line on the sheet joins into one character: its <b style="color:var(--gold2)">stroke count</b> sets the base Form and Spirit, and its <b style="color:#ff8a73">character multiplier</b> comes on top. The strokes must match the pattern exactly — one more, one fewer or one out of place is something else.',
+    'dict.title': 'Lexicon', 'dict.sub': '{0} of {1} collected', 'dict.count': 'Written ×{0}', 'dict.unwritten': 'Not yet written', 'dict.secret': 'Hidden', 'dict.full': 'The Whole Sheet', 'dict.diag': 'The Diagonals', 'dict.diag.sub': 'needs the Wolf-hair Brush seal', 'dict.diag.no': 'cannot be written on a sheet that is not square', 'fx.void': 'void under this masterwork',
+    'dict.intro': 'A full row is a horizontal stroke, a full column a vertical one. When you flourish, every complete line on the sheet joins into one character: its <b style="color:var(--gold2)">stroke count</b> sets the base Form and Spirit, and its <b style="color:#ff8a73">character multiplier</b> comes on top. The strokes must match the pattern exactly — one stroke more, one fewer, or at the edge instead of inside is something else.',
     'dict.recipe': 'Recipe', 'dict.base': 'Base', 'dict.plain': '(no extra multiplier)', 'dict.xuan.base': 'Counts as 7+ strokes: ',
     'recipe.full': 'Fill the entire sheet', 'recipe.san': 'Any strokes that match no character',
     'sanbi.desc': 'When the rows and columns form no character it is a <b>scribble</b>: no character multiplier, scored by stroke count alone.',
@@ -3433,7 +3529,7 @@ const STR = {
     'setup.title': 'New Run', 'setup.deck': 'Script', 'setup.stake': 'Rank', 'setup.stake.unlock': 'Winning with a script opens the next rank for it.', 'setup.go': 'Begin',
     'setup.seed': 'Seed', 'setup.seed.ph': 'RANDOM', 'setup.seed.d': 'Leave empty for a random run; the same seed always gives the same run',
     'end.lose': 'The Scroll Ends', 'end.lose.at': 'Stopped at {0} — {1} / {2}', 'end.win': 'All Eight Principles', 'end.win.d': 'You finished the scroll in {0}, at the rank of {1}.', 'end.win.next': 'The next rank, {0}, is now open for this script.', 'end.win.top': 'This is the highest rank. The pond has run black with ink.',
-    'keep.btn': 'Keepsake', 'keep.title': 'Keepsake', 'keep.save': 'Save image', 'keep.saved': 'Saved', 'keep.tip': 'A memento of this run. On a phone you can also press and hold the picture to save it.',
+    'keep.btn': 'Keepsake', 'keep.title': 'Keepsake', 'keep.save': 'Save image', 'keep.saved': 'Saved', 'keep.tip': 'A memento of this run. You can also press and hold (or right-click) the picture to save it.',
     'end.again': 'New Run', 'end.title': 'Title', 'end.endless': 'Continue — Endless', 'end.ante': 'Reached', 'end.chars': 'Characters', 'end.rounds': 'Sheets cleared',
     'col.tab.seals': 'Seals', 'col.tab.chars': 'Characters', 'col.tab.bosses': 'Masterworks', 'col.tab.ach': 'Feats', 'col.tab.stats': 'Record',
     'col.seals': '{0} of {1} seals seen', 'col.locked': 'Locked', 'col.unseen': 'You have not held this seal yet', 'col.beaten': 'Beaten ×{0}', 'col.ach': '{0} of {1} earned', 'col.unlocks': 'Unlocks: {0}',
@@ -3442,7 +3538,7 @@ const STR = {
     'set.lang': 'Language · 语言', 'set.music': 'Music', 'set.sfx': 'Sound', 'set.speed': 'Scoring speed', 'set.speed.d': 'Tapping anywhere while scoring also hurries it along', 'set.hints': 'Character hints', 'set.hints.d': 'Show characters one or two strokes away',
     'set.marks': 'Ink marks', 'set.marks.d': 'Mark the four inks with ● ▲ ◆ ★', 'set.shake': 'Screen shake', 'set.haptics': 'Haptics', 'set.haptics.d': 'A light buzz on placing and scoring (where supported)', 'set.reduce': 'Reduce motion', 'set.reduce.d': 'Fewer flashes and particles, a calmer background',
     'set.confirm': 'Confirm flourish', 'set.confirm.d': 'Guards against a stray tap', 'set.full': 'Fullscreen', 'set.full.b': 'Toggle', 'set.data': 'Save data', 'set.data.d': 'Kept in this browser; export it as text to back it up', 'set.data.bad': 'This browser cannot store saves — export a backup',
-    'set.export': 'Export', 'set.export.d': 'Copy this text somewhere safe. Import it on any device to restore your progress.', 'set.copy': 'Copy', 'set.copied': 'Copied', 'set.import': 'Import', 'set.import.d': 'Paste a save you exported earlier. It replaces your current progress.',
+    'set.export': 'Export', 'set.export.d': 'Copy this text somewhere safe. Import it on any device to restore your progress.', 'set.copy': 'Copy', 'set.copied': 'Copied', 'set.copyfail': 'Could not copy automatically: the text is selected, copy it by hand', 'set.import': 'Import', 'set.import.d': 'Paste a save you exported earlier. It replaces your current progress.',
     'set.import.bad': 'That is not a valid save', 'set.imported': 'Save imported', 'set.reset': 'Erase all progress', 'set.reset.b': 'Erase', 'set.reset.d': 'Collection, unlocks and records are all wiped', 'set.reset.q': 'Everything you have collected and unlocked will be gone for good.', 'set.reset.y': 'Erase everything',
     'tut.step': 'Tutorial {0}/{1}', 'tut.ok': 'Got it', 'tut.next': 'Next', 'tut.done': 'Start writing', 'tut.skip': 'Skip tutorial',
     'tut.1': 'Each round is one sheet of paper. Reach the <b>target</b> before your <b>flourishes</b> run out. Press Begin.',
@@ -3455,7 +3551,7 @@ const STR = {
     'tut.8': 'This opens the <b>Lexicon</b>: every character you can write, and how. Off you go — blocks become strokes, strokes become characters.',
     'tut.shop': 'Clearing a sheet pays <b>coins</b> to spend on <b>seals</b>, <b>copybooks</b> and <b>studio items</b>. Seals are the heart of a run — tap anything to read it before you buy. Coins you keep earn <b>interest</b>.',
     'help.1': '<h3>Blocks become strokes</h3><p>Drag blocks onto the sheet (tap to rotate). A <b>full row</b> is a horizontal stroke; a <b>full column</b> is a vertical one. Each block costs <b>Ink</b> equal to its cells, and when the Ink is gone no more can be placed.</p><h3>Strokes become characters</h3><p>Press <b>Flourish</b> and every complete row and column scores together and leaves the sheet — together they write one <b>character</b>. The strokes must match the character <b>exactly</b>: edge or middle matters, and one stroke more or fewer is a different character, or a formless <b>scribble</b>.</p>',
-    'help.2': '<h3>Form × Spirit</h3><p>Score = <b>Form × Spirit</b>.</p><ul><li>The <b>stroke count</b> sets the base Form and Spirit; <b>copybooks</b> raise its level.</li><li>Each scored cell gives <b>+5 Form</b>; a cell at a <b>crossing</b> counts twice.</li><li>A stroke written in a single ink is <b>pure</b>: Black +40 Form, Vermilion +4 Spirit, Azure ×1.2 Spirit, Gold +$1.</li><li>Finally everything is multiplied by the <b>character multiplier</b> (王 ×3, 田 ×4 …).</li></ul><h3>Eight principles</h3><p>A run has eight principles of three sheets each: <b>Practice</b>, an <b>Assignment</b>, and a <b>Masterwork</b> with a rule of its own. Reach the target before your flourishes run out. Clearing a sheet pays <b>coins</b> for the shop:</p><ul><li><b>Seals</b> — up to five, acting from left to right; the heart of a run.</li><li><b>Copybooks</b> — raise the level of one stroke tier.</li><li><b>Studio items</b> — dye blocks, give them a nature, copy or destroy them, or mark squares on your paper.</li><li><b>Furnishings</b> — lasting upgrades for the whole run.</li></ul><h3>Controls</h3><ul><li>Drag to place; tap, right-click, scroll or press <b>R</b> to rotate; drop a block on Rinse to swap it.</li><li>Keyboard: <b>1–4</b> pick a block, arrows move, <b>Space</b> places or flourishes, <b>Q</b> rinses, <b>Z / X / C</b> open Lexicon, Ink Box and Run record, <b>Esc</b> pauses.</li><li>Tap anywhere while scoring to speed it up.</li></ul>',
+    'help.2': '<h3>Form × Spirit</h3><p>Score = <b>Form × Spirit</b>.</p><ul><li>The <b>stroke count</b> sets the base Form and Spirit; <b>copybooks</b> raise its level.</li><li>Each scored cell gives <b>+5 Form</b>; a cell at a <b>crossing</b> counts twice.</li><li>A stroke written in a single ink is <b>pure</b>: Black +40 Form, Vermilion +4 Spirit, Azure ×1.2 Spirit, Gold +$1.</li><li>Finally everything is multiplied by the <b>character multiplier</b> (王 ×3, 田 ×4 …).</li></ul><h3>Eight principles</h3><p>A run has eight principles of three sheets each: <b>Practice</b>, an <b>Assignment</b>, and a <b>Masterwork</b> with a rule of its own. Reach the target before your flourishes run out. Clearing a sheet pays <b>coins</b> for the shop:</p><ul><li><b>Seals</b> — up to five, acting in the order they are arranged; the heart of a run.</li><li><b>Copybooks</b> — raise the level of one stroke tier.</li><li><b>Studio items</b> — dye blocks, give them a nature, copy or destroy them, or mark squares on your paper.</li><li><b>Furnishings</b> — lasting upgrades for the whole run.</li></ul><h3>Controls</h3><ul><li>Drag to place; tap, right-click, scroll or press <b>R</b> to rotate; drop a block on Rinse to swap it.</li><li>Keyboard: <b>1–4</b> pick a block, arrows move, <b>Space</b> places or flourishes, <b>Q</b> rinses, <b>Z / X / C</b> open Lexicon, Ink Box and Run record, <b>Esc</b> pauses.</li><li>Tap anywhere while scoring to speed it up.</li></ul>',
   },
 };
 function T(key, ...args) {
@@ -3465,7 +3561,9 @@ function T(key, ...args) {
   if (args.length) s = s.replace(/\{(\d)\}/g, (_, i) => (args[+i] == null ? '' : args[+i]));
   return s;
 }
-const faName = (ante) => T('hud.fa', ante > 8 ? ' ' + ante + ' ' : T('num.' + ante)).replace('第 ', '第 ').trim();
+const faName = (ante) => (ante > 8 ? (LANG === 'zh' ? '第 ' + ante + ' 法' : 'Principle ' + ante) : T('hud.fa', T('num.' + ante)));
+// where a run stands: a finished scroll says so instead of naming a ninth principle
+const runWhere = (run) => (run.phase === 'won' ? T('end.win') : faName(run.ante));
 
 // ---------- sound: everything is synthesised (plucked strings, bells, drums, breath) ----------
 const Snd = (() => {
@@ -4183,8 +4281,8 @@ const Gfx = {
     }));
     this.paintCells(c, list, cs, cx - (geom.w * cs) / 2, cy - (geom.h * cs) / 2, o);
   },
-  pieceCanvas(shape, ink, enh, cs, marks) {
-    const g = geomOf(shape, 0, 0), k = Math.min(2, window.devicePixelRatio || 1) * 1.3;
+  pieceCanvas(shape, ink, enh, cs, marks, rot) {
+    const g = geomOf(shape, rot || 0, 0), k = Math.min(2, window.devicePixelRatio || 1) * 1.3;
     const cv = mkCanvas((g.w * cs + cs) * k, (g.h * cs + cs) * k), c = cv.getContext('2d');
     c.scale(k, k);
     this.piece(c, g, ink, enh, (g.w * cs + cs) / 2, (g.h * cs + cs) / 2, cs, { marks });
@@ -4463,6 +4561,7 @@ const FX = (() => {
     },
     rise(x, y, col, n, spread, size) {
       // embers drifting upward (score on fire)
+      if (reduce()) n = Math.ceil(n / 4);
       for (let i = 0; i < n; i++) {
         parts.push({ x: x + (Math.random() - 0.5) * spread, y, vx: (Math.random() - 0.5) * 40, vy: -(60 + Math.random() * 160), g: -40, drag: 0.97, r: (size || 3) * (0.5 + Math.random()), life: 0.5 + Math.random() * 0.8, max: 1.3, col, a: 0.9, shrink: true, fade: true, add: true });
       }
@@ -4535,8 +4634,12 @@ void main(){
       const loc = gl.getAttribLocation(prog, 'p');
       gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
       uR = gl.getUniformLocation(prog, 'r'); uT = gl.getUniformLocation(prog, 't'); uTint = gl.getUniformLocation(prog, 'tint'); uAmp = gl.getUniformLocation(prog, 'amp');
-      cv.addEventListener('webglcontextlost', (e) => { e.preventDefault(); alive = false; });
-      cv.addEventListener('webglcontextrestored', () => { gl = null; init(); });
+      if (!cv._bound) {
+        // registered once: a restored context must not pile up handlers
+        cv._bound = true;
+        cv.addEventListener('webglcontextlost', (e) => { e.preventDefault(); alive = false; });
+        cv.addEventListener('webglcontextrestored', () => { gl = null; init(); });
+      }
       alive = true;
       resize();
       t0 = nowMs() - Math.random() * 500000;
@@ -4747,15 +4850,42 @@ function bindCard(el, getCard, o) {
     _tipTimer = setTimeout(() => { const c = getCard(); if (c && el.isConnected) showTip(el, c); }, 110);
   });
   el.addEventListener('pointerleave', hideTip);
+  const open = () => {
+    const c = getCard();
+    if (!c) return false;
+    if (_popAnchor === el) { hidePop(); return false; }
+    Snd.play('tick');
+    showPop(el, c);
+    return true;
+  };
   el.addEventListener('click', (e) => {
     if (opt.noClick || el._suppressClick) return;
     e.stopPropagation();
-    const c = getCard();
-    if (!c) return;
-    if (_popAnchor === el) { hidePop(); return; }
-    Snd.play('tick');
-    showPop(el, c);
+    open();
   });
+  if (!opt.noClick) {
+    el.tabIndex = 0;
+    el.setAttribute('role', 'button');
+    el.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault(); e.stopPropagation();
+      if (open()) { const b = $('#pop').querySelector('button'); if (b) b.focus(); }
+    });
+  }
+  if (opt.hold) {
+    // touch: press and hold to read the card (a tap keeps its own meaning)
+    let timer = 0;
+    const stop = () => { clearTimeout(timer); timer = 0; };
+    el.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse') return;
+      stop();
+      timer = setTimeout(() => { timer = 0; const c = getCard(); if (c && el.isConnected) { el._held = true; showTip(el, c); } }, 460);
+    });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) el.addEventListener(ev, () => {
+      stop();
+      if (el._held) { el._held = false; hideTip(); el._suppressClick = true; setTimeout(() => { el._suppressClick = false; }, 350); }
+    });
+  }
 }
 
 // ---- modals
@@ -4796,15 +4926,24 @@ function openModal(o) {
     api.foot = foot;
   }
   veil.appendChild(box);
+  box.tabIndex = -1;
+  veil.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const f = [...box.querySelectorAll('button, input, textarea, select, [tabindex="0"]')].filter((x) => !x.disabled && x.offsetParent !== null);
+    if (!f.length) { e.preventDefault(); return; }
+    const i = f.indexOf(document.activeElement);
+    if (e.shiftKey ? i <= 0 : i === f.length - 1 || i < 0) { e.preventDefault(); f[e.shiftKey ? f.length - 1 : 0].focus(); }
+  });
   if (o.dismiss !== false) veil.addEventListener('pointerdown', (e) => { if (e.target === veil) { Snd.play('back'); close(); } });
   api.dismiss = o.dismiss !== false;
   root.appendChild(veil);
   _modals.push(api);
+  try { if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); box.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
   return api;
 }
 const modalOpen = () => _modals.length > 0;
 function closeTopModal() { const m = _modals[_modals.length - 1]; if (m && m.dismiss) { Snd.play('back'); m.close(); return true; } return false; }
-function closeAllModals() { while (_modals.length) { const m = _modals.pop(); m.veil.remove(); } }
+function closeAllModals() { let guard = 40; while (_modals.length && guard-- > 0) _modals[_modals.length - 1].close(); }
 function confirmBox(title, text, yes, no, danger) {
   return new Promise((res) => {
     let done = false;
@@ -4861,13 +5000,14 @@ function initUiCore() {
     const pop = $('#pop');
     if (_popAnchor && !pop.contains(e.target) && !_popAnchor.contains(e.target)) hidePop();
   }, true);
-  document.addEventListener('contextmenu', (e) => { if (!(e.target instanceof HTMLTextAreaElement) && !(e.target instanceof HTMLInputElement)) e.preventDefault(); });
+  document.addEventListener('contextmenu', (e) => { if (!(e.target instanceof HTMLTextAreaElement) && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLImageElement)) e.preventDefault(); });
   // iOS: block pinch and double-tap zoom
   document.addEventListener('gesturestart', (e) => e.preventDefault());
   document.addEventListener('dblclick', (e) => e.preventDefault());
 }
 
 // ---------- HUD: sheet info, score, the character being written, ink, seals and items ----------
+const strokesLabel = (n) => (n === 1 ? T('char.stroke1') : T('char.strokes', n));
 const edTag = (ed) => (LANG === 'zh' ? EDITIONS[ed].zh : EDITIONS[ed].te);
 const Hud = {
   el: {},
@@ -4922,6 +5062,7 @@ const Hud = {
   },
   view(name) {
     const E = this.el;
+    Tutorial.hide();
     for (const k of ['viewPick', 'viewCash', 'viewShop']) E[k].classList.remove('on');
     $('#playui').style.visibility = name ? 'hidden' : 'visible';
     $('#play').style.visibility = name ? 'hidden' : 'visible';
@@ -4935,8 +5076,9 @@ const Hud = {
     Play.poke();
     const rd = run.round;
     // blind card
-    const fa = FA[((run.ante - 1) % 8) + 1];
-    clear(E.fa).append(h('span.g', { text: fa.g }), h('span', { text: faName(run.ante) }));
+    const ante = run.phase === 'won' ? 8 : run.ante;
+    const fa = FA[((ante - 1) % 8) + 1];
+    clear(E.fa).append(h('span.g', { text: fa.g }), h('span', { text: faName(ante) }));
     const b = rd ? rd.blind : run.blind, bossId = rd ? rd.boss : (b === 2 ? run.boss : null);
     E.blind.classList.toggle('boss', !!bossId);
     if (bossId) { E.bname.textContent = '《' + nm(BOSSES[bossId]) + '》'; E.bfx.innerHTML = rich(dtx(BOSSES[bossId])); }
@@ -5098,7 +5240,7 @@ const Hud = {
     E.peek.classList.remove('hide');
     E.peek.appendChild(h('div.t', { text: T('hud.next') }));
     for (const p of list) {
-      const cv = Gfx.pieceCanvas(p.shape, p.ink, p.enh, 9, PROFILE.settings.marks);
+      const cv = Gfx.pieceCanvas(p.shape, p.ink, p.enh, 9, PROFILE.settings.marks, p.rot);
       E.peek.appendChild(cv);
     }
   },
@@ -5110,7 +5252,10 @@ const Hud = {
     const rd = run.round;
     // in portrait the seals share one strip: shrink them when there are many
     const shown = run.seals.length + Math.max(0, slots - used);
-    const size = UI.orient === 'p' ? clamp(Math.floor((UI.W - 250) / Math.max(5, shown)) - 12, 40, 74) : 62;
+    const roomL = (E.sealList.clientHeight || 520) / Math.max(1, shown);
+    const size = UI.orient === 'p' ? clamp(Math.floor((UI.W - 250) / Math.max(5, shown)) - 12, 40, 74) : clamp(Math.floor(roomL) - 14, 30, 62);
+    E.sealList.classList.toggle('tightseals', UI.orient === 'l' && size < 52);
+    E.sealList.classList.toggle('smallseals', UI.orient === 'p' && size < 58);
     E.sealList.style.setProperty('--ss', size + 'px');
     run.seals.forEach((s, i) => {
       const d = SEALS[s.id];
@@ -5132,8 +5277,10 @@ const Hud = {
       if (UI.busy || e.button > 0) return;
       start = { x: e.clientX, y: e.clientY, id: e.pointerId }; moved = false;
     });
+    el.addEventListener('pointerleave', () => { if (!moved) start = null; });
     el.addEventListener('pointermove', (e) => {
       if (!start || e.pointerId !== start.id) return;
+      if (e.pointerType === 'mouse' && e.buttons === 0) { start = null; moved = false; el.classList.remove('dragging'); return; }
       if (!moved && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 14 * Math.max(0.6, UI.s)) {
         moved = true; hidePop(); hideTip();
         try { el.setPointerCapture(e.pointerId); } catch (err) { /* not capturable */ }
@@ -5145,10 +5292,10 @@ const Hud = {
         if (tgt && tgt.el !== el) tgt.el.classList.add('dropbefore');
       }
     });
-    const end = (e) => {
+    const end = (e, cancelled) => {
       if (!start || e.pointerId !== start.id) return;
-      const wasMoved = moved;
-      start = null;
+      const wasMoved = moved && !cancelled;
+      start = null; moved = false;
       el.classList.remove('dragging');
       this.el.sealList.querySelectorAll('.dropbefore').forEach((x) => x.classList.remove('dropbefore'));
       if (!wasMoved) return;
@@ -5161,7 +5308,7 @@ const Hud = {
       }
     };
     el.addEventListener('pointerup', end);
-    el.addEventListener('pointercancel', end);
+    el.addEventListener('pointercancel', (e) => end(e, true));
   },
   sealAt(cx, cy) {
     const kids = [...this.el.sealList.querySelectorAll('.seal:not(.empty)')];
@@ -5223,7 +5370,7 @@ function sealCard(id, s, run, o) {
 function itemCard(id, run, o) {
   const d = ITEMS[id], opt = o || {};
   const actions = [];
-  if (opt.owned && run && !UI.busy) {
+  if (opt.owned && run && !UI.busy && ['shop', 'round', 'pick'].includes(run.phase)) {
     const u = itemUsable(run, d);
     actions.push({ label: T('use'), cls: 'red', disabled: !u.ok, snd: 'click', fn: () => Game.useItemFlow(opt.index) });
     actions.push({ label: T('sell') + ' ' + coinHtml(itemSellValue(id)), cls: 'gold', snd: 'sell', fn: () => Game.sellItem(opt.index) });
@@ -5242,11 +5389,11 @@ function charCard(id, run) {
   if (def.x !== 1) extra += (extra ? '　' : '') + `${T('char.x')} <b style="color:#b3261a">${fmtX(def.x)}</b>`;
   if (def.yi) extra += `<br><b>${T('hud.yi')}</b> ` + rich(dtx(YI[def.yi])) + ` <span style="opacity:.7">${T('char.yi.once')}</span>`;
   if (def.num) extra += `<br>${T('char.num', def.num)}`;
-  return { title: (id === 'sanbi' ? T('sanbi') : def.g) + (def.py ? ` <span style="font-family:var(--f-ui);font-size:16px;font-weight:400;opacity:.75">${def.py}${LANG === 'en' ? ' · ' + def.en : ''}</span>` : ''), tag: id === 'sanbi' ? '' : T('char.strokes', def.n), body, extra };
+  return { title: (id === 'sanbi' ? T('sanbi') : def.g) + (def.py ? ` <span style="font-family:var(--f-ui);font-size:16px;font-weight:400;opacity:.75">${def.py}${LANG === 'en' ? ' · ' + def.en : ''}</span>` : ''), tag: id === 'sanbi' ? '' : strokesLabel(id === 'xuan' && run ? run.w + run.h : def.n), body, extra };
 }
 function pieceCard(p) {
   const sh = SHAPES[p.shape];
-  let body = `${T('piece.cells', sh.n)}　${T('piece.ink')} <b class="rk rk-${p.ink}">${nm(INK[p.ink])}</b>`;
+  let body = `${sh.n === 1 ? T('piece.cell1') : T('piece.cells', sh.n)}　${T('piece.ink')} <b class="rk rk-${p.ink}">${nm(INK[p.ink])}</b>`;
   body += `<br><span class="rk-n rk">${rich(tx(INK[p.ink].pure))}</span>`;
   let extra = '';
   if (p.enh) extra = `<b>${nm(ENH[p.enh])}</b>：${rich(dtx(ENH[p.enh]))}`;
@@ -5269,7 +5416,21 @@ const Play = {
     cv.addEventListener('pointerup', (e) => this.onUp(e));
     cv.addEventListener('pointercancel', (e) => this.cancelDrag());
     cv.addEventListener('pointerleave', () => { this._hoverSlot = -1; if (!this.drag) this.hideSlotCard(); });
-    cv.addEventListener('wheel', (e) => { if (this.drag || this.slotAt(e) >= 0) { e.preventDefault(); this.rotate(this.drag ? this.drag.slot : this.slotAt(e), e.deltaY > 0 ? 1 : -1); } }, { passive: false });
+    cv.addEventListener('wheel', (e) => {
+      const slot = this.drag ? this.drag.slot : this.slotAt(e);
+      if (slot < 0) return;
+      e.preventDefault();
+      if (!e.deltaY) return;
+      // one notch, one turn: a trackpad sends a stream of small deltas, so they are gathered and rationed
+      const now = nowMs();
+      this._wheel = (now - (this._wheelT || 0) > 350 ? 0 : this._wheel || 0) + (e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY);
+      this._wheelT = now;
+      if (Math.abs(this._wheel) < 70 || now - (this._wheelTurn || 0) < 200) return;
+      const dir = this._wheel > 0 ? 1 : -1;
+      this._wheel = 0; this._wheelTurn = now;
+      this.rotate(slot, dir);
+    }, { passive: false });
+    window.addEventListener('blur', () => this.cancelDrag());
     Hud.el.ignite.addEventListener('click', () => Game.ignite());
     Hud.el.rinse.addEventListener('click', () => this.toggleRinse());
     if (!this.raf) this.raf = requestAnimationFrame((t) => this.frame(t));
@@ -5340,20 +5501,29 @@ const Play = {
     }
     if (this.drag) {
       // a second finger (or the other mouse button) turns the block in hand
-      if (e.pointerId !== this.drag.id || e.button === 2) this.rotate(this.drag.slot, e.button === 2 ? -1 : 1);
+      if (e.button === 2 || (e.pointerId !== this.drag.id && this.drag.moved)) this.rotate(this.drag.slot, e.button === 2 ? -1 : 1);
       return;
     }
     const slot = this.slotAt(e);
     const rd = UI.run.round;
-    if (slot < 0 || !rd.tray[slot]) { if (this.rinseMode) this.setRinse(false); this.kb = null; return; }
+    if (this.kb) { this.kb = null; this.setGhost(null); }
+    if (slot < 0 || !rd.tray[slot]) { if (this.rinseMode) this.setRinse(false); return; }
     if (e.button === 2) { this.rotate(slot, -1); return; }
     if (this.rinseMode) { this.setRinse(false); Game.discard(slot); return; }
     const p = this.local(e);
+    if (this.flipHit(slot, p)) { this.hideSlotCard(); this.flip(slot); return; }
     this.hideSlotCard();
     this.drag = { slot, id: e.pointerId, sx: p.x, sy: p.y, x: p.x, y: p.y, moved: false, touch: e.pointerType !== 'mouse', gx: 0, gy: 0, valid: false, onBoard: false, overRinse: false, held: false };
     if (this.drag.touch) this._hoverT = setTimeout(() => { const d = this.drag; if (d && !d.moved && d.slot === slot) { d.held = true; this.showSlotCard(slot); } }, 480);
-    this.kb = null;
     try { this.cv.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+  },
+  // the "Flip" tab in the corner of a tray slot (only with a seal that allows mirroring)
+  flipOn() { const run = UI.run; return !!run && run.phase === 'round' && stat(run, 'flip') > 0 && !flag(run, 'noRotate') && !this.rinseMode; },
+  flipRect(slot) { const s = this.slots[slot]; return s ? { x: s.x + s.w - 64, y: s.y + 15, w: 54, h: 28 } : null; },
+  flipHit(slot, p) {
+    if (!this.flipOn()) return false;
+    const r = this.flipRect(slot);
+    return !!r && p.x >= r.x - 6 && p.x <= r.x + r.w + 6 && p.y >= r.y - 8 && p.y <= r.y + r.h + 8;
   },
   // a card describing the block under the pointer (hover with a mouse, press-and-hold with a finger)
   showSlotCard(slot) {
@@ -5383,6 +5553,7 @@ const Play = {
     if (!d) { this.onHover(e); return; }
     this.poke();
     if (e.pointerId !== d.id) return;
+    if (e.pointerType === 'mouse' && e.buttons === 0) { this.cancelDrag(); return; }
     // with a mouse, pressing the other button mid-drag turns the block
     if (e.pointerType === 'mouse') { if ((e.buttons & 2) && !(d.btns & 2) && d.moved) this.rotate(d.slot, 1); d.btns = e.buttons; }
     const p = this.local(e);
@@ -5493,6 +5664,8 @@ const Play = {
   setRinse(v) { this.rinseMode = v && UI.run.round.discards > 0; Hud.el.rinse.classList.toggle('armed', this.rinseMode); },
 
   // ---- keyboard
+  // the block a turning key applies to: the one in hand, the one chosen by keyboard, or the one under the mouse
+  keySlot() { return this.drag ? this.drag.slot : this.kb ? this.kb.slot : (this._hoverSlot >= 0 && UI.run.round.tray[this._hoverSlot] ? this._hoverSlot : -1); },
   key(e) {
     this.poke();
     if (!this.canAct()) return false;
@@ -5509,9 +5682,9 @@ const Play = {
     };
     if (k >= '1' && k <= '9') { pickSlot(+k - 1); return true; }
     if (k === 'Tab') { const n = rd.tray.length; let s = this.kb ? this.kb.slot : -1; for (let i = 0; i < n; i++) { s = (s + (e.shiftKey ? n - 1 : 1)) % n; if (rd.tray[s] && slotUsable(run, s)) break; } pickSlot(s); return true; }
-    if (k === 'r' || k === 'R') { const s = this.drag ? this.drag.slot : this.kb ? this.kb.slot : -1; if (s >= 0) this.rotate(s, e.shiftKey ? -1 : 1); return true; }
-    if (k === 'e' || k === 'E') { const s = this.drag ? this.drag.slot : this.kb ? this.kb.slot : -1; if (s >= 0) this.rotate(s, -1); return true; }
-    if (k === 'f' || k === 'F') { const s = this.drag ? this.drag.slot : this.kb ? this.kb.slot : -1; if (s >= 0) this.flip(s); return true; }
+    if (k === 'r' || k === 'R') { const s = this.keySlot(); if (s >= 0) this.rotate(s, e.shiftKey ? -1 : 1); return true; }
+    if (k === 'e' || k === 'E') { const s = this.keySlot(); if (s >= 0) this.rotate(s, -1); return true; }
+    if (k === 'f' || k === 'F') { const s = this.keySlot(); if (s >= 0) this.flip(s); return true; }
     if (k === 'q' || k === 'Q') { this.toggleRinse(); return true; }
     if (k === 'Escape') { if (this.kb) { this.kb = null; this.setGhost(null); return true; } if (this.rinseMode) { this.setRinse(false); return true; } if (this.drag) { this.cancelDrag(); return true; } return false; }
     const dirs = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1], a: [-1, 0], d: [1, 0], w: [0, -1], s: [0, 1], A: [-1, 0], D: [1, 0], W: [0, -1], S: [0, 1] };
@@ -5524,6 +5697,7 @@ const Play = {
       return true;
     }
     if (k === ' ' || k === 'Enter') {
+      if (e.repeat) return true;
       if (this.kb) {
         const { slot, gx, gy } = this.kb;
         if (canPlace(run, slot, gx, gy)) { this.setGhost(null); const keep = { gx, gy }; this.kb = null; Game.place(slot, gx, gy); this._kbLast = keep; }
@@ -5576,7 +5750,7 @@ const Play = {
       this.shakeSlot >= 0 || this.rinseMode || this.target || now - (this.pokeT || 0) < 700;
     if (!busy) {
       // completed lines keep a slow sheen: half rate is plenty; otherwise just a rare safety refresh
-      if (this.lines.n > 0 ? this.fno % 2 : this.fno % 45) return;
+      if (this.lines.n > 0 && !PROFILE.settings.reduce ? this.fno % 2 : this.fno % 45) return;
     }
     this.draw();
   },
@@ -5696,7 +5870,7 @@ const Play = {
           for (const x of g.lines.cols) if (!L.cols.includes(x)) c.fillRect(bx + x * cs, by, cs, h * cs);
         }
         c.save();
-        c.globalAlpha = g.valid ? 0.5 + 0.12 * Math.sin(t * 0.008) : 0.3;
+        c.globalAlpha = g.valid ? 0.5 + (PROFILE.settings.reduce ? 0 : 0.12 * Math.sin(t * 0.008)) : 0.3;
         Gfx.piece(c, g.geom, p.ink, p.enh, bx + (g.gx + g.geom.w / 2) * cs, by + (g.gy + g.geom.h / 2) * cs, cs, { flat: true });
         c.restore();
         c.save();
@@ -5754,7 +5928,7 @@ const Play = {
     c.fillStyle = gr; c.fill();
     c.strokeStyle = this.rinseMode ? 'rgba(140,200,250,0.95)' : 'rgba(210,168,74,0.3)'; c.lineWidth = this.rinseMode ? 2.5 : 1; c.stroke();
     c.restore();
-    const queue = flag(run, 'queue'), lim = flag(run, 'pieceLimit');
+    const queue = flag(run, 'queue'), lim = flag(run, 'pieceLimit'), flipOn = this.flipOn();
     for (let i = 0; i < this.slots.length; i++) {
       const s = this.slots[i], tp = rd.tray[i];
       if (i > 0) { c.fillStyle = 'rgba(210,168,74,0.14)'; c.fillRect(s.x - 0.5, py + 12, 1, ph - 24); }
@@ -5771,7 +5945,7 @@ const Play = {
       const ap = clamp((t - (this.trayAppear[i] || 0)) / 260, 0, 1), e = 1 - Math.pow(1 - ap, 3);
       let cx = s.x + s.w / 2, cy = s.y + s.h / 2 - 9 + (1 - e) * 26;
       if (this.shakeSlot === i) { const u = (nowMs() - this.shakeT) / 300; if (u < 1) cx += Math.sin(u * 30) * 6 * (1 - u); else this.shakeSlot = -1; }
-      if (this.rinseMode) cy += Math.sin(t * 0.012 + i * 1.3) * 3;
+      if (this.rinseMode && !PROFILE.settings.reduce) cy += Math.sin(t * 0.012 + i * 1.3) * 3;
       if (kbSel) { rr(s.x + 6, py + 5, s.w - 12, ph - 10, 10); c.fillStyle = 'rgba(243,217,139,0.13)'; c.fill(); c.strokeStyle = 'rgba(243,217,139,0.8)'; c.lineWidth = 2; c.stroke(); }
       c.save();
       c.globalAlpha = (dragging ? 0.22 : 1) * e * (afford && usable ? 1 : 0.38);
@@ -5788,6 +5962,16 @@ const Play = {
       c.fillStyle = afford ? 'rgba(0,0,0,0.5)' : 'rgba(120,20,10,0.8)'; c.fill();
       c.fillStyle = afford ? '#d9cdb6' : '#ffb7a6'; c.fillText(label, s.x + s.w / 2, ly + 1);
       if (!UI.touch && !this.rinseMode) { c.globalAlpha = 0.4 * e; c.fillStyle = '#efe6d2'; c.font = `700 14px ${FONT_NUM}`; c.textAlign = 'left'; c.fillText(String(i + 1), s.x + 12, py + 15); }
+      if (flipOn && usable && !dragging) {
+        const fr = this.flipRect(i);
+        c.globalAlpha = 0.95 * e;
+        rr(fr.x, fr.y, fr.w, fr.h, 9);
+        c.fillStyle = tp.flip ? 'rgba(210,168,74,0.32)' : 'rgba(255,255,255,0.07)'; c.fill();
+        c.strokeStyle = 'rgba(243,217,139,0.75)'; c.lineWidth = 1.2; c.stroke();
+        c.fillStyle = '#f3d98b'; c.textAlign = 'center';
+        c.font = LANG === 'zh' ? `700 18px ${FONT_KAI}` : `700 14px ${FONT_NUM}`;
+        c.fillText(LANG === 'zh' ? '翻' : 'Flip', fr.x + fr.w / 2, fr.y + fr.h / 2 + 1);
+      }
       if (queue && i > 0) { c.globalAlpha = 0.8; c.fillStyle = '#ff9a82'; c.font = `700 ${Math.round(tcs)}px ${FONT_KAI}`; c.textAlign = 'center'; c.fillText(LANG === 'zh' ? '候' : '…', s.x + s.w / 2, s.y + s.h / 2 - 9); }
       c.restore();
     }
@@ -6024,7 +6208,7 @@ const Score = {
           const d = YI[e.yi];
           Snd.play(e.yi.startsWith('money') ? 'coin' : 'level');
           FX.ring(c.x, c.y, 'rgba(120,220,170,0.9)', c.w * 0.4, c.w * 1.3, 4 * u, 0.5);
-          toast({ iconEl: Gfx.glyphCanvas(e.char, 34, '#1b1918'), title: T('fx.yi', CH[e.char].g), text: rich(dtx(d)) + (e.item ? (e.got ? ' — ' + nm(ITEMS[e.item]) : ' — ' + T('fx.noroom')) : e.tier ? ' — ' + (LANG === 'zh' ? TIER_NAME.zh[e.tier] : TIER_NAME.en[e.tier]) : ''), ms: 2600 });
+          toast({ iconEl: Gfx.glyphCanvas(e.char, 34, '#1b1918'), title: T('fx.yi', CH[e.char].g), text: rich(dtx(d)) + (e.void ? ' — ' + T('fx.void') : '') + (e.item ? (e.got ? ' — ' + nm(ITEMS[e.item]) : ' — ' + T('fx.noroom')) : e.tier ? ' — ' + (LANG === 'zh' ? TIER_NAME.zh[e.tier] : TIER_NAME.en[e.tier]) : ''), ms: 2600 });
           if (e.cells) { for (const i of e.cells) { const p = Play.cellVP(i); FX.ink(p.x, p.y, '#c9bfa8', 2, 160 * u, 4 * u); if (Play.viewBoard) Play.viewBoard[i] = null; } Play.inkDirty = true; }
           await this.wait(300);
           break;
@@ -6065,12 +6249,13 @@ const Game = {
   _tick: 0,
   save() {
     const run = UI.run;
+    // with nothing in play (the title screen) the stored run is left exactly as it is
     if (run) {
       const now = nowMs();
       if (this._tick) run.stats.time += Math.min(60, (now - this._tick) / 1000);
       this._tick = now;
+      PROFILE.run = run.phase !== 'over' ? run : null;
     }
-    PROFILE.run = run && run.phase !== 'over' ? run : null;
     saveProfile();
   },
   begin(opts) {
@@ -6091,6 +6276,7 @@ const Game = {
   enter() {
     UI.busy = false;
     UI.screen('game');
+    Targets.cancel();
     Play.cancelDrag(); Play.kb = null; Play.rinseMode = false; Play.target = null; Play.viewBoard = null; Play.strokes.length = 0; Play.hidden.clear(); Play.pops.clear(); Play.flashCells.clear(); Play.lineFlash.length = 0; Play.trayUid = [];
     FX.clear();
     Hud._patKey = ''; Hud._score = 0;
@@ -6199,6 +6385,8 @@ const Game = {
       const ok = await confirmBox(T('ignite'), T('confirm.ignite', pat.id === 'sanbi' ? T('sanbi') : CH[pat.id].g), T('ignite'), T('cancel'));
       if (!ok) return;
     }
+    Targets.cancel();
+    Tutorial.hide();
     Play.cancelDrag(); Play.kb = null; Play.setGhost(null); Play.setRinse(false);
     this.hideStuck();
     const snapshot = rd.board.slice();
@@ -6217,12 +6405,15 @@ const Game = {
     for (const id of seq) { if (id === ['yi', 'er', 'san'][k]) k++; if (k === 3) break; }
     res.seq123 = k === 3;
     const isNew = metaOnIgnite(run, res);
+    // the outcome goes into the record before the ceremony, so closing the page during it loses nothing
+    if (res.won && rd.boss) metaOnBoss(run, rd.boss);
+    if (res.lost && !run.recorded) { run.recorded = true; metaOnRunEnd(run, false); }
     this.save();
+    if (res.won || res.lost) saveProfile(true);
     await Score.play(res);
     if (isNew) toast({ iconEl: Gfx.glyphCanvas(res.char, 34, '#1b1918'), title: T('fx.newchar', CH[res.char].g + (LANG === 'en' ? ' · ' + CH[res.char].en : '')), text: escHtml(LANG === 'zh' ? CH[res.char].gz : CH[res.char].ge), ms: 4800, snd: 'newchar' });
     metaOnState(run);
     if (res.won) {
-      if (rd.boss) metaOnBoss(run, rd.boss);
       showAchievements();
       Snd.play('win');
       FX.flash('#fff3d0', 0.2);
@@ -6244,7 +6435,7 @@ const Game = {
   },
   checkStuck() {
     const run = UI.run;
-    if (run.phase !== 'round' || UI.busy) { this.hideStuck(); return; }
+    if (run.phase !== 'round' || UI.busy || Play.target) { this.hideStuck(); return; }
     if (hasMove(run)) { this.hideStuck(); return; }
     if (this._stuck) return;
     const bar = h('div.panel.stuckbar', h('span', { text: T('stuck') }), mkBtn(T('stuck.end'), 'red small', () => this.giveUp()));
@@ -6252,11 +6443,16 @@ const Game = {
     Hud.el.center.appendChild(bar);
   },
   hideStuck() { if (this._stuck) { this._stuck.remove(); this._stuck = null; } },
-  giveUp() {
+  async giveUp() {
     const run = UI.run;
-    if (run.phase !== 'round' || UI.busy) return;
+    if (run.phase !== 'round' || UI.busy || modalOpen()) return;
+    // only the things that act on the sheet in hand can still turn it around
+    const usable = run.items.some((it) => { const d = ITEMS[it.id]; return (d.round || (d.need && d.need.t === 'cell')) && itemUsable(run, d).ok; });
+    const sure = await confirmBox(T('stuck.end'), T('stuck.sure') + (usable ? '<br><span style="color:#ffd9a0">' + T('stuck.items') + '</span>' : ''), T('stuck.end'), T('cancel'), true);
+    if (!sure || UI.run !== run || run.phase !== 'round' || UI.busy) return;
     this.hideStuck();
     concede(run);
+    if (run.phase === 'over' && !run.recorded) { run.recorded = true; metaOnRunEnd(run, false); }
     this.save();
     if (run.phase === 'cash') { Snd.play('win'); this.showCash(); } else this.finish();
   },
@@ -6386,6 +6582,7 @@ const Game = {
   },
   startRound() {
     const run = UI.run;
+    Targets.cancel();
     if (!startRound(run)) return;
     this.save();
     Play.trayUid = []; Play._kbLast = null;
@@ -6589,7 +6786,8 @@ const Shop = {
     if (!run.pack) return;
     const def = PACKS[run.pack.id];
     const m = this._packModal = openModal({
-      title: nm(def), sub: '', dismiss: false, width: Math.min(UI.W - 30, 190 * run.pack.choices.length + 60),
+      title: nm(def), sub: '&nbsp;', dismiss: false, width: Math.min(UI.W - 30, 190 * run.pack.choices.length + 60),
+      onClose: () => { if (this._packModal === m) { this._packModal = null; this._packRoot = null; } },
       body: (root) => { this._packRoot = root; },
       buttons: [{ label: T('pack.skip'), cls: 'ghost', keep: true, fn: () => { closePack(run); this.packDone(); } }],
     });
@@ -6661,6 +6859,9 @@ const Shop = {
 
 // ---- choosing what an item acts on
 const Targets = {
+  _cancel: null,
+  // leave square-picking mode, whoever started it
+  cancel() { if (this._cancel) this._cancel(); },
   choose(def) {
     if (!def.need) return Promise.resolve({});
     if (def.need.t === 'pieces') return this.pieces(def);
@@ -6686,12 +6887,16 @@ const Targets = {
           for (const p of list) {
             const el = h('div.pc', { data: { uid: p.uid } }, Gfx.pieceCanvas(p.shape, p.ink, p.enh, UI.orient === 'p' ? 19 : 15, PROFILE.settings.marks));
             if (p.enh) el.appendChild(h('span.tg', { text: ENH[p.enh].g }));
+            const able = !def.ok || def.ok(p);
+            if (!able) el.classList.add('off');
             el.addEventListener('click', () => {
+              if (el._suppressClick) return;
+              if (!able) { Snd.play('bad'); return; }
               if (sel.has(p.uid)) sel.delete(p.uid);
               else { if (nd.max === 1) sel.clear(); if (sel.size >= nd.max) { Snd.play('bad'); return; } sel.add(p.uid); }
               Snd.play('tick'); upd();
             });
-            bindCard(el, () => pieceCard(p), { noClick: true });
+            bindCard(el, () => pieceCard(p), { noClick: true, hold: true });
             grid.appendChild(el);
           }
           root.appendChild(grid);
@@ -6712,10 +6917,20 @@ const Targets = {
     };
     if (inRound && Play.active && !modalOpen()) {
       // pick straight on the sheet
+      this.cancel();
       return new Promise((res) => {
-        const bar = h('div.panel.stuckbar', { style: { borderColor: 'rgba(120,220,170,0.7)' } }, h('span', { text: T('target.square', nm(def)), style: { color: '#b6ecd4' } }),
+        const bar = h('div.panel.stuckbar.targetbar', { style: { borderColor: 'rgba(120,220,170,0.7)' } }, h('span', { text: T('target.square', nm(def)), style: { color: '#b6ecd4' } }),
           mkBtn(T('cancel'), 'ghost small', () => finish(null)));
-        const finish = (v) => { Play.target = null; bar.remove(); res(v == null ? null : { square: v }); };
+        const finish = (v) => {
+          if (this._cancel !== cancel) return;
+          this._cancel = null; Play.target = null; bar.remove(); Play.poke();
+          res(v == null ? null : { square: v });
+          if (v == null) Game.checkStuck();
+        };
+        const cancel = () => finish(null);
+        this._cancel = cancel;
+        Game.hideStuck();
+        Play.cancelDrag(); Play.kb = null; Play.setGhost(null); Play.setRinse(false);
         Hud.el.center.appendChild(bar);
         Play.target = { ok, pick: (i) => { Snd.play('click'); finish(i); } };
       });
@@ -6846,7 +7061,7 @@ const Overlays = {
       sec(LANG === 'zh' ? TIER_NAME.zh[n] : TIER_NAME.en[n], `Lv.${lvl} · ${T('form')} ${b.c} × ${T('spirit')} ${b.m}`, ids);
     }
     sec(T('dict.full'), '', groups.x);
-    sec(T('dict.diag'), T('dict.diag.sub'), groups.d);
+    sec(T('dict.diag'), w === hh ? T('dict.diag.sub') : T('dict.diag.no'), groups.d);
     root.appendChild(h('div.dsec', T('sanbi')));
     root.appendChild(h('div', { html: T('sanbi.desc'), style: { fontSize: '18px', color: '#e8dcc6' } }));
   },
@@ -7005,7 +7220,7 @@ const Overlays = {
           return el;
         };
         const onoff = (cur, fn) => seg([[true, T('on')], [false, T('off')]], !!cur, fn);
-        row(T('set.lang'), null, seg([['zh', '中文'], ['en', 'English']], S.lang, (v) => { S.lang = v; LANG = v; saveProfile(true); close(); App.relang(); }));
+        row(T('set.lang'), null, seg([['zh', '中文'], ['en', 'English']], S.lang, (v) => { S.lang = v; LANG = v; saveProfile(true); closeAllModals(); App.relang(); }));
         row(T('set.music'), null, slider(S.music, (v) => { S.music = v; }));
         row(T('set.sfx'), null, slider(S.sfx, (v) => { S.sfx = v; }));
         row(T('set.speed'), T('set.speed.d'), seg([[1, '1×'], [2, '2×'], [4, '4×']], S.speed, (v) => { S.speed = v; }));
@@ -7013,7 +7228,7 @@ const Overlays = {
         row(T('set.marks'), T('set.marks.d'), onoff(S.marks, (v) => { S.marks = v; Play.inkDirty = true; }));
         row(T('set.shake'), null, onoff(S.shake, (v) => { S.shake = v; }));
         if (navigator.vibrate) row(T('set.haptics'), T('set.haptics.d'), onoff(S.haptics !== false, (v) => { S.haptics = v; }));
-        row(T('set.reduce'), T('set.reduce.d'), onoff(S.reduce, (v) => { S.reduce = v; }));
+        row(T('set.reduce'), T('set.reduce.d'), onoff(S.reduce, (v) => { S.reduce = v; App.motion(); }));
         row(T('set.confirm'), T('set.confirm.d'), onoff(S.confirmIgnite, (v) => { S.confirmIgnite = v; }));
         if (document.fullscreenEnabled || document.webkitFullscreenEnabled) row(T('set.full'), null, mkBtn(T('set.full.b'), 'small', () => App.fullscreen()));
         row(T('set.data'), Store.ok ? T('set.data.d') : T('set.data.bad'), h('div', { style: { display: 'flex', gap: '8px' } }, mkBtn(T('set.export'), 'small', () => this.exportSave()), mkBtn(T('set.import'), 'small', () => this.importSave())));
@@ -7037,8 +7252,11 @@ const Overlays = {
       buttons: [{ label: T('set.copy'), cls: 'gold', keep: true, fn: () => {
         const done = () => toast({ icon: '存', title: T('set.copied'), ms: 1800 });
         const ta = document.querySelector('textarea.code');
-        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => { ta.select(); try { document.execCommand('copy'); done(); } catch (e) { /* manual copy */ } });
-        else { ta.select(); try { document.execCommand('copy'); done(); } catch (e) { /* manual copy */ } }
+        const pick = () => { ta.readOnly = false; ta.focus(); ta.select(); try { ta.setSelectionRange(0, ta.value.length); } catch (e) { /* ignore */ } ta.readOnly = true; };
+        // only claim success when the browser really took the text
+        const legacy = () => { pick(); let took = false; try { took = document.execCommand('copy'); } catch (e) { took = false; } if (took) done(); else toast({ icon: '存', title: T('set.copyfail'), ms: 3600 }); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, legacy);
+        else legacy();
       } }, { label: T('close'), cls: 'ghost' }],
     });
   },
@@ -7259,8 +7477,8 @@ const Menu = {
     cv.title = AUTHOR;
     return cv;
   },
-  title() {
-    closeAllModals();
+  title(keep) {
+    if (!keep) closeAllModals();
     UI.screen('menu');
     BG.mood('title'); Snd.setMusic('title');
     Tutorial.hide();
@@ -7271,7 +7489,7 @@ const Menu = {
     const list = h('div.menulist');
     const add = (label, cls, fn, id) => { const b = mkBtn(label, cls, fn); if (id) b.id = id; list.appendChild(b); return b; };
     const run = PROFILE.run;
-    if (run) add(`${T('menu.continue')}<small>${T('menu.continue.d', nm(DECKS[run.deckId]), run.ante > 8 ? run.ante : T('num.' + run.ante))}</small>`, 'gold', () => {
+    if (run) add(`${T('menu.continue')}<small>${nm(DECKS[run.deckId])} · ${runWhere(run)}</small>`, 'gold', () => {
       try { Game.resume(); } catch (e) {
         // a save that can no longer be read should never trap the player
         PROFILE.run = null; UI.run = null; saveProfile(true); closeAllModals(); this.title();
@@ -7357,7 +7575,7 @@ const Menu = {
   endStats(run) {
     const box = h('div.endstats');
     const add = (k, v) => box.appendChild(h('div', k, h('b', { html: v })));
-    add(T('end.ante'), faName(run.ante));
+    add(T('end.ante'), runWhere(run));
     add(T('run.best'), fmtNum(run.stats.best) + (run.stats.bestChar ? ` <span class="kai" style="font-size:20px">${run.stats.bestChar === 'sanbi' ? T('sanbi') : CH[run.stats.bestChar].g}</span>` : ''));
     add(T('end.chars'), String(distinctChars(run)));
     add(T('run.ignites'), String(run.stats.ignites));
@@ -7367,7 +7585,7 @@ const Menu = {
   },
   endSeals(run) {
     const row = h('div.endseals');
-    for (const s of run.seals) { const el = Gfx.sealEl(s.id, 56, s.ed); bindCard(el, () => sealCard(s.id, s, run), { noClick: true }); row.appendChild(el); }
+    for (const s of run.seals) { const el = Gfx.sealEl(s.id, 56, s.ed); bindCard(el, () => sealCard(s.id, s, run)); row.appendChild(el); }
     return row;
   },
   // a keepsake of the run: one image to save or share
@@ -7448,16 +7666,20 @@ const Menu = {
   showKeepsake(run, won) {
     const cv = this.keepsake(run, won);
     const name = `方块字-${run.daily ? 'D' + run.daily : run.seed}.png`;
-    const blobOf = () => new Promise((res) => { if (cv.toBlob) cv.toBlob((b) => res(b), 'image/png'); else res(null); });
+    // the picture is made ready beforehand: sharing must start inside the tap itself
+    let blob = null;
+    if (cv.toBlob) cv.toBlob((b) => { blob = b; }, 'image/png');
     openModal({
       title: T('keep.title'), width: Math.min(UI.W - 30, 560),
       body: (root) => {
-        cv.style.width = '100%'; cv.style.height = 'auto'; cv.style.borderRadius = '6px'; cv.style.boxShadow = '0 8px 24px rgba(0,0,0,0.6)';
-        root.appendChild(cv);
+        // a real image (not a canvas), so the browser's own "save image" works on a long press or a right click
+        let shown = cv;
+        try { const img = h('img.keepimg', { alt: name }); img.src = cv.toDataURL('image/png'); shown = img; } catch (e) { shown = cv; }
+        shown.style.width = '100%'; shown.style.height = 'auto'; shown.style.borderRadius = '6px'; shown.style.boxShadow = '0 8px 24px rgba(0,0,0,0.6)';
+        root.appendChild(shown);
         root.appendChild(h('div.dim', { text: T('keep.tip'), style: { marginTop: '10px', fontSize: '16px', textAlign: 'center' } }));
       },
       buttons: [{ label: T('close'), cls: 'ghost' }, { label: T('keep.save'), cls: 'gold', keep: true, fn: async () => {
-        const blob = await blobOf();
         if (!blob) return;
         try {
           const file = typeof File === 'function' ? new File([blob], name, { type: 'image/png' }) : null;
@@ -7573,29 +7795,29 @@ const Tutorial = {
     if (!this.active()) return;
     const st = PROFILE.meta.tutorial;
     if (ev === 'pick') {
-      if (st === 0) this.show($('#btn-start'), T('tut.1'), [], T('tut.step', 1, 6));
+      if (st === 0) this.show($('#btn-start'), T('tut.1'), [], T('tut.step', 1, 8));
       else this.hide();
     } else if (ev === 'round') {
-      if (st <= 1) { this.set(1); this.show(Hud.el.traybox, T('tut.2'), [], T('tut.step', 2, 6)); }
+      if (st <= 1) { this.set(1); this.show(Hud.el.traybox, T('tut.2'), [], T('tut.step', 2, 8)); }
     } else if (ev === 'place') {
       if (st === 1 || st === 2) {
         if (data.lines.n >= 1) this.stepLine();
-        else if (st === 1) { this.set(2); this.show(Hud.el.boardbox, T('tut.3'), [], T('tut.step', 3, 6), 'in'); }
+        else if (st === 1) { this.set(2); this.show(Hud.el.boardbox, T('tut.3'), [], T('tut.step', 3, 8), 'in'); }
       }
     } else if (ev === 'ignite') {
       if (st < 5) {
         this.set(5);
         this.show(Hud.el.char.querySelector('.calc'), T('tut.6'), [{ label: T('tut.next'), fn: () => {
           this.show(Hud.el.rinse, T('tut.7'), [{ label: T('tut.next'), fn: () => {
-            this.show(Hud.el.bDict, T('tut.8'), [{ label: T('tut.done'), fn: () => { this.set(99); this.hide(); } }], T('tut.step', 6, 6));
-          } }], T('tut.step', 6, 6));
-        } }], T('tut.step', 5, 6));
+            this.show(Hud.el.bDict, T('tut.8'), [{ label: T('tut.done'), fn: () => { this.set(99); this.hide(); } }], T('tut.step', 8, 8));
+          } }], T('tut.step', 7, 8));
+        } }], T('tut.step', 6, 8));
       }
     } else if (ev === 'discard') { /* nothing to teach */ }
   },
   stepLine() {
     this.set(3);
-    this.show(Hud.el.char, T('tut.4'), [{ label: T('tut.next'), fn: () => { this.set(4); this.show(Hud.el.ignite, T('tut.5'), [], T('tut.step', 4, 6)); } }], T('tut.step', 4, 6));
+    this.show(Hud.el.char, T('tut.4'), [{ label: T('tut.next'), fn: () => { this.set(4); this.show(Hud.el.ignite, T('tut.5'), [], T('tut.step', 5, 8)); } }], T('tut.step', 4, 8));
   },
   show(target, html, btns, step, mode) {
     this.hide();
@@ -7651,6 +7873,16 @@ const App = {
     if (window.visualViewport) window.visualViewport.addEventListener('resize', () => this.resize());
     document.addEventListener('keydown', (e) => this.key(e));
     document.addEventListener('pointerdown', () => { this.wake(); if (Score.playing) Score.fast = true; }, true);
+    // some browsers (iOS Safari) unlock sound only on a release or a click, never on the press itself
+    for (const ev of ['pointerup', 'touchend', 'click']) document.addEventListener(ev, () => this.wake(), true);
+    // a button clicked with the pointer does not keep the keyboard focus (Space stays free for the game)
+    document.addEventListener('click', (e) => { const b = e.detail > 0 && e.target instanceof Element ? e.target.closest('button') : null; if (b) b.blur(); }, true);
+    // another tab saved while this one sits on the title: show what is really stored
+    window.addEventListener('storage', (e) => {
+      if (e.key !== SAVE_KEY || UI.run || !$('#menu').classList.contains('on') || modalOpen()) return;
+      loadProfile(); Menu.title();
+    });
+    this.motion();
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) { Game.save(); saveProfile(true); Snd.suspend(); }
       else { Game._tick = nowMs(); if (this.started) Snd.resume(); }
@@ -7673,7 +7905,7 @@ const App = {
     FX.resize(); BG.resize();
     hidePop(); hideTip();
     Play.cancelDrag();
-    if ($('#menu').classList.contains('on')) Menu.title();
+    if ($('#menu').classList.contains('on')) Menu.title(true);
     else if (UI.run) {
       Hud._patKey = '';
       Hud.refresh();
@@ -7684,6 +7916,8 @@ const App = {
     }
     Tutorial.relayout();
   },
+  // the reduce-motion switch reaches the stylesheet through a class
+  motion() { document.body.classList.toggle('calm', !!PROFILE.settings.reduce); },
   relang() {
     document.documentElement.lang = LANG === 'zh' ? 'zh-CN' : 'en';
     Gfx._paper.clear();
@@ -7704,14 +7938,24 @@ const App = {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) { if (e.key === 'Escape') e.target.blur(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     this.wake();
+    // a held key must not act twice (Space places, then would flourish)
+    if (e.repeat && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); return; }
     if (Score.playing) { Score.fast = true; if (e.key === ' ') e.preventDefault(); return; }
     if (UI.busy) { if (e.key === ' ') e.preventDefault(); return; }
-    if (modalOpen()) { if (e.key === 'Escape') { closeTopModal(); e.preventDefault(); } return; }
+    // a control reached with Tab keeps Enter/Space for itself (a button merely clicked with the mouse does not)
+    let onControl = false;
+    try { onControl = e.target instanceof HTMLElement && !!e.target.closest('button, [role="button"], a, select') && e.target.matches(':focus-visible'); } catch (err) { onControl = false; }
+    if (modalOpen()) {
+      if (e.key === 'Escape') { closeTopModal(); e.preventDefault(); }
+      else if ((e.key === ' ' || e.key === 'Enter') && !(onControl && e.target.closest('#modals'))) e.preventDefault();
+      return;
+    }
+    if (onControl && (e.key === ' ' || e.key === 'Enter')) return;
     if (e.key === 'Escape' && _popAnchor) { hidePop(); return; }
     if (!$('#game').classList.contains('on') || !UI.run) return;
     const run = UI.run;
     if (run.phase === 'round') {
-      if (Play.target) { if (e.key === 'Escape') { const b = Hud.el.center.querySelector('.stuckbar .btn'); if (b) b.click(); } return; }
+      if (Play.target) { if (e.key === 'Escape') { Targets.cancel(); e.preventDefault(); } return; }
       if (Play.key(e)) { e.preventDefault(); return; }
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();

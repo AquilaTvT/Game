@@ -17,6 +17,16 @@ const App = {
     if (window.visualViewport) window.visualViewport.addEventListener('resize', () => this.resize());
     document.addEventListener('keydown', (e) => this.key(e));
     document.addEventListener('pointerdown', () => { this.wake(); if (Score.playing) Score.fast = true; }, true);
+    // some browsers (iOS Safari) unlock sound only on a release or a click, never on the press itself
+    for (const ev of ['pointerup', 'touchend', 'click']) document.addEventListener(ev, () => this.wake(), true);
+    // a button clicked with the pointer does not keep the keyboard focus (Space stays free for the game)
+    document.addEventListener('click', (e) => { const b = e.detail > 0 && e.target instanceof Element ? e.target.closest('button') : null; if (b) b.blur(); }, true);
+    // another tab saved while this one sits on the title: show what is really stored
+    window.addEventListener('storage', (e) => {
+      if (e.key !== SAVE_KEY || UI.run || !$('#menu').classList.contains('on') || modalOpen()) return;
+      loadProfile(); Menu.title();
+    });
+    this.motion();
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) { Game.save(); saveProfile(true); Snd.suspend(); }
       else { Game._tick = nowMs(); if (this.started) Snd.resume(); }
@@ -39,7 +49,7 @@ const App = {
     FX.resize(); BG.resize();
     hidePop(); hideTip();
     Play.cancelDrag();
-    if ($('#menu').classList.contains('on')) Menu.title();
+    if ($('#menu').classList.contains('on')) Menu.title(true);
     else if (UI.run) {
       Hud._patKey = '';
       Hud.refresh();
@@ -50,6 +60,8 @@ const App = {
     }
     Tutorial.relayout();
   },
+  // the reduce-motion switch reaches the stylesheet through a class
+  motion() { document.body.classList.toggle('calm', !!PROFILE.settings.reduce); },
   relang() {
     document.documentElement.lang = LANG === 'zh' ? 'zh-CN' : 'en';
     Gfx._paper.clear();
@@ -70,14 +82,24 @@ const App = {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) { if (e.key === 'Escape') e.target.blur(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     this.wake();
+    // a held key must not act twice (Space places, then would flourish)
+    if (e.repeat && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); return; }
     if (Score.playing) { Score.fast = true; if (e.key === ' ') e.preventDefault(); return; }
     if (UI.busy) { if (e.key === ' ') e.preventDefault(); return; }
-    if (modalOpen()) { if (e.key === 'Escape') { closeTopModal(); e.preventDefault(); } return; }
+    // a control reached with Tab keeps Enter/Space for itself (a button merely clicked with the mouse does not)
+    let onControl = false;
+    try { onControl = e.target instanceof HTMLElement && !!e.target.closest('button, [role="button"], a, select') && e.target.matches(':focus-visible'); } catch (err) { onControl = false; }
+    if (modalOpen()) {
+      if (e.key === 'Escape') { closeTopModal(); e.preventDefault(); }
+      else if ((e.key === ' ' || e.key === 'Enter') && !(onControl && e.target.closest('#modals'))) e.preventDefault();
+      return;
+    }
+    if (onControl && (e.key === ' ' || e.key === 'Enter')) return;
     if (e.key === 'Escape' && _popAnchor) { hidePop(); return; }
     if (!$('#game').classList.contains('on') || !UI.run) return;
     const run = UI.run;
     if (run.phase === 'round') {
-      if (Play.target) { if (e.key === 'Escape') { const b = Hud.el.center.querySelector('.stuckbar .btn'); if (b) b.click(); } return; }
+      if (Play.target) { if (e.key === 'Escape') { Targets.cancel(); e.preventDefault(); } return; }
       if (Play.key(e)) { e.preventDefault(); return; }
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();

@@ -228,7 +228,7 @@ const Score = {
           const d = YI[e.yi];
           Snd.play(e.yi.startsWith('money') ? 'coin' : 'level');
           FX.ring(c.x, c.y, 'rgba(120,220,170,0.9)', c.w * 0.4, c.w * 1.3, 4 * u, 0.5);
-          toast({ iconEl: Gfx.glyphCanvas(e.char, 34, '#1b1918'), title: T('fx.yi', CH[e.char].g), text: rich(dtx(d)) + (e.item ? (e.got ? ' — ' + nm(ITEMS[e.item]) : ' — ' + T('fx.noroom')) : e.tier ? ' — ' + (LANG === 'zh' ? TIER_NAME.zh[e.tier] : TIER_NAME.en[e.tier]) : ''), ms: 2600 });
+          toast({ iconEl: Gfx.glyphCanvas(e.char, 34, '#1b1918'), title: T('fx.yi', CH[e.char].g), text: rich(dtx(d)) + (e.void ? ' — ' + T('fx.void') : '') + (e.item ? (e.got ? ' — ' + nm(ITEMS[e.item]) : ' — ' + T('fx.noroom')) : e.tier ? ' — ' + (LANG === 'zh' ? TIER_NAME.zh[e.tier] : TIER_NAME.en[e.tier]) : ''), ms: 2600 });
           if (e.cells) { for (const i of e.cells) { const p = Play.cellVP(i); FX.ink(p.x, p.y, '#c9bfa8', 2, 160 * u, 4 * u); if (Play.viewBoard) Play.viewBoard[i] = null; } Play.inkDirty = true; }
           await this.wait(300);
           break;

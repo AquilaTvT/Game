@@ -102,6 +102,11 @@ module.exports = async ({ page, ev, shot, W, H }) => {
   await ev('saveProfile(true); 1');
   await page.reload(); await settle(900);
   assert(await ev('!!document.querySelector("#btn-continue")'), 'continue offered after reload');
+  // the page going to the background while the title is showing must leave the stored run alone
+  await ev('Game.save(); saveProfile(true); 1');
+  assert(await ev('!!PROFILE.run'), 'hiding the page on the title screen keeps the saved run');
+  await page.reload(); await settle(900);
+  assert(await ev('!!document.querySelector("#btn-continue")'), 'continue still offered after a second reload');
   await shot('F08-title-continue');
   await page.click('#btn-continue'); await settle(600);
   const after = await J('({ ante: UI.run.ante, blind: UI.run.blind, phase: UI.run.phase, ink: UI.run.round.ink, filled: UI.run.round.board.filter(Boolean).length, seed: UI.run.seed, tray: UI.run.round.tray.map(t => t && t.uid), money: UI.run.money, seals: UI.run.seals.length })');
@@ -181,6 +186,37 @@ module.exports = async ({ page, ev, shot, W, H }) => {
     await settle(300);
     await page.click('#btn-next'); await settle(400);
   }
+  await ev('Game.abandon(); 1'); await settle(300);
+
+  // ---- 12. a sheet with no move left: cancelling an item with Esc must not end the run; ending it asks first
+  await ev(`(() => { Game.begin({ seed: 'STUCK', deck: 'kai' }); Game.startRound(); const run = UI.run, rd = run.round; rd.ink = 0; rd.discards = 0; run.items.length = 0; giveItem(run, 'dianjing_i', true); Hud.refresh(); Game.after(); })()`);
+  await settle(300);
+  assert(await ev('!!document.querySelector(".stuckbar:not(.targetbar)")'), 'the "nothing more can be done" bar is up');
+  await page.click('#side .item:not(.empty)'); await settle(200);
+  await page.click('#pop .btn.red'); await settle(300);
+  assert(await ev('!!Play.target && !!document.querySelector(".targetbar") && !document.querySelector(".stuckbar:not(.targetbar)")'), 'picking a square replaces the bar');
+  await page.keyboard.press('Escape'); await settle(300);
+  assert(await ev('UI.run.phase === "round" && !Play.target && !document.querySelector(".targetbar") && UI.run.items.length === 1'), 'Esc cancels the item, the run goes on');
+  await page.click('.stuckbar:not(.targetbar) .btn'); await settle(300);
+  assert(await ev('modalOpen() && UI.run.phase === "round"'), 'ending the round asks first');
+  await page.click('.modal .btn.ghost'); await settle(300);
+  assert(await ev('!modalOpen() && UI.run.phase === "round"'), 'declining keeps the round');
+  // a held Space places the block once and does not go on to flourish
+  await ev(`(() => { const run = UI.run, rd = run.round; rd.ink = 50; for (let i = 0; i < 64; i++) rd.board[i] = null; for (let x = 0; x < 7; x++) rd.board[56 + x] = { ink: 'mo', enh: null, pid: 0, shape: 'dot' }; rd.tray[0].sh = 'dot'; rd.tray[0].rot = 0; Play._kbLast = null; Play.inkDirty = true; Hud.refresh(); Game.after(); })()`);
+  await settle(200);
+  await page.keyboard.press('1');
+  for (let i = 0; i < 4; i++) { await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowDown'); }
+  await page.keyboard.down(' '); await page.keyboard.down(' '); await page.keyboard.down(' '); await page.keyboard.up(' '); await settle(300);
+  assert(await ev('!!UI.run.round.board[63] && UI.run.round.igniteCount === 0 && !UI.busy'), 'holding Space places once and does not flourish');
+  // a click on the sheet drops the keyboard ghost
+  await page.keyboard.press('1'); await settle(100);
+  assert(await ev('!!Play.kb && !!Play.ghost'), 'keyboard ghost shown');
+  { const c = await J('Play.cellVP(2 * 8 + 2)'); await page.mouse.click(c.x, c.y); await settle(150); }
+  assert(await ev('!Play.kb && !Play.ghost'), 'clicking the sheet clears the keyboard ghost');
+  // the Flip tab appears with the mirror seal and flips the block under it
+  await ev(`(() => { addSeal(UI.run, 'jinghua'); Hud.refresh(); Play.poke(); })()`); await settle(300);
+  { const r = await J('(() => { const f = Play.flipRect(0); return Play.toViewport(f.x + f.w / 2, f.y + f.h / 2); })()'); await page.mouse.click(r.x, r.y); await settle(200); }
+  assert(await ev('UI.run.round.tray[0].flip === 1'), 'the Flip tab mirrors the block');
   await ev('Game.abandon(); 1'); await settle(300);
   console.log('flow test passed', W + 'x' + H);
 };

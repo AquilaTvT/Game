@@ -3,6 +3,7 @@ function finishRound(run, ev) {
   const rd = run.round;
   const out = ev || [];
   for (const s of run.seals.slice()) {
+    if (rd.sealOff[s.uid]) continue;
     const d = SEALS[s.id];
     if (d.roundEnd) d.roundEnd(run, s, out);
   }
@@ -64,27 +65,35 @@ function skipBlind(run) {
 }
 
 // ---- shop
-const priceOf = (run, base) => Math.max(1, Math.round((base * (100 - stat(run, 'discount'))) / 100));
+const priceOf = (run, base) => Math.max(1, Math.round((base * (100 + stat(run, 'markup')) * (100 - stat(run, 'discount'))) / 10000));
+// prices follow the shop's terms as they stand now (a furnishing bought here counts at once)
+function repriceShop(run) {
+  const sh = run.shop;
+  if (!sh) return;
+  for (const it of sh.items.concat(sh.packs)) if (!it.sold && !it.gift && it.base != null) it.price = priceOf(run, it.base);
+}
 function rollShopItem(run, exclude) {
   const x = rnd(run, 'shop');
   if (x < 0.62) {
     const id = rollSealId(run, 'shop', 0, exclude);
     const ed = rollEdition(run, 'shop');
-    return { kind: 'seal', id, ed, price: priceOf(run, SEALS[id].cost + (ed ? EDITIONS[ed].add : 0)), sold: false };
+    const base = SEALS[id].cost + (ed ? EDITIONS[ed].add : 0);
+    return { kind: 'seal', id, ed, base, price: priceOf(run, base), sold: false };
   }
   if (x < 0.78) {
     const id = rnd(run, 'shop') < 0.35 ? 'tie' + favTier(run) : rndPick(run, 'shop', TIE_IDS);
-    return { kind: 'tie', id, price: priceOf(run, ITEMS[id].cost), sold: false };
+    return { kind: 'tie', id, base: ITEMS[id].cost, price: priceOf(run, ITEMS[id].cost), sold: false };
   }
   const id = rndWeighted(run, 'shop', ITEM_POOL, (i) => ITEMS[i].w);
-  return { kind: 'wen', id, price: priceOf(run, ITEMS[id].cost), sold: false };
+  return { kind: 'wen', id, base: ITEMS[id].cost, price: priceOf(run, ITEMS[id].cost), sold: false };
 }
 function fillShopItems(run) {
   const sh = run.shop;
   const n = stat(run, 'shopSlots');
-  sh.items = [];
-  const ex = [];
-  for (let i = 0; i < n; i++) {
+  // a gift on the shelf is not swept away by a reroll
+  sh.items = (sh.items || []).filter((i) => i.gift && !i.sold);
+  const ex = sh.items.filter((i) => i.kind === 'seal').map((i) => i.id);
+  for (let i = sh.items.length; i < n; i++) {
     const it = rollShopItem(run, ex);
     if (it.kind === 'seal') ex.push(it.id);
     sh.items.push(it);
@@ -102,7 +111,7 @@ function enterShop(run) {
   }
   for (let i = 0; i < 2; i++) {
     const id = rndWeighted(run, 'shop', PACK_IDS, (k) => PACKS[k].w);
-    sh.packs.push({ id, price: priceOf(run, PACKS[id].cost), sold: false });
+    sh.packs.push({ id, base: PACKS[id].cost, price: priceOf(run, PACKS[id].cost), sold: false });
   }
   for (const id of run.tags.packs) sh.packs.push({ id, price: 0, sold: false, gift: true });
   run.tags.packs = [];
@@ -124,6 +133,7 @@ function shopBuy(run, i, useNow) {
   const it = run.shop.items[i];
   if (!it || it.sold) return { ok: false, why: 'gone' };
   if (run.money < it.price) return { ok: false, why: 'money' };
+  let paid = false;
   if (it.kind === 'seal') {
     if (it.ed !== 'xian' && !sealRoom(run)) return { ok: false, why: 'room' };
     addSeal(run, it.id, it.ed);
@@ -131,10 +141,13 @@ function shopBuy(run, i, useNow) {
     const def = ITEMS[it.id];
     if (useNow) {
       if (!noTargetUse(def) || (def.can && !def.can(run))) return { ok: false, why: 'use' };
-      if (!applyItem(run, def, {})) return { ok: false, why: 'use' };
+      // pay first: the item must not count the coins that buy it
+      run.money -= it.price;
+      if (!applyItem(run, def, {})) { run.money += it.price; return { ok: false, why: 'use' }; }
+      paid = true;
     } else if (!giveItem(run, it.id)) return { ok: false, why: 'room' };
   }
-  run.money -= it.price;
+  if (!paid) run.money -= it.price;
   it.sold = true;
   run.stats.bought++;
   return { ok: true };
@@ -150,6 +163,10 @@ function buyVoucher(run) {
   run.shop.voucher = null;
   run.shopVoucher = null;
   run.stats.bought++;
+  // a furnishing takes effect in the very shop where it is bought
+  repriceShop(run);
+  const sh = run.shop, ex = sh.items.filter((i) => i.kind === 'seal').map((i) => i.id);
+  while (sh.items.length < stat(run, 'shopSlots')) { const it = rollShopItem(run, ex); if (it.kind === 'seal') ex.push(it.id); sh.items.push(it); }
   return { ok: true };
 }
 function sellSeal(run, uid) {
@@ -260,6 +277,7 @@ function itemUsable(run, def) {
   if (def.round && run.phase !== 'round') return { ok: false, why: 'round' };
   if (def.need && def.need.t === 'cell' && run.phase !== 'round') return { ok: false, why: 'round' };
   if (def.can && !def.can(run)) return { ok: false, why: 'cannot' };
+  if (def.ok && !run.deck.some(def.ok)) return { ok: false, why: 'cannot' };
   if (!['round', 'shop', 'pick'].includes(run.phase)) return { ok: false, why: 'phase' };
   return { ok: true };
 }
@@ -270,6 +288,8 @@ function applyItem(run, def, target) {
     if (nd.t === 'pieces') {
       if (!tg.pieces || tg.pieces.length < (nd.min || 1) || tg.pieces.length > nd.max) return false;
       if (tg.pieces.some((u) => !pieceByUid(run, u))) return false;
+      // every chosen block must be one the item can actually change
+      if (def.ok && tg.pieces.some((u) => !def.ok(pieceByUid(run, u)))) return false;
     } else if (nd.t === 'square' || nd.t === 'cell') {
       if (tg.square == null || tg.square < 0 || tg.square >= run.w * run.h) return false;
       if (nd.t === 'cell') {
@@ -281,6 +301,7 @@ function applyItem(run, def, target) {
   }
   if (!def.use(run, tg)) return false;
   for (const s of run.seals) {
+    if (run.round && run.round.sealOff[s.uid]) continue;
     const d = SEALS[s.id];
     if (d.useItem) d.useItem(run, s, def);
   }

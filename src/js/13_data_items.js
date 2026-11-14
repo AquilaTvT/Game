@@ -19,7 +19,7 @@ for (let t = 1; t <= TIER_MAX; t++) {
     },
     de: (run) => {
       const lv = run ? run.tiers[t] : 1, b = tierBase(t, lv), tr = TIERS[t], k = 1 + (run ? stat(run, 'tieBonus') : 0);
-      return `[k|${TIER_NAME.en[t]}] characters gain [k|+${k} level${k > 1 ? 's' : ''}]\n[n|Now Lv.${lv}: ${b.c} Form × ${b.m} Spirit · each level +${tr.dc} / +${tr.dm}]`;
+      return `Characters of [k|${TIER_NAME.en[t]}] gain [k|+${k} level${k > 1 ? 's' : ''}]\n[n|Now Lv.${lv}: ${b.c} Form × ${b.m} Spirit · each level +${tr.dc} / +${tr.dm}]`;
     },
     use(run) { levelUp(run, t, 1 + stat(run, 'tieBonus')); return true; } });
 }
@@ -27,18 +27,19 @@ const TIE_IDS = range(TIER_MAX).map((i) => 'tie' + (i + 1));
 
 // --- pigments: recolour blocks
 const dye = (ink) => function (run, tg) { for (const u of tg.pieces) { const p = pieceByUid(run, u); if (p) p.ink = ink; } return true; };
+const notInk = (ink) => (p) => p.ink !== ink;
 defItem('zhusha', '朱砂', 'Cinnabar', 'wen', 3, { need: { t: 'pieces', max: 3 },
-  dz: '将墨匣中至多 [k|3 块] 墨染为[zhu|朱]色', de: 'Dye up to [k|3 blocks] in your Ink Box [zhu|Vermilion]', use: dye('zhu') });
+  dz: '将墨匣中至多 [k|3 块] 墨染为[zhu|朱]色', de: 'Dye up to [k|3 blocks] in your Ink Box [zhu|Vermilion]', use: dye('zhu'), ok: notInk('zhu') });
 defItem('shiqing', '石青', 'Azurite', 'wen', 3, { need: { t: 'pieces', max: 3 },
-  dz: '将墨匣中至多 [k|3 块] 墨染为[qing|青]色', de: 'Dye up to [k|3 blocks] in your Ink Box [qing|Azure]', use: dye('qing') });
+  dz: '将墨匣中至多 [k|3 块] 墨染为[qing|青]色', de: 'Dye up to [k|3 blocks] in your Ink Box [qing|Azure]', use: dye('qing'), ok: notInk('qing') });
 defItem('nijin', '泥金', 'Gold Paste', 'wen', 3, { need: { t: 'pieces', max: 3 },
-  dz: '将墨匣中至多 [k|3 块] 墨染为[jin|金]色', de: 'Dye up to [k|3 blocks] in your Ink Box [jin|Gold]', use: dye('jin') });
+  dz: '将墨匣中至多 [k|3 块] 墨染为[jin|金]色', de: 'Dye up to [k|3 blocks] in your Ink Box [jin|Gold]', use: dye('jin'), ok: notInk('jin') });
 defItem('songyan', '松烟', 'Pine Soot', 'wen', 3, { need: { t: 'pieces', max: 3 },
-  dz: '将墨匣中至多 [k|3 块] 墨染为[mo|墨]色', de: 'Dye up to [k|3 blocks] in your Ink Box [mo|Black]', use: dye('mo') });
+  dz: '将墨匣中至多 [k|3 块] 墨染为[mo|墨]色', de: 'Dye up to [k|3 blocks] in your Ink Box [mo|Black]', use: dye('mo'), ok: notInk('mo') });
 // --- ink natures
 const enhance = (e) => function (run, tg) { for (const u of tg.pieces) { const p = pieceByUid(run, u); if (p) p.enh = e; } return true; };
 const enhItem = (id, zh, en, e, max, w) => defItem(id, zh, en, 'wen', 3, { need: { t: 'pieces', max }, w: w || 1, enh: e,
-  dz: `赋予墨匣中至多 [k|${max} 块] 墨[k|「${ENH[e].zh}」]之性\n[n|${plain(ENH[e].dz)}]`, de: `Give up to [k|${max} block${max > 1 ? 's' : ''}] in your Ink Box the [k|${ENH[e].en}] nature\n[n|${plain(ENH[e].de)}]`, use: enhance(e) });
+  dz: `赋予墨匣中至多 [k|${max} 块] 墨[k|「${ENH[e].zh}」]之性\n[n|${plain(ENH[e].dz)}]`, de: `Give up to [k|${max} block${max > 1 ? 's' : ''}] in your Ink Box the [k|${ENH[e].en}] nature\n[n|${plain(ENH[e].de)}]`, use: enhance(e), ok: (p) => p.enh !== e });
 enhItem('e_nong', '浓墨', 'Thick Ink', 'nong', 2);
 enhItem('e_fei', '飞白', 'Flying White', 'fei', 2);
 enhItem('e_po', '泼墨', 'Splashed Ink', 'po', 1, 0.8);
@@ -56,6 +57,7 @@ defItem('kedao', '刻刀', 'Carving Knife', 'wen', 3, { need: { t: 'pieces', max
   use(run, tg) { let ok = false; for (const u of tg.pieces) { if (run.deck.length <= 8) break; removePiece(run, u); ok = true; } return ok; } });
 defItem('jiechi', '戒尺', 'The Ruler', 'wen', 3, { need: { t: 'pieces', max: 2, min: 1 },
   dz: '将墨匣中至多 2 块墨[k|捋直]：变为同格数的直笔', de: '[k|Straighten] up to 2 blocks: each becomes a straight stroke of the same size',
+  ok: (p) => !SHAPES[p.shape].tags.includes('straight'),
   use(run, tg) { for (const u of tg.pieces) { const p = pieceByUid(run, u); if (p) p.shape = straightOf(SHAPES[p.shape].n); } return true; } });
 defItem('suimo', '碎墨', 'Crushed Ink', 'wen', 3, { need: { t: 'pieces', max: 1, min: 1 },
   dz: '将墨匣中的 1 块墨碾碎，化为 [k|2 个「点」]（同墨色）', de: 'Crush 1 block into [k|2 Dots] of the same ink',
@@ -71,7 +73,7 @@ sqItem('g_sajin', '洒金笺', 'Gold-Flecked Paper', 'sajin', 0.8);
 sqItem('g_die', '叠影格', 'Echo Square', 'die', 0.6);
 // --- in-round tools
 defItem('yanmo', '墨锭', 'Ink Stick', 'wen', 3, { round: true,
-  dz: '研墨：本局回复 [k|25 墨]', de: 'Grind fresh ink: restore [k|25 Ink] this round',
+  dz: '研墨：本局添 [k|25 墨]\n[n|可以超出墨量上限]', de: 'Grind fresh ink: [k|+25 Ink] this round\n[n|May go above your maximum]',
   use(run) { addInk(run, 25); return true; } });
 defItem('dianjing_i', '点睛笔', 'Eye-Dotting Brush', 'wen', 4, { round: true, need: { t: 'cell', empty: true },
   dz: '在纸上任选一个空格，点上一格[k|留白]之墨（不耗墨）', de: 'Fill any one empty square with a [k|Blank] cell (costs no Ink)',
@@ -98,11 +100,13 @@ defItem('huifeng_i', '回锋笔', 'Return-Tip Brush', 'wen', 4, { round: true, w
   use(run) { run.round.ignites += 1; return true; } });
 defItem('xiyan', '洗砚水', 'Inkstone Rinse', 'wen', 3, { round: true,
   dz: '本局 [k|洗笔+2]', de: '[k|+2 Rinses] this round',
-  use(run) { run.round.discards += 2; return true; } });
+  can(run) { return !flag(run, 'noDiscard'); },
+  use(run) { return addDiscards(run, 2); } });
 // --- fortune
 defItem('runge', '润格', 'Price List', 'wen', 3, { w: 0.8,
   dz: (run) => `润笔翻倍（至多 [g|+20 文]）${run ? `\n[n|现在使用可得 ${Math.min(20, Math.max(0, run.money))} 文]` : ''}`,
   de: (run) => `Double your money (up to [g|+$20])${run ? `\n[n|Would give $${Math.min(20, Math.max(0, run.money))} now]` : ''}`,
+  can(run) { return run.money > 0; },
   use(run) { run.money += Math.min(20, Math.max(0, run.money)); return true; } });
 defItem('xinde', '心得', 'Reflections', 'wen', 3, {
   dz: (run) => `你最近写出的字所属的画数等级 [k|+1]${run && run.lastTier ? `\n[n|当前：${TIER_NAME.zh[run.lastTier]}]` : ''}`,

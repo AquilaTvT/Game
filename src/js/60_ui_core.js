@@ -162,15 +162,42 @@ function bindCard(el, getCard, o) {
     _tipTimer = setTimeout(() => { const c = getCard(); if (c && el.isConnected) showTip(el, c); }, 110);
   });
   el.addEventListener('pointerleave', hideTip);
+  const open = () => {
+    const c = getCard();
+    if (!c) return false;
+    if (_popAnchor === el) { hidePop(); return false; }
+    Snd.play('tick');
+    showPop(el, c);
+    return true;
+  };
   el.addEventListener('click', (e) => {
     if (opt.noClick || el._suppressClick) return;
     e.stopPropagation();
-    const c = getCard();
-    if (!c) return;
-    if (_popAnchor === el) { hidePop(); return; }
-    Snd.play('tick');
-    showPop(el, c);
+    open();
   });
+  if (!opt.noClick) {
+    el.tabIndex = 0;
+    el.setAttribute('role', 'button');
+    el.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault(); e.stopPropagation();
+      if (open()) { const b = $('#pop').querySelector('button'); if (b) b.focus(); }
+    });
+  }
+  if (opt.hold) {
+    // touch: press and hold to read the card (a tap keeps its own meaning)
+    let timer = 0;
+    const stop = () => { clearTimeout(timer); timer = 0; };
+    el.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse') return;
+      stop();
+      timer = setTimeout(() => { timer = 0; const c = getCard(); if (c && el.isConnected) { el._held = true; showTip(el, c); } }, 460);
+    });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) el.addEventListener(ev, () => {
+      stop();
+      if (el._held) { el._held = false; hideTip(); el._suppressClick = true; setTimeout(() => { el._suppressClick = false; }, 350); }
+    });
+  }
 }
 
 // ---- modals
@@ -211,15 +238,24 @@ function openModal(o) {
     api.foot = foot;
   }
   veil.appendChild(box);
+  box.tabIndex = -1;
+  veil.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const f = [...box.querySelectorAll('button, input, textarea, select, [tabindex="0"]')].filter((x) => !x.disabled && x.offsetParent !== null);
+    if (!f.length) { e.preventDefault(); return; }
+    const i = f.indexOf(document.activeElement);
+    if (e.shiftKey ? i <= 0 : i === f.length - 1 || i < 0) { e.preventDefault(); f[e.shiftKey ? f.length - 1 : 0].focus(); }
+  });
   if (o.dismiss !== false) veil.addEventListener('pointerdown', (e) => { if (e.target === veil) { Snd.play('back'); close(); } });
   api.dismiss = o.dismiss !== false;
   root.appendChild(veil);
   _modals.push(api);
+  try { if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); box.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
   return api;
 }
 const modalOpen = () => _modals.length > 0;
 function closeTopModal() { const m = _modals[_modals.length - 1]; if (m && m.dismiss) { Snd.play('back'); m.close(); return true; } return false; }
-function closeAllModals() { while (_modals.length) { const m = _modals.pop(); m.veil.remove(); } }
+function closeAllModals() { let guard = 40; while (_modals.length && guard-- > 0) _modals[_modals.length - 1].close(); }
 function confirmBox(title, text, yes, no, danger) {
   return new Promise((res) => {
     let done = false;
@@ -276,7 +312,7 @@ function initUiCore() {
     const pop = $('#pop');
     if (_popAnchor && !pop.contains(e.target) && !_popAnchor.contains(e.target)) hidePop();
   }, true);
-  document.addEventListener('contextmenu', (e) => { if (!(e.target instanceof HTMLTextAreaElement) && !(e.target instanceof HTMLInputElement)) e.preventDefault(); });
+  document.addEventListener('contextmenu', (e) => { if (!(e.target instanceof HTMLTextAreaElement) && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLImageElement)) e.preventDefault(); });
   // iOS: block pinch and double-tap zoom
   document.addEventListener('gesturestart', (e) => e.preventDefault());
   document.addEventListener('dblclick', (e) => e.preventDefault());

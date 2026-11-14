@@ -126,7 +126,7 @@ CH.sanbi.g = '';
 
 // 字义 (a character's own meaning-effect, triggers the first time it is written each round)
 const YI = {
-  ink:     { dz: '汲水：回复 [k|16 墨]', de: 'Draw water: restore [k|16 Ink]' },
+  ink:     { dz: '汲水：添 [k|16 墨]', de: 'Draw water: [k|+16 Ink]' },
   discard: { dz: '川流：本局 [k|洗笔+1]', de: 'Flow: [k|+1 Rinse] this round' },
   sweep:   { dz: '洒扫：本局 [k|洗笔+1]', de: 'Sweep: [k|+1 Rinse] this round' },
   money2:  { dz: '所获：[g|+2 文]', de: 'Earnings: [g|+$2]' },
@@ -135,8 +135,8 @@ const YI = {
   tier2:   { dz: '上进：二画等级 [k|+1]', de: 'Ascend: the 2-stroke tier gains [k|+1 level]' },
   buff:    { dz: '日新：本局此后每次挥毫 [m|神+6]', de: 'Daybreak: [m|+6 Spirit] on every later flourish this round' },
   tray:    { dz: '洞察：本局 [k|笔架+1 格]', de: 'Insight: [k|+1 tray slot] this round' },
-  item:    { dz: '致用：获得一件随机文房', de: 'Put to use: gain a random studio item' },
-  tie:     { dz: '开卷：获得一张随机字帖', de: 'Open a book: gain a random copybook' },
+  item:    { dz: '致用：获得一件随机文房（须有空位）', de: 'Put to use: gain a random studio item (needs room)' },
+  tie:     { dz: '开卷：获得一张随机字帖（须有空位）', de: 'Open a book: gain a random copybook (needs room)' },
   peek:    { dz: '问卜：本局可预见接下来的 [k|5 块] 墨', de: 'Divine: foresee the next [k|5 blocks] this round' },
   wipe:    { dz: '拂拭：拭去纸上所有散墨', de: 'Wipe: clear all stray ink from the paper' },
   ignite:  { dz: '藏锋：本次挥毫不消耗次数', de: 'Concealed tip: this flourish is free' },

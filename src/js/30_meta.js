@@ -42,7 +42,8 @@ function migrateProfile(p) {
       const rd = r.round;
       const okRound = r.phase !== 'round' && r.phase !== 'cash' ? true : !!rd && Array.isArray(rd.board) && rd.board.length === r.w * r.h && Array.isArray(rd.tray) && Array.isArray(rd.draw) && (!rd.boss || !!BOSSES[rd.boss]);
       const okShop = r.phase !== 'shop' || (!!r.shop && Array.isArray(r.shop.items) && r.shop.items.every((i) => (i.kind === 'seal' ? SEALS[i.id] : ITEMS[i.id])) && r.shop.packs.every((k) => PACKS[k.id]));
-      const okMisc = r.deck.length >= 4 && Array.isArray(r.paper) && r.paper.length === r.w * r.h && Array.isArray(r.tiers) && !!BOSSES[r.boss] && !!STAKES[r.stake] && (r.phase !== 'cash' || !!r.cash);
+      const okText = typeof r.seed === 'string' && /^[A-Z0-9]{1,24}$/.test(r.seed) && Number.isInteger(r.ante) && r.ante >= 1 && [0, 1, 2].includes(r.blind) && typeof r.money === 'number' && isFinite(r.money) && Number.isInteger(r.w) && Number.isInteger(r.h);
+      const okMisc = okText && r.deck.length >= 4 && Array.isArray(r.paper) && r.paper.length === r.w * r.h && Array.isArray(r.tiers) && !!BOSSES[r.boss] && !!STAKES[r.stake] && (r.phase !== 'cash' || !!r.cash);
       if (!okPhase || !okRound || !okShop || !okMisc) p.run = null;
     } catch (e) { p.run = null; }
   }
@@ -77,7 +78,10 @@ function importProfile(str) {
   try {
     const s = String(str).trim();
     if (!s.startsWith('FKZ1:')) return false;
-    const obj = JSON.parse(decodeURIComponent(escape(atob(s.slice(5)))));
+    const text = decodeURIComponent(escape(atob(s.slice(5))));
+    // a save holds only plain names and numbers: anything that looks like markup is refused outright
+    if (/[<>]/.test(text)) return false;
+    const obj = JSON.parse(text);
     if (!obj || !obj.meta || !obj.settings) return false;
     PROFILE = migrateProfile(obj);
     LANG = PROFILE.settings.lang === 'en' ? 'en' : 'zh';
