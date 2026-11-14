@@ -153,7 +153,9 @@ const Hud = {
     if (!run) return;
     const inRound = run.phase === 'round' && run.round;
     const p = pat !== undefined ? pat : (inRound ? currentPattern(run) : null);
-    const key = p ? p.id + ':' + p.lines.rows.join(',') + '|' + p.lines.cols.join(',') + '|' + p.lines.diags.join(',') + ':' + p.lvl + ':' + (p.nul || '') + (ghost ? 'g' : '') : 'none' + (inRound ? 1 : 0);
+    // the hints depend on the whole sheet, so the cache key includes how much of it is inked
+    const state = inRound ? ':' + run.round.placed + '.' + run.round.igniteCount + '.' + run.round.board.reduce((n, c) => n + (c ? 1 : 0), 0) + '.' + (PROFILE.settings.hints ? 1 : 0) + UI.orient : '';
+    const key = (p ? p.id + ':' + p.lines.rows.join(',') + '|' + p.lines.cols.join(',') + '|' + p.lines.diags.join(',') + ':' + p.lvl + ':' + (p.nul || '') + (ghost ? 'g' : '') : 'none' + (inRound ? 1 : 0)) + state;
     if (this._patKey === key + LANG) return;
     this._patKey = key + LANG;
     clear(E.glyph); clear(E.cname); clear(E.hints);

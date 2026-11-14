@@ -615,3 +615,84 @@ html[lang="en"] .hints .hl { font-family: var(--f-num); font-size: 12px; }
 html[lang="en"] .coach .cstep { font-family: var(--f-num); }
 html[lang="en"] .setrow .sl, html[lang="en"] .cashtotal, html[lang="en"] .stuckbar span, html[lang="en"] .bossline, html[lang="en"] .toast .tt { font-family: var(--f-num); }
 html[lang="en"] .packart .pn, html[lang="en"] .vouch .pn { font-family: var(--f-num); font-size: 13px; line-height: 1.1; text-align: center; padding: 0 3px; }
+
+/* ---------- portrait (phones): larger text and touch targets ---------- */
+body[data-o="p"] .btn { min-height: 64px; font-size: 29px; padding: 8px 24px; }
+body[data-o="p"] .btn.small { min-height: 54px; font-size: 24px; padding: 4px 16px; }
+body[data-o="p"] .btn.tiny { min-height: 46px; font-size: 21px; padding: 2px 14px; }
+body[data-o="p"] .iconbtn { width: 70px; height: 70px; font-size: 32px; border-radius: 12px; }
+body[data-o="p"] .xbtn { width: 62px; height: 62px; font-size: 36px; }
+body[data-o="p"] .blindcard .infobtn { width: 46px; height: 46px; font-size: 25px; }
+body[data-o="p"] .card { width: 440px; font-size: 22.5px; padding: 14px 16px; }
+body[data-o="p"] .card.wide { width: 540px; }
+body[data-o="p"] .card .cn { font-size: 31px; }
+body[data-o="p"] .card .ct { font-size: 17px; }
+body[data-o="p"] .card .cx { font-size: 19.5px; }
+body[data-o="p"] .tab { font-size: 25px; padding: 10px 18px; }
+body[data-o="p"] .seg button { padding: 10px 18px; font-size: 22px; min-width: 64px; }
+body[data-o="p"] .setrow { font-size: 24px; padding: 12px 0; }
+body[data-o="p"] .setrow .sl small { font-size: 17px; }
+body[data-o="p"] input[type="range"] { width: 250px; height: 44px; }
+body[data-o="p"] .modal .mh .mt { font-size: 36px; }
+body[data-o="p"] .modal .mb { padding: 16px 18px; }
+body[data-o="p"] .help p, body[data-o="p"] .help ul { font-size: 22.5px; }
+body[data-o="p"] .help h3 { font-size: 30px; }
+body[data-o="p"] .toast .tt { font-size: 24px; }
+body[data-o="p"] .toast .td { font-size: 19px; }
+body[data-o="p"] .toast .ti { width: 52px; height: 52px; font-size: 29px; }
+body[data-o="p"] .bossline { font-size: 19px; }
+body[data-o="p"] .stake { font-size: 23px; padding: 12px 2px; min-width: 150px; }
+body[data-o="p"] .stakeinfo, body[data-o="p"] .deckinfo { font-size: 21px; }
+body[data-o="p"] .deck .dg { font-size: 44px; }
+body[data-o="p"] .deck .dn2 { font-size: 20px; }
+body[data-o="p"] .deck { padding: 10px 4px 8px; }
+body[data-o="p"] .seedrow { font-size: 21px; }
+body[data-o="p"] input.txt { font-size: 26px; padding: 10px 14px; }
+body[data-o="p"] .pchoice { width: 300px; padding: 14px 10px; }
+body[data-o="p"] .pchoice .pn2 { font-size: 25px; }
+body[data-o="p"] .pchoice .pd { font-size: 19px; min-height: 0; }
+body[data-o="p"] .sheet .fx { font-size: 20px; }
+body[data-o="p"] .sheet .rw { font-size: 21px; }
+body[data-o="p"] .sheet .skip { font-size: 18px; }
+body[data-o="p"] .sheet .au { font-size: 17px; }
+body[data-o="p"] .pickinfo { font-size: 20px; }
+body[data-o="p"] .vsub { font-size: 21px; }
+body[data-o="p"] .cashcard { width: 100%; max-width: 640px; padding: 22px 28px 24px; }
+body[data-o="p"] .cashline { font-size: 25px; padding: 9px 0; }
+body[data-o="p"] .cashline .v { font-size: 29px; }
+body[data-o="p"] .cashcard .sc { font-size: 21px; }
+body[data-o="p"] .shelf .lab { font-size: 19px; }
+body[data-o="p"] .good { width: 172px; }
+body[data-o="p"] .good .gn { font-size: 22px; max-width: 168px; }
+body[data-o="p"] .price { font-size: 27px; padding: 1px 16px 3px; }
+body[data-o="p"] .shophead .nm { font-size: 40px; }
+body[data-o="p"] .dch .dc { font-size: 17px; }
+body[data-o="p"] .dch .dn { font-size: 29px; }
+body[data-o="p"] .dictgrid { grid-template-columns: repeat(4, 1fr); }
+body[data-o="p"] .chardetail { flex-direction: column; align-items: center; }
+body[data-o="p"] .chardetail .ln, body[data-o="p"] .chardetail .gl { font-size: 23px; }
+body[data-o="p"] .tiertab { font-size: 23px; }
+body[data-o="p"] .tiertab td:first-child { font-size: 26px; }
+body[data-o="p"] .kv { font-size: 22px; }
+body[data-o="p"] .ach .an { font-size: 24px; }
+body[data-o="p"] .ach .ad { font-size: 18.5px; }
+body[data-o="p"] .bl .bd { font-size: 19.5px; }
+body[data-o="p"] .bl .bn { font-size: 25px; }
+body[data-o="p"] .sg .n { font-size: 19px; }
+body[data-o="p"] .sealgrid { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); }
+body[data-o="p"] .sg .sealface { width: 88px; height: 88px; }
+body[data-o="p"] .inkrow { font-size: 20px; }
+body[data-o="p"] .pc { width: 118px; height: 118px; }
+body[data-o="p"] .endstats div { font-size: 20px; }
+body[data-o="p"] .endstats b { font-size: 30px; }
+body[data-o="p"] .endwrap .quote { font-size: 25px; }
+body[data-o="p"] .coach { font-size: 23.5px; max-width: 560px; padding: 16px 20px; }
+body[data-o="p"] .coach .cstep { font-size: 18px; }
+body[data-o="p"] .stuckbar span { font-size: 26px; }
+body[data-o="p"] .charcard .csub { font-size: 18.5px; }
+body[data-o="p"] .credit { font-size: 18px; }
+body[data-o="p"] .credit b { font-size: 21px; }
+body[data-o="p"] .logo .tag { font-size: 27px; }
+html[lang="en"] body[data-o="p"] .stake { font-size: 17px; }
+html[lang="en"] body[data-o="p"] .menulist .btn { font-size: 30px; }
+html[lang="en"] body[data-o="p"] .iconbtn { font-size: 21px; }

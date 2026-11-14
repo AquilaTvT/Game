@@ -53,7 +53,7 @@ const Overlays = {
         const grid = h('div.deckgrid');
         const list = run.deck.slice().sort((a, b) => order[a.ink] - order[b.ink] || SHAPES[a.shape].n - SHAPES[b.shape].n || a.shape.localeCompare(b.shape));
         for (const p of list) {
-          const el = h('div.pc', Gfx.pieceCanvas(p.shape, p.ink, p.enh, 15, PROFILE.settings.marks));
+          const el = h('div.pc', Gfx.pieceCanvas(p.shape, p.ink, p.enh, UI.orient === 'p' ? 19 : 15, PROFILE.settings.marks));
           if (p.enh) el.appendChild(h('span.tg', { text: ENH[p.enh].g }));
           if (rd && !inDraw.has(p.uid) && !inTray.has(p.uid)) el.classList.add('gone');
           if (rd && inTray.has(p.uid)) el.appendChild(h('span.cnt', { text: T('deck.intray') }));
@@ -216,6 +216,8 @@ const Overlays = {
   // ---- pause
   pause() {
     const run = UI.run;
+    // not in the middle of a flourish: hurry it along instead
+    if (UI.busy) { Score.fast = true; return null; }
     const m = openModal({
       title: T('pause.title'), width: 440,
       body: (root, close) => {

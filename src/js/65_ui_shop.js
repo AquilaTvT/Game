@@ -171,7 +171,7 @@ const Shop = {
           if (u.ok) btns.appendChild(mkBtn(T('use'), 'small gold', () => this.pickUse(j)));
         }
       } else {
-        const cv = Gfx.pieceCanvas(ch.shape, ch.ink, ch.enh, 16, PROFILE.settings.marks);
+        const cv = Gfx.pieceCanvas(ch.shape, ch.ink, ch.enh, 15, PROFILE.settings.marks);
         el.append(h('div.pcv', cv), h('div.pn2', { html: `<span class="rk rk-${ch.ink}">${nm(INK[ch.ink])}</span> · ${nm(SHAPES[ch.shape])}` }), h('div.pd', { html: ch.enh ? `<b>${nm(ENH[ch.enh])}</b>：${rich(dtx(ENH[ch.enh]))}` : `<span class="rk-n rk">${T('piece.cells', SHAPES[ch.shape].n)}</span>` }));
         take(T('pack.keep'));
       }
@@ -225,7 +225,7 @@ const Targets = {
           root.appendChild(h('div', { html: rich(itemDesc(def.id, run)), style: { marginBottom: '10px', fontSize: '18px', color: '#e8dcc6' } }));
           grid = h('div.deckgrid');
           for (const p of list) {
-            const el = h('div.pc', { data: { uid: p.uid } }, Gfx.pieceCanvas(p.shape, p.ink, p.enh, 15, PROFILE.settings.marks));
+            const el = h('div.pc', { data: { uid: p.uid } }, Gfx.pieceCanvas(p.shape, p.ink, p.enh, UI.orient === 'p' ? 19 : 15, PROFILE.settings.marks));
             if (p.enh) el.appendChild(h('span.tg', { text: ENH[p.enh].g }));
             el.addEventListener('click', () => {
               if (sel.has(p.uid)) sel.delete(p.uid);

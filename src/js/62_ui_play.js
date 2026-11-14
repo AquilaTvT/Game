@@ -54,9 +54,11 @@ const Play = {
     for (let i = 0; i < n; i++) this.slots.push({ x: x0 + i * sw, y: y0, w: sw, h: th });
     this.trayRect = { x: x0, y: y0, w: tw, h: th };
   },
-  trayCs(slot) {
+  // blocks on the tray share one scale; only an oversized one is shrunk to fit its slot
+  trayCs(slot, dim) {
     const s = this.slots[slot];
-    return Math.max(8, Math.min(this.cs * 0.6, (s.w - 14) / 5.3, (s.h - 36) / 5.3 * 1.25));
+    const base = Math.max(8, Math.min(this.cs * 0.6, (s.w - 14) / 5.3, (s.h - 36) / 5.3 * 1.25));
+    return dim > 5 ? Math.min(base, (s.w - 12) / dim, (s.h - 44) / dim) : base;
   },
   // ---- coordinates
   local(e) { const r = this.cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / UI.s, y: (e.clientY - r.top) / UI.s }; },
@@ -126,6 +128,8 @@ const Play = {
     if (!d) { this.onHover(e); return; }
     this.poke();
     if (e.pointerId !== d.id) return;
+    // with a mouse, pressing the other button mid-drag turns the block
+    if (e.pointerType === 'mouse') { if ((e.buttons & 2) && !(d.btns & 2) && d.moved) this.rotate(d.slot, 1); d.btns = e.buttons; }
     const p = this.local(e);
     d.x = p.x; d.y = p.y; d.cx = e.clientX; d.cy = e.clientY;
     if (!d.moved) {
@@ -244,7 +248,8 @@ const Play = {
       if (!slotUsable(run, s)) { this.nope(s); Snd.play('bad'); return; }
       const g = trayGeom(run, s);
       const prev = this.kb;
-      this.kb = { slot: s, gx: prev ? prev.gx : Math.floor((run.w - g.w) / 2), gy: prev ? prev.gy : Math.floor((run.h - g.h) / 2) };
+      const from = prev || this._kbLast;
+      this.kb = { slot: s, gx: from ? from.gx : Math.floor((run.w - g.w) / 2), gy: from ? from.gy : Math.floor((run.h - g.h) / 2) };
       Snd.play('pick');
       this.kbUpdate();
     };
@@ -508,7 +513,7 @@ const Play = {
       const kbSel = this.kb && this.kb.slot === i;
       const sh = tp.sh || p.shape, g = geomOf(sh, tp.rot, tp.flip), cost = pieceCost(run, sh);
       const afford = cost <= rd.ink && !(lim && rd.placed >= lim), usable = !queue || i === 0;
-      const tcs = this.trayCs(i);
+      const tcs = this.trayCs(i, Math.max(g.w, g.h));
       const ap = clamp((t - (this.trayAppear[i] || 0)) / 260, 0, 1), e = 1 - Math.pow(1 - ap, 3);
       let cx = s.x + s.w / 2, cy = s.y + s.h / 2 - 9 + (1 - e) * 26;
       if (this.shakeSlot === i) { const u = (nowMs() - this.shakeT) / 300; if (u < 1) cx += Math.sin(u * 30) * 6 * (1 - u); else this.shakeSlot = -1; }

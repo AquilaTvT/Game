@@ -325,7 +325,7 @@ const Game = {
     const run = UI.run;
     if (!startRound(run)) return;
     this.save();
-    Play.trayUid = [];
+    Play.trayUid = []; Play._kbLast = null;
     this.showRound(true);
   },
   skip() {
@@ -344,7 +344,7 @@ const Game = {
   // ---- payout after a cleared sheet
   showCash() {
     const run = UI.run, cash = run.cash, V = clear(Hud.el.viewCash);
-    BG.mood('calm');
+    BG.mood('calm'); Snd.setMusic('calm');
     Hud.refresh();
     const card = h('div.panel.cashcard');
     card.appendChild(h('div.hd', { text: T('cash.title') }));
