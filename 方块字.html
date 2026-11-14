@@ -2204,6 +2204,8 @@ function blindInfo(run, b) {
     t *= BOSSES[boss].targetMul || 1;
     for (let i = 1; i <= run.stake; i++) if (STAKES[i].flags && STAKES[i].flags.bossMul) t *= STAKES[i].flags.bossMul;
   }
+  // the very first sheet of a first-ever run is a gentle one
+  if (run.tutorial && run.ante === 1 && b === 0) t = Math.min(t, 150);
   let reward = BLIND_REWARD[b];
   if (b === 0) for (let i = 1; i <= run.stake; i++) if (STAKES[i].flags && STAKES[i].flags.noSmallReward) reward = 0;
   return { blind: b, boss, target: roundTarget(t), reward };
@@ -3331,6 +3333,7 @@ const STR = {
     'setup.title': '开卷', 'setup.deck': '书体', 'setup.stake': '难度 · 科第', 'setup.stake.unlock': '以某种书体通关后，可为它开启更高一重的难度。', 'setup.go': '开卷',
     'setup.seed': '卷号', 'setup.seed.ph': '随机', 'setup.seed.d': '留空则随机；相同的卷号会得到一模一样的一卷',
     'end.lose': '卷终', 'end.lose.at': '止步于 {0}　　{1} / {2}', 'end.win': '八法皆成', 'end.win.d': '以「{0}」·「{1}」写完了这一卷。', 'end.win.next': '更高一重的难度「{0}」已为此书体开启。', 'end.win.top': '已是最高的难度。池水尽墨。',
+    'keep.btn': '留影', 'keep.title': '留影', 'keep.save': '保存图片', 'keep.saved': '已保存', 'keep.tip': '把这一卷留作纪念；手机上也可长按图片保存。',
     'end.again': '再开一卷', 'end.title': '回到标题', 'end.endless': '续写 · 无尽之卷', 'end.ante': '行至', 'end.chars': '写出的字', 'end.rounds': '过关',
     'col.tab.seals': '印', 'col.tab.chars': '字', 'col.tab.bosses': '名帖', 'col.tab.ach': '成就', 'col.tab.stats': '生平',
     'col.seals': '已得见 {0} / {1} 枚印', 'col.locked': '未解锁', 'col.unseen': '尚未在卷中得过这枚印', 'col.beaten': '已胜 {0} 次', 'col.ach': '已达成 {0} / {1}', 'col.unlocks': '解锁：{0}',
@@ -3406,6 +3409,7 @@ const STR = {
     'setup.title': 'New Run', 'setup.deck': 'Script', 'setup.stake': 'Rank', 'setup.stake.unlock': 'Winning with a script opens the next rank for it.', 'setup.go': 'Begin',
     'setup.seed': 'Seed', 'setup.seed.ph': 'RANDOM', 'setup.seed.d': 'Leave empty for a random run; the same seed always gives the same run',
     'end.lose': 'The Scroll Ends', 'end.lose.at': 'Stopped at {0} — {1} / {2}', 'end.win': 'All Eight Principles', 'end.win.d': 'You finished the scroll in {0}, at the rank of {1}.', 'end.win.next': 'The next rank, {0}, is now open for this script.', 'end.win.top': 'This is the highest rank. The pond has run black with ink.',
+    'keep.btn': 'Keepsake', 'keep.title': 'Keepsake', 'keep.save': 'Save image', 'keep.saved': 'Saved', 'keep.tip': 'A memento of this run. On a phone you can also press and hold the picture to save it.',
     'end.again': 'New Run', 'end.title': 'Title', 'end.endless': 'Continue — Endless', 'end.ante': 'Reached', 'end.chars': 'Characters', 'end.rounds': 'Sheets cleared',
     'col.tab.seals': 'Seals', 'col.tab.chars': 'Characters', 'col.tab.bosses': 'Masterworks', 'col.tab.ach': 'Feats', 'col.tab.stats': 'Record',
     'col.seals': '{0} of {1} seals seen', 'col.locked': 'Locked', 'col.unseen': 'You have not held this seal yet', 'col.beaten': 'Beaten ×{0}', 'col.ach': '{0} of {1} earned', 'col.unlocks': 'Unlocks: {0}',
@@ -4156,7 +4160,7 @@ const Gfx = {
     this.paintCells(c, list, cs, cx - (geom.w * cs) / 2, cy - (geom.h * cs) / 2, o);
   },
   pieceCanvas(shape, ink, enh, cs, marks) {
-    const g = geomOf(shape, 0, 0), k = Math.min(3, window.devicePixelRatio || 1) * 1.5;
+    const g = geomOf(shape, 0, 0), k = Math.min(2, window.devicePixelRatio || 1) * 1.3;
     const cv = mkCanvas((g.w * cs + cs) * k, (g.h * cs + cs) * k), c = cv.getContext('2d');
     c.scale(k, k);
     this.piece(c, g, ink, enh, (g.w * cs + cs) / 2, (g.h * cs + cs) / 2, cs, { marks });
@@ -4229,7 +4233,7 @@ const Gfx = {
     }
   },
   glyphCanvas(id, size, color, o) {
-    const k = Math.min(3, window.devicePixelRatio || 1) * (o && o.k ? o.k : 1.5);
+    const k = Math.min(2, window.devicePixelRatio || 1) * (o && o.k ? o.k : 1.3);
     const cv = mkCanvas(size * k, size * k), c = cv.getContext('2d');
     c.scale(k, k);
     if (id === 'sanbi') {
@@ -4251,7 +4255,8 @@ const Gfx = {
   sealFace(id, size, ed) {
     const key = id + '|' + size + '|' + (ed || '') + '|' + (window.devicePixelRatio || 1);
     if (this._seal.has(key)) return this._seal.get(key);
-    const d = SEALS[id], k = Math.min(3, window.devicePixelRatio || 1) * 1.6;
+    if (this._seal.size > 320) this._seal.clear();
+    const d = SEALS[id], k = Math.min(2, window.devicePixelRatio || 1) * 1.35;
     const cv = mkCanvas(size * k, size * k), c = cv.getContext('2d');
     c.scale(k, k);
     const R = prng(hashStr(id) + 3);
@@ -5394,7 +5399,6 @@ const Play = {
     FX.setDrag(null);
     this.hideSlotCard();
     if (!d.moved) { if (!d.held) this.rotate(d.slot, 1); return; }
-    const g = this.ghost;
     this.setGhost(null);
     if (d.overRinse) { Game.discard(d.slot); return; }
     if (d.onBoard && d.valid) { Game.place(d.slot, d.gx, d.gy); return; }
@@ -6007,7 +6011,7 @@ const Score = {
 
 // ---------- game controller: actions, round flow, sheet selection and payout ----------
 const Game = {
-  _tick: 0, _sealSig: '',
+  _tick: 0,
   save() {
     const run = UI.run;
     if (run) {
@@ -6234,7 +6238,6 @@ const Game = {
     const v = sellSeal(run, uid);
     if (v === false) return;
     if (c) { FX.spark(c.x, c.y, '#ffe08a', 14, 240 * UI.s, 2.4 * UI.s); FX.text(c.x, c.y, '+' + v, '#ffe08a', 26 * UI.s); }
-    Hud._sealSig = '';
     this.afterMeta();
   },
   sellItem(idx) {
@@ -6337,7 +6340,6 @@ const Game = {
   },
   skip() {
     const run = UI.run;
-    const before = this.snapshotForItem({});
     const id = skipBlind(run);
     if (!id) return;
     Snd.play('paper');
@@ -6498,7 +6500,6 @@ const Shop = {
     Snd.play('buy');
     if (c) FX.spark(c.x, c.y, '#ffe08a', 16, 260 * UI.s, 2.4 * UI.s);
     if (useNow && it.kind !== 'seal') Game.itemFeedback(ITEMS[it.id], before);
-    Hud._sealSig = '';
     Game.afterMeta();
   },
   buyVoucher() {
@@ -6592,7 +6593,6 @@ const Shop = {
     if (!r.ok) { this.why(r); return; }
     Snd.play('buy');
     if (ch.kind === 'tie' || (opt && opt.use)) Game.itemFeedback(ITEMS[ch.id], before);
-    Hud._sealSig = '';
     Hud.refresh();
     Game.save(); metaOnState(run); showAchievements();
     if (run.pack) this.packRender(); else this.packDone();
@@ -7310,6 +7310,107 @@ const Menu = {
     for (const s of run.seals) { const el = Gfx.sealEl(s.id, 56, s.ed); bindCard(el, () => sealCard(s.id, s, run), { noClick: true }); row.appendChild(el); }
     return row;
   },
+  // a keepsake of the run: one image to save or share
+  keepsake(run, won) {
+    const W = 1080, H = 1440;
+    const cv = mkCanvas(W, H), c = cv.getContext('2d');
+    const R = prng(hashStr(run.seed) + 5);
+    // paper
+    const g = c.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, PAPER.hi); g.addColorStop(0.6, PAPER.base); g.addColorStop(1, PAPER.lo);
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    for (let i = 0; i < 26; i++) {
+      const x = R() * W, y = R() * H, r = 120 + R() * 380, gg = c.createRadialGradient(x, y, 0, x, y, r);
+      gg.addColorStop(0, R() < 0.5 ? 'rgba(160,120,60,0.06)' : 'rgba(255,252,240,0.12)'); gg.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = gg; c.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    c.lineCap = 'round';
+    for (let i = 0; i < 2600; i++) {
+      const x = R() * W, y = R() * H, a = R() * Math.PI, l = 4 + R() * 22;
+      c.strokeStyle = R() < 0.6 ? `rgba(120,90,50,${0.05 + R() * 0.08})` : `rgba(255,255,255,${0.1 + R() * 0.15})`;
+      c.lineWidth = 0.6 + R() * 0.9;
+      c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); c.stroke();
+    }
+    c.strokeStyle = 'rgba(160,44,32,0.85)'; c.lineWidth = 6; c.strokeRect(44, 44, W - 88, H - 88);
+    c.strokeStyle = 'rgba(160,44,32,0.5)'; c.lineWidth = 2; c.strokeRect(58, 58, W - 116, H - 116);
+    const ink = '#1b1918', red = '#b3261a', dim = '#6b5a44';
+    c.textBaseline = 'middle';
+    // heading
+    c.fillStyle = ink; c.textAlign = 'left'; c.font = `700 76px ${FONT_KAI}`;
+    c.fillText('方块字', 100, 150);
+    c.fillStyle = dim; c.font = `400 30px ${FONT_NUM}`;
+    c.fillText('BLOCK SCRIPT', 104, 210);
+    c.textAlign = 'right'; c.fillStyle = dim; c.font = `400 34px ${FONT_KAI}`;
+    c.fillText(`${nm(DECKS[run.deckId])} · ${nm(STAKES[run.stake])}`, W - 100, 140);
+    c.font = `400 28px ${FONT_NUM}`;
+    c.fillText((run.daily ? T('daily.short') + ' ' + run.daily : T('hud.seed') + ' ' + run.seed), W - 100, 190);
+    // the best character of the run, written large
+    const id = run.stats.bestChar && CH[run.stats.bestChar] ? run.stats.bestChar : 'yi';
+    const gs = 560, gx = (W - gs) / 2, gy = 280;
+    c.strokeStyle = 'rgba(160,44,32,0.55)'; c.lineWidth = 3; c.strokeRect(gx - 24, gy - 24, gs + 48, gs + 48);
+    c.setLineDash([10, 12]); c.strokeStyle = 'rgba(160,44,32,0.25)'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(gx + gs / 2, gy - 24); c.lineTo(gx + gs / 2, gy + gs + 24); c.moveTo(gx - 24, gy + gs / 2); c.lineTo(gx + gs + 24, gy + gs / 2); c.stroke(); c.setLineDash([]);
+    if (id === 'sanbi') {
+      Gfx.brush(c, gx + gs * 0.1, gy + gs * 0.3, gx + gs * 0.88, gy + gs * 0.22, gs * 0.09, ink, 1, 5);
+      Gfx.brush(c, gx + gs * 0.18, gy + gs * 0.64, gx + gs * 0.9, gy + gs * 0.72, gs * 0.09, ink, 1, 9);
+      Gfx.brush(c, gx + gs * 0.36, gy + gs * 0.08, gx + gs * 0.3, gy + gs * 0.92, gs * 0.09, ink, 1, 13);
+      Gfx.brush(c, gx + gs * 0.7, gy + gs * 0.14, gx + gs * 0.76, gy + gs * 0.88, gs * 0.09, ink, 1, 17);
+    } else Gfx.glyph(c, charLayout(id, run.w, run.h), run.w, run.h, gx, gy, gs, ink, { weight: 0.1 });
+    // result stamp
+    c.save();
+    c.translate(W - 190, gy + gs - 40); c.rotate(-0.12);
+    c.strokeStyle = red; c.lineWidth = 7; c.strokeRect(-92, -62, 184, 124);
+    c.fillStyle = red; c.textAlign = 'center'; c.font = `700 ${LANG === 'zh' ? 62 : 34}px ${FONT_KAI}`;
+    c.fillText(won ? (LANG === 'zh' ? '通关' : 'CLEARED') : faName(Math.min(run.ante, 99)), 0, 4);
+    c.restore();
+    // numbers
+    const ty = gy + gs + 110;
+    const col = (x, label, value) => {
+      c.textAlign = 'center'; c.fillStyle = dim; c.font = `400 30px ${FONT_KAI}`; c.fillText(label, x, ty);
+      c.fillStyle = ink; c.font = `700 56px ${FONT_NUM}`; c.fillText(value, x, ty + 62);
+    };
+    col(W * 0.22, T('run.best'), fmtNum(run.stats.best) + (id === 'sanbi' ? '' : ' ' + CH[id].g));
+    col(W * 0.5, T('end.ante'), won && run.ante <= 9 ? T('end.win') : faName(run.ante));
+    col(W * 0.78, T('end.chars'), String(distinctChars(run)));
+    // seals
+    const n = run.seals.length, ss = Math.min(120, (W - 240) / Math.max(1, n) - 18), sy = ty + 136;
+    run.seals.forEach((sl, i) => { const x = W / 2 - (n * (ss + 18) - 18) / 2 + i * (ss + 18); c.drawImage(Gfx.sealFace(sl.id, 128, sl.ed), x, sy, ss, ss); });
+    // signature
+    const seal = this.authorSeal(110);
+    c.drawImage(seal, W - 96 - 110, H - 92 - 110, 110, 110);
+    c.textAlign = 'left'; c.fillStyle = dim; c.font = `400 28px ${FONT_KAI}`;
+    const d = new Date();
+    c.fillText(`${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`, 100, H - 150);
+    c.fillStyle = ink; c.font = `400 32px ${FONT_KAI}`;
+    c.fillText(T('title.tag'), 100, H - 108);
+    return cv;
+  },
+  showKeepsake(run, won) {
+    const cv = this.keepsake(run, won);
+    const name = `方块字-${run.daily ? 'D' + run.daily : run.seed}.png`;
+    const blobOf = () => new Promise((res) => { if (cv.toBlob) cv.toBlob((b) => res(b), 'image/png'); else res(null); });
+    openModal({
+      title: T('keep.title'), width: Math.min(UI.W - 30, 560),
+      body: (root) => {
+        cv.style.width = '100%'; cv.style.height = 'auto'; cv.style.borderRadius = '6px'; cv.style.boxShadow = '0 8px 24px rgba(0,0,0,0.6)';
+        root.appendChild(cv);
+        root.appendChild(h('div.dim', { text: T('keep.tip'), style: { marginTop: '10px', fontSize: '16px', textAlign: 'center' } }));
+      },
+      buttons: [{ label: T('close'), cls: 'ghost' }, { label: T('keep.save'), cls: 'gold', keep: true, fn: async () => {
+        const blob = await blobOf();
+        if (!blob) return;
+        try {
+          const file = typeof File === 'function' ? new File([blob], name, { type: 'image/png' }) : null;
+          if (file && navigator.canShare && navigator.canShare({ files: [file] }) && UI.touch) { await navigator.share({ files: [file], title: '方块字' }); return; }
+        } catch (e) { if (e && e.name === 'AbortError') return; }
+        const url = URL.createObjectURL(blob);
+        const a = h('a', { href: url, download: name, style: { display: 'none' } });
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        toast({ icon: '存', title: T('keep.saved'), ms: 1800 });
+      } }],
+    });
+  },
   gameOver() {
     const run = UI.run;
     if (!run) { this.title(); return; }
@@ -7333,6 +7434,7 @@ const Menu = {
       },
       buttons: [
         { label: T('end.title'), cls: 'ghost', keep: true, fn: () => { closeAllModals(); UI.run = null; Menu.title(); } },
+        { label: T('keep.btn'), cls: '', keep: true, fn: () => this.showKeepsake(run, false) },
         { label: T('end.again'), cls: 'red', keep: true, fn: () => { closeAllModals(); const o = run.daily ? dailyConfig(run.daily) : { deck: run.deckId, stake: run.stake }; UI.run = null; Game.begin(o); } },
       ],
     });
@@ -7387,6 +7489,7 @@ const Menu = {
       },
       buttons: [
         { label: T('end.title'), cls: 'ghost', keep: true, fn: () => { closeAllModals(); Game.abandon(); } },
+        { label: T('keep.btn'), cls: '', keep: true, fn: () => this.showKeepsake(run, true) },
         { label: T('end.endless'), cls: 'gold', keep: true, fn: () => { closeAllModals(); continueEndless(run); Game.save(); Game.route(); } },
       ],
     });

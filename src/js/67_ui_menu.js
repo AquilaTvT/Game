@@ -204,6 +204,107 @@ const Menu = {
     for (const s of run.seals) { const el = Gfx.sealEl(s.id, 56, s.ed); bindCard(el, () => sealCard(s.id, s, run), { noClick: true }); row.appendChild(el); }
     return row;
   },
+  // a keepsake of the run: one image to save or share
+  keepsake(run, won) {
+    const W = 1080, H = 1440;
+    const cv = mkCanvas(W, H), c = cv.getContext('2d');
+    const R = prng(hashStr(run.seed) + 5);
+    // paper
+    const g = c.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, PAPER.hi); g.addColorStop(0.6, PAPER.base); g.addColorStop(1, PAPER.lo);
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    for (let i = 0; i < 26; i++) {
+      const x = R() * W, y = R() * H, r = 120 + R() * 380, gg = c.createRadialGradient(x, y, 0, x, y, r);
+      gg.addColorStop(0, R() < 0.5 ? 'rgba(160,120,60,0.06)' : 'rgba(255,252,240,0.12)'); gg.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = gg; c.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    c.lineCap = 'round';
+    for (let i = 0; i < 2600; i++) {
+      const x = R() * W, y = R() * H, a = R() * Math.PI, l = 4 + R() * 22;
+      c.strokeStyle = R() < 0.6 ? `rgba(120,90,50,${0.05 + R() * 0.08})` : `rgba(255,255,255,${0.1 + R() * 0.15})`;
+      c.lineWidth = 0.6 + R() * 0.9;
+      c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); c.stroke();
+    }
+    c.strokeStyle = 'rgba(160,44,32,0.85)'; c.lineWidth = 6; c.strokeRect(44, 44, W - 88, H - 88);
+    c.strokeStyle = 'rgba(160,44,32,0.5)'; c.lineWidth = 2; c.strokeRect(58, 58, W - 116, H - 116);
+    const ink = '#1b1918', red = '#b3261a', dim = '#6b5a44';
+    c.textBaseline = 'middle';
+    // heading
+    c.fillStyle = ink; c.textAlign = 'left'; c.font = `700 76px ${FONT_KAI}`;
+    c.fillText('方块字', 100, 150);
+    c.fillStyle = dim; c.font = `400 30px ${FONT_NUM}`;
+    c.fillText('BLOCK SCRIPT', 104, 210);
+    c.textAlign = 'right'; c.fillStyle = dim; c.font = `400 34px ${FONT_KAI}`;
+    c.fillText(`${nm(DECKS[run.deckId])} · ${nm(STAKES[run.stake])}`, W - 100, 140);
+    c.font = `400 28px ${FONT_NUM}`;
+    c.fillText((run.daily ? T('daily.short') + ' ' + run.daily : T('hud.seed') + ' ' + run.seed), W - 100, 190);
+    // the best character of the run, written large
+    const id = run.stats.bestChar && CH[run.stats.bestChar] ? run.stats.bestChar : 'yi';
+    const gs = 560, gx = (W - gs) / 2, gy = 280;
+    c.strokeStyle = 'rgba(160,44,32,0.55)'; c.lineWidth = 3; c.strokeRect(gx - 24, gy - 24, gs + 48, gs + 48);
+    c.setLineDash([10, 12]); c.strokeStyle = 'rgba(160,44,32,0.25)'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(gx + gs / 2, gy - 24); c.lineTo(gx + gs / 2, gy + gs + 24); c.moveTo(gx - 24, gy + gs / 2); c.lineTo(gx + gs + 24, gy + gs / 2); c.stroke(); c.setLineDash([]);
+    if (id === 'sanbi') {
+      Gfx.brush(c, gx + gs * 0.1, gy + gs * 0.3, gx + gs * 0.88, gy + gs * 0.22, gs * 0.09, ink, 1, 5);
+      Gfx.brush(c, gx + gs * 0.18, gy + gs * 0.64, gx + gs * 0.9, gy + gs * 0.72, gs * 0.09, ink, 1, 9);
+      Gfx.brush(c, gx + gs * 0.36, gy + gs * 0.08, gx + gs * 0.3, gy + gs * 0.92, gs * 0.09, ink, 1, 13);
+      Gfx.brush(c, gx + gs * 0.7, gy + gs * 0.14, gx + gs * 0.76, gy + gs * 0.88, gs * 0.09, ink, 1, 17);
+    } else Gfx.glyph(c, charLayout(id, run.w, run.h), run.w, run.h, gx, gy, gs, ink, { weight: 0.1 });
+    // result stamp
+    c.save();
+    c.translate(W - 190, gy + gs - 40); c.rotate(-0.12);
+    c.strokeStyle = red; c.lineWidth = 7; c.strokeRect(-92, -62, 184, 124);
+    c.fillStyle = red; c.textAlign = 'center'; c.font = `700 ${LANG === 'zh' ? 62 : 34}px ${FONT_KAI}`;
+    c.fillText(won ? (LANG === 'zh' ? '通关' : 'CLEARED') : faName(Math.min(run.ante, 99)), 0, 4);
+    c.restore();
+    // numbers
+    const ty = gy + gs + 110;
+    const col = (x, label, value) => {
+      c.textAlign = 'center'; c.fillStyle = dim; c.font = `400 30px ${FONT_KAI}`; c.fillText(label, x, ty);
+      c.fillStyle = ink; c.font = `700 56px ${FONT_NUM}`; c.fillText(value, x, ty + 62);
+    };
+    col(W * 0.22, T('run.best'), fmtNum(run.stats.best) + (id === 'sanbi' ? '' : ' ' + CH[id].g));
+    col(W * 0.5, T('end.ante'), won && run.ante <= 9 ? T('end.win') : faName(run.ante));
+    col(W * 0.78, T('end.chars'), String(distinctChars(run)));
+    // seals
+    const n = run.seals.length, ss = Math.min(120, (W - 240) / Math.max(1, n) - 18), sy = ty + 136;
+    run.seals.forEach((sl, i) => { const x = W / 2 - (n * (ss + 18) - 18) / 2 + i * (ss + 18); c.drawImage(Gfx.sealFace(sl.id, 128, sl.ed), x, sy, ss, ss); });
+    // signature
+    const seal = this.authorSeal(110);
+    c.drawImage(seal, W - 96 - 110, H - 92 - 110, 110, 110);
+    c.textAlign = 'left'; c.fillStyle = dim; c.font = `400 28px ${FONT_KAI}`;
+    const d = new Date();
+    c.fillText(`${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`, 100, H - 150);
+    c.fillStyle = ink; c.font = `400 32px ${FONT_KAI}`;
+    c.fillText(T('title.tag'), 100, H - 108);
+    return cv;
+  },
+  showKeepsake(run, won) {
+    const cv = this.keepsake(run, won);
+    const name = `方块字-${run.daily ? 'D' + run.daily : run.seed}.png`;
+    const blobOf = () => new Promise((res) => { if (cv.toBlob) cv.toBlob((b) => res(b), 'image/png'); else res(null); });
+    openModal({
+      title: T('keep.title'), width: Math.min(UI.W - 30, 560),
+      body: (root) => {
+        cv.style.width = '100%'; cv.style.height = 'auto'; cv.style.borderRadius = '6px'; cv.style.boxShadow = '0 8px 24px rgba(0,0,0,0.6)';
+        root.appendChild(cv);
+        root.appendChild(h('div.dim', { text: T('keep.tip'), style: { marginTop: '10px', fontSize: '16px', textAlign: 'center' } }));
+      },
+      buttons: [{ label: T('close'), cls: 'ghost' }, { label: T('keep.save'), cls: 'gold', keep: true, fn: async () => {
+        const blob = await blobOf();
+        if (!blob) return;
+        try {
+          const file = typeof File === 'function' ? new File([blob], name, { type: 'image/png' }) : null;
+          if (file && navigator.canShare && navigator.canShare({ files: [file] }) && UI.touch) { await navigator.share({ files: [file], title: '方块字' }); return; }
+        } catch (e) { if (e && e.name === 'AbortError') return; }
+        const url = URL.createObjectURL(blob);
+        const a = h('a', { href: url, download: name, style: { display: 'none' } });
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        toast({ icon: '存', title: T('keep.saved'), ms: 1800 });
+      } }],
+    });
+  },
   gameOver() {
     const run = UI.run;
     if (!run) { this.title(); return; }
@@ -227,6 +328,7 @@ const Menu = {
       },
       buttons: [
         { label: T('end.title'), cls: 'ghost', keep: true, fn: () => { closeAllModals(); UI.run = null; Menu.title(); } },
+        { label: T('keep.btn'), cls: '', keep: true, fn: () => this.showKeepsake(run, false) },
         { label: T('end.again'), cls: 'red', keep: true, fn: () => { closeAllModals(); const o = run.daily ? dailyConfig(run.daily) : { deck: run.deckId, stake: run.stake }; UI.run = null; Game.begin(o); } },
       ],
     });
@@ -281,6 +383,7 @@ const Menu = {
       },
       buttons: [
         { label: T('end.title'), cls: 'ghost', keep: true, fn: () => { closeAllModals(); Game.abandon(); } },
+        { label: T('keep.btn'), cls: '', keep: true, fn: () => this.showKeepsake(run, true) },
         { label: T('end.endless'), cls: 'gold', keep: true, fn: () => { closeAllModals(); continueEndless(run); Game.save(); Game.route(); } },
       ],
     });

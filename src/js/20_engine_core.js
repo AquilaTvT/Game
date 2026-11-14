@@ -207,6 +207,8 @@ function blindInfo(run, b) {
     t *= BOSSES[boss].targetMul || 1;
     for (let i = 1; i <= run.stake; i++) if (STAKES[i].flags && STAKES[i].flags.bossMul) t *= STAKES[i].flags.bossMul;
   }
+  // the very first sheet of a first-ever run is a gentle one
+  if (run.tutorial && run.ante === 1 && b === 0) t = Math.min(t, 150);
   let reward = BLIND_REWARD[b];
   if (b === 0) for (let i = 1; i <= run.stake; i++) if (STAKES[i].flags && STAKES[i].flags.noSmallReward) reward = 0;
   return { blind: b, boss, target: roundTarget(t), reward };

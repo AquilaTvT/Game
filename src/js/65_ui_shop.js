@@ -93,7 +93,6 @@ const Shop = {
     Snd.play('buy');
     if (c) FX.spark(c.x, c.y, '#ffe08a', 16, 260 * UI.s, 2.4 * UI.s);
     if (useNow && it.kind !== 'seal') Game.itemFeedback(ITEMS[it.id], before);
-    Hud._sealSig = '';
     Game.afterMeta();
   },
   buyVoucher() {
@@ -187,7 +186,6 @@ const Shop = {
     if (!r.ok) { this.why(r); return; }
     Snd.play('buy');
     if (ch.kind === 'tie' || (opt && opt.use)) Game.itemFeedback(ITEMS[ch.id], before);
-    Hud._sealSig = '';
     Hud.refresh();
     Game.save(); metaOnState(run); showAchievements();
     if (run.pack) this.packRender(); else this.packDone();

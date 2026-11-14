@@ -195,7 +195,6 @@ const Play = {
     FX.setDrag(null);
     this.hideSlotCard();
     if (!d.moved) { if (!d.held) this.rotate(d.slot, 1); return; }
-    const g = this.ghost;
     this.setGhost(null);
     if (d.overRinse) { Game.discard(d.slot); return; }
     if (d.onBoard && d.valid) { Game.place(d.slot, d.gx, d.gy); return; }

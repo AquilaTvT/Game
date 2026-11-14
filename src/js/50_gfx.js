@@ -320,7 +320,7 @@ const Gfx = {
     this.paintCells(c, list, cs, cx - (geom.w * cs) / 2, cy - (geom.h * cs) / 2, o);
   },
   pieceCanvas(shape, ink, enh, cs, marks) {
-    const g = geomOf(shape, 0, 0), k = Math.min(3, window.devicePixelRatio || 1) * 1.5;
+    const g = geomOf(shape, 0, 0), k = Math.min(2, window.devicePixelRatio || 1) * 1.3;
     const cv = mkCanvas((g.w * cs + cs) * k, (g.h * cs + cs) * k), c = cv.getContext('2d');
     c.scale(k, k);
     this.piece(c, g, ink, enh, (g.w * cs + cs) / 2, (g.h * cs + cs) / 2, cs, { marks });
@@ -393,7 +393,7 @@ const Gfx = {
     }
   },
   glyphCanvas(id, size, color, o) {
-    const k = Math.min(3, window.devicePixelRatio || 1) * (o && o.k ? o.k : 1.5);
+    const k = Math.min(2, window.devicePixelRatio || 1) * (o && o.k ? o.k : 1.3);
     const cv = mkCanvas(size * k, size * k), c = cv.getContext('2d');
     c.scale(k, k);
     if (id === 'sanbi') {
@@ -415,7 +415,8 @@ const Gfx = {
   sealFace(id, size, ed) {
     const key = id + '|' + size + '|' + (ed || '') + '|' + (window.devicePixelRatio || 1);
     if (this._seal.has(key)) return this._seal.get(key);
-    const d = SEALS[id], k = Math.min(3, window.devicePixelRatio || 1) * 1.6;
+    if (this._seal.size > 320) this._seal.clear();
+    const d = SEALS[id], k = Math.min(2, window.devicePixelRatio || 1) * 1.35;
     const cv = mkCanvas(size * k, size * k), c = cv.getContext('2d');
     c.scale(k, k);
     const R = prng(hashStr(id) + 3);

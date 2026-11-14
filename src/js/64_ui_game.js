@@ -1,6 +1,6 @@
 // ---------- game controller: actions, round flow, sheet selection and payout ----------
 const Game = {
-  _tick: 0, _sealSig: '',
+  _tick: 0,
   save() {
     const run = UI.run;
     if (run) {
@@ -227,7 +227,6 @@ const Game = {
     const v = sellSeal(run, uid);
     if (v === false) return;
     if (c) { FX.spark(c.x, c.y, '#ffe08a', 14, 240 * UI.s, 2.4 * UI.s); FX.text(c.x, c.y, '+' + v, '#ffe08a', 26 * UI.s); }
-    Hud._sealSig = '';
     this.afterMeta();
   },
   sellItem(idx) {
@@ -330,7 +329,6 @@ const Game = {
   },
   skip() {
     const run = UI.run;
-    const before = this.snapshotForItem({});
     const id = skipBlind(run);
     if (!id) return;
     Snd.play('paper');
