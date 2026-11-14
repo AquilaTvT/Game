@@ -262,6 +262,7 @@ const Overlays = {
         row(T('set.hints'), T('set.hints.d'), onoff(S.hints, (v) => { S.hints = v; Hud._patKey = ''; if (UI.run) Hud.pattern(); }));
         row(T('set.marks'), T('set.marks.d'), onoff(S.marks, (v) => { S.marks = v; Play.inkDirty = true; }));
         row(T('set.shake'), null, onoff(S.shake, (v) => { S.shake = v; }));
+        if (navigator.vibrate) row(T('set.haptics'), T('set.haptics.d'), onoff(S.haptics !== false, (v) => { S.haptics = v; }));
         row(T('set.reduce'), T('set.reduce.d'), onoff(S.reduce, (v) => { S.reduce = v; }));
         row(T('set.confirm'), T('set.confirm.d'), onoff(S.confirmIgnite, (v) => { S.confirmIgnite = v; }));
         if (document.fullscreenEnabled || document.webkitFullscreenEnabled) row(T('set.full'), null, mkBtn(T('set.full.b'), 'small', () => App.fullscreen()));

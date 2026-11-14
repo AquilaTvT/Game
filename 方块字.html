@@ -761,11 +761,11 @@ const INK = {
   zhu:  { zh: '朱', en: 'Vermilion', col: '#c0321f', hi: '#e8614a', lo: '#7d1a10', mark: '▲',
           pure: { zh: '纯朱之笔：[m|神+4]', en: 'Pure Vermilion stroke: [m|+4 Spirit]' } },
   qing: { zh: '青', en: 'Azure',     col: '#1f5c8f', hi: '#4d92c9', lo: '#0f3558', mark: '◆',
-          pure: { zh: '纯青之笔：[x|神×1.25]', en: 'Pure Azure stroke: [x|×1.25 Spirit]' } },
+          pure: { zh: '纯青之笔：[x|神×1.2]', en: 'Pure Azure stroke: [x|×1.2 Spirit]' } },
   jin:  { zh: '金', en: 'Gold',      col: '#c79a36', hi: '#f6dc8c', lo: '#8a6316', mark: '★',
-          pure: { zh: '纯金之笔：[g|+1 文]', en: 'Pure Gold stroke: [g|+$1]' } },
+          pure: { zh: '纯金之笔：[g|+1 文]（每次挥毫至多 5 文）', en: 'Pure Gold stroke: [g|+$1] (up to $5 per flourish)' } },
 };
-const PURE = { mo: 40, zhu: 4, qing: 1.25, jin: 1 };
+const PURE = { mo: 40, zhu: 4, qing: 1.2, jin: 1 };
 const CELL_CHIPS = 5;
 
 // 墨性 (ink natures, carried by a whole block)
@@ -999,7 +999,7 @@ defChar('yi4', '乂', 'yì', 2, 2.5, NONE, NONE, { d: 3, tags: ['diag'], secret:
 defChar('mi', '米', 'mǐ', 4, 5, [[0, 1, 0]], [[0, 1, 0]], { d: 3, tags: ['diag', 'cross'], secret: true,
   zh: '米', en: 'Rice', gz: '粟实也，象禾实之形。习字者以米字格为范。', ge: 'The grain of millet. Every student of writing begins on rice-pattern squares.' });
 // ---- specials
-defChar('xuan', '玄', 'xuán', 16, 5, [], [], { tags: ['full'], yi: 'allTier', secret: true,
+defChar('xuan', '玄', 'xuán', 16, 2.5, [], [], { tags: ['full'], yi: 'allTier', secret: true,
   zh: '玄', en: 'The Dark', gz: '幽远也。黑而有赤色者为玄。满纸皆墨，玄之又玄，众妙之门。', ge: 'The deep and distant. A sheet wholly black: "mystery upon mystery, the gate of all wonders."' });
 defChar('sanbi', '〇', '', 0, 1, [], [], { tags: ['san'],
   zh: '散笔', en: 'Scribble', gz: '笔画纵横而不成字。', ge: 'Strokes that cross and scatter, yet form no character.' });
@@ -1239,8 +1239,8 @@ defSeal('suanchou', '算筹', 'Counting Rods', 2, 7, {
   dz: '写出[k|数字]时，[m|神]增加其数值\n[n|一 1 · 二 2 · 三 3 · 亖四 4 · 十 10 · 廿 20 · 卅 30 · 卌 40]', de: 'When you write a [k|numeral], add its value to [m|Spirit]\n[n|一 1 · 二 2 · 三 3 · 亖/四 4 · 十 10 · 廿 20 · 卅 30 · 卌 40]',
   end(sc) { if (sc.num) sc.m(sc.num); } });
 defSeal('shiquan', '十全十美', 'Perfect in Every Way', 2, 6, {
-  dz: '每个横竖相交的[k|交点] [m|神+3]', de: '[m|+3 Spirit] for every [k|crossing] of a row and a column',
-  end(sc) { if (sc.nodes > 0) sc.m(3 * sc.nodes); } });
+  dz: '每个横竖相交的[k|交点] [m|神+3]（至多 16 个交点）', de: '[m|+3 Spirit] for every [k|crossing] of a row and a column (up to 16 crossings)',
+  end(sc) { if (sc.nodes > 0) sc.m(3 * Math.min(16, sc.nodes)); } });
 defSeal('wuse', '墨分五色', 'Five Shades of Ink', 2, 7, {
   dz: '计分的格中含[k|三种]墨色 [x|神×1.5]；[k|四种]俱全 [x|神×2]', de: 'If the scored cells include [k|3 inks]: [x|×1.5 Spirit]; all [k|4 inks]: [x|×2 Spirit]',
   end(sc) { const k = Object.keys(sc.inkCount).length; if (k >= 4) sc.x(2); else if (k === 3) sc.x(1.5); } });
@@ -1268,8 +1268,8 @@ defSeal('dianjing', '画龙点睛', 'Dotting the Dragon\'s Eyes', 2, 6, {
   dz: '挥毫前最后落下的墨块是[k|「点」]时 [x|神×2]', de: 'If the last block you placed before the flourish was a [k|Dot]: [x|×2 Spirit]',
   end(sc) { if (sc.rd.lastPlaced === 'dot') sc.x(2); } });
 defSeal('longshe', '笔走龙蛇', 'Dragons and Serpents', 2, 7, {
-  dz: '每块参与计分的[k|蛇形]墨块（乙、之、阶、曲、弓）[x|神×1.2]', de: 'Each [k|serpentine] block that scores (Wave, Zigzag, Stairs, Crook, Bow): [x|×1.2 Spirit]',
-  end(sc) { for (const p of sc.pieces) if (hasTag(p.shape, 'snake')) sc.x(1.2); } });
+  dz: '每块参与计分的[k|蛇形]墨块（乙、之、阶、曲、弓）[x|神×1.2]（每次挥毫至多 6 块）', de: 'Each [k|serpentine] block that scores (Wave, Zigzag, Stairs, Crook, Bow): [x|×1.2 Spirit] (up to 6 blocks per flourish)',
+  end(sc) { let k = 0; for (const p of sc.pieces) if (hasTag(p.shape, 'snake') && k < 6) { k++; sc.x(1.2); } } });
 defSeal('shuke', '疏可走马', 'Room for a Horse to Run', 2, 7, {
   dz: '两画以上，且所有并列的笔画[k|互不相邻]时 [x|神×2]', de: 'With 2+ strokes, if no two parallel strokes are [k|adjacent]: [x|×2 Spirit]',
   end(sc) { if (sc.n >= 2 && sc.adjPairs === 0) sc.x(2); } });
@@ -1323,8 +1323,8 @@ defSeal('kubi', '枯笔', 'Dry Brush', 2, 7, {
   dz: '[k|墨量−25]\n[x|神×1.75]', de: '[k|−25 Ink] each round\n[x|×1.75 Spirit]', mods: { inkMax: -25 },
   end(sc) { sc.x(1.75); } });
 defSeal('yajiao', '压角章', 'Corner Seal', 2, 6, {
-  dz: '纸面[k|四角]的格计分时 [x|神×1.25]', de: 'The [k|four corner] cells of the sheet: [x|×1.25 Spirit] when scored',
-  cell(sc, s, c) { if (c.corner) sc.x(1.25); } });
+  dz: '纸面[k|四角]的格每次计分 [x|神×1.1]', de: 'The [k|four corner] cells of the sheet: [x|×1.1 Spirit] each time they score',
+  cell(sc, s, c) { if (c.corner) sc.x(1.1); } });
 defSeal('luokuan', '落款章', 'Signature Seal', 2, 6, {
   dz: '写出[k|底行]之横时 [x|神×1.5]', de: 'When the [k|bottom row] is one of your strokes: [x|×1.5 Spirit]',
   end(sc) { if (sc.rows.includes(sc.h - 1)) sc.x(1.5); } });
@@ -1404,8 +1404,8 @@ defSeal('mobao', '墨宝', 'Treasured Ink', 2, 6, {
   dz: '[mo|纯墨]之笔额外 [c|形+100]', de: 'Each [mo|pure Black] stroke: an extra [c|+100 Form]',
   stroke(sc, s, st) { if (st.pure === 'mo') sc.c(100); } });
 defSeal('qinglan', '青出于蓝', 'Bluer than Indigo', 2, 7, {
-  dz: '[qing|纯青]之笔额外 [x|神×1.3]', de: 'Each [qing|pure Azure] stroke: an extra [x|×1.3 Spirit]',
-  stroke(sc, s, st) { if (st.pure === 'qing') sc.x(1.3); } });
+  dz: '[qing|纯青]之笔额外 [m|神+6]', de: 'Each [qing|pure Azure] stroke: an extra [m|+6 Spirit]',
+  stroke(sc, s, st) { if (st.pure === 'qing') sc.m(6); } });
 defSeal('jinbi', '金碧辉煌', 'Gold and Jade Resplendent', 2, 6, {
   dz: '[jin|纯金]之笔额外 [g|+1 文]、[m|神+5]', de: 'Each [jin|pure Gold] stroke: an extra [g|+$1] and [m|+5 Spirit]',
   stroke(sc, s, st) { if (st.pure === 'jin') { sc.cash(1); sc.m(5); } } });
@@ -2436,7 +2436,7 @@ function ignite(run) {
         if (st.pure === 'mo') sc.c(PURE.mo);
         else if (st.pure === 'zhu') sc.m(PURE.zhu);
         else if (st.pure === 'qing') sc.x(PURE.qing);
-        else if (st.pure === 'jin') sc.cash(PURE.jin);
+        else if (st.pure === 'jin' && (once.gold || 0) < 5) { once.gold = (once.gold || 0) + 1; sc.cash(PURE.jin); }
       } else st.pure = null;
       for (const e of seals) if (e.def.stroke) { sc.src = { k: 'seal', u: e.u }; e.def.stroke(sc, e.s, st); }
       ev.push({ t: 'strokeEnd', si: st.si });
@@ -2937,7 +2937,7 @@ function checkRun(run) {
 
 // ---------- profile: settings, collection, unlocks, achievements ----------
 const SAVE_KEY = 'fangkuaizi.save.v1';
-const DEFAULT_SETTINGS = { lang: 'zh', music: 0.6, sfx: 0.8, speed: 1, shake: true, marks: false, reduce: false, hints: true, confirmIgnite: false };
+const DEFAULT_SETTINGS = { lang: 'zh', music: 0.6, sfx: 0.8, speed: 1, shake: true, marks: false, reduce: false, hints: true, confirmIgnite: false, haptics: true };
 function freshProfile() {
   return {
     v: 1, settings: Object.assign({}, DEFAULT_SETTINGS),
@@ -3256,7 +3256,7 @@ const STR = {
     'stat.runs': '开卷', 'stat.wins': '通关', 'stat.bestAnte': '最远', 'stat.endless': '无尽最远', 'stat.bestScore': '最佳一笔', 'stat.ignites': '挥毫', 'stat.placed': '落墨', 'stat.cells': '写去的墨格', 'stat.clean': '不留余墨',
     'stat.time': '习字时长', 'stat.time.v': '{0} 小时 {1} 分', 'stat.decks': '书体战绩', 'stat.deck.v': '通关 {0} 次 · 最高「{1}」', 'stat.history': '近来的卷', 'stat.lostat': '止于第 {0} 法', 'stat.won': '通关',
     'set.lang': '语言 · Language', 'set.music': '配乐', 'set.sfx': '音效', 'set.speed': '计分速度', 'set.speed.d': '计分时点击任意处也可加速', 'set.hints': '可成之字', 'set.hints.d': '提示再添一两笔就能写成的字',
-    'set.marks': '墨色记号', 'set.marks.d': '在墨块上标出 ● ▲ ◆ ★，便于分辨四种墨色', 'set.shake': '震屏', 'set.reduce': '减弱动效', 'set.reduce.d': '减少闪光与粒子，放缓背景',
+    'set.marks': '墨色记号', 'set.marks.d': '在墨块上标出 ● ▲ ◆ ★，便于分辨四种墨色', 'set.shake': '震屏', 'set.haptics': '触感', 'set.haptics.d': '落墨与成字时轻震（视设备而定）', 'set.reduce': '减弱动效', 'set.reduce.d': '减少闪光与粒子，放缓背景',
     'set.confirm': '挥毫前确认', 'set.confirm.d': '防止误触', 'set.full': '全屏', 'set.full.b': '切换', 'set.data': '存档', 'set.data.d': '存于本机的浏览器中；可导出为文字备份', 'set.data.bad': '此浏览器无法写入存档，请及时导出备份',
     'set.export': '导出', 'set.export.d': '复制下面这段文字并妥善保存；在任何设备上导入即可恢复。', 'set.copy': '复制', 'set.copied': '已复制', 'set.import': '导入', 'set.import.d': '粘贴此前导出的存档文字。当前的进度将被覆盖。',
     'set.import.bad': '这段文字不是有效的存档', 'set.imported': '存档已导入', 'set.reset': '清除全部进度', 'set.reset.b': '清除', 'set.reset.d': '图鉴、解锁与战绩都会清空', 'set.reset.q': '所有的图鉴、解锁与战绩都将清空，且无法恢复。', 'set.reset.y': '全部清除',
@@ -3271,7 +3271,7 @@ const STR = {
     'tut.8': '这是<b>字典</b>，收着所有能写的字与写法。去吧——落墨成笔，积笔成字。',
     'tut.shop': '过关得<b>润笔</b>，可在铺中添置<b>印</b>、<b>字帖</b>与<b>文房</b>。印是一卷的根本——点一下货物看清效果，再决定买不买。留着的润笔还会生<b>利息</b>。',
     'help.1': '<h3>落墨成笔</h3><p>把墨块拖到纸上（轻点可旋转）。填满的<b>整行</b>是一「横」，<b>整列</b>是一「竖」。每块墨耗去与格数相同的<b>墨</b>，墨尽则不能再落。</p><h3>积笔成字</h3><p>按下<b>挥毫</b>，纸上所有成笔的横竖一同计分并消去——它们合起来写成一个<b>字</b>。须与字的图样<b>完全吻合</b>：在纸边还是在中间都有讲究；多一笔、少一笔，就成了另一个字，或是不成字的<b>散笔</b>。</p>',
-    'help.2': '<h3>形 × 神</h3><p>得分 = <b>形 × 神</b>。</p><ul><li>字的<b>画数</b>定下基础的形与神，可用<b>字帖</b>提升等级；</li><li>每个计分的墨格 <b>形+5</b>；横竖<b>交点</b>上的格会计两次；</li><li>一条笔画若全由同一种墨写成（<b>纯色</b>）：墨 形+40、朱 神+4、青 神×1.25、金 +1 文；</li><li>最后再乘这个字的<b>字格</b>（王 ×3、田 ×4……）。</li></ul><h3>一卷八法</h3><p>一卷共八「法」，每法三局：<b>习字</b>、<b>课业</b>，与一张自带规矩的<b>名帖</b>。在挥毫的次数用完之前达到目标分数即可过关。过关得<b>润笔</b>，可在文房铺添置：</p><ul><li><b>印</b>——至多五枚，自左至右依次生效，是一卷的根本；</li><li><b>字帖</b>——提升某一画数的等级；</li><li><b>文房</b>——为墨块染色、赋予墨性、拓印、销毁，或在纸上制格；</li><li><b>陈设</b>——整卷有效的添置。</li></ul><h3>操作</h3><ul><li>拖动落墨；轻点、右键、滚轮或 <b>R</b> 旋转；拖到「洗笔」上换块。</li><li>键盘：<b>1–4</b> 选块，方向键移动，<b>空格</b>落墨或挥毫，<b>Q</b> 洗笔，<b>Z / X / C</b> 字典、墨匣、卷况，<b>Esc</b> 暂歇。</li><li>计分时点击任意处可加速。</li></ul>',
+    'help.2': '<h3>形 × 神</h3><p>得分 = <b>形 × 神</b>。</p><ul><li>字的<b>画数</b>定下基础的形与神，可用<b>字帖</b>提升等级；</li><li>每个计分的墨格 <b>形+5</b>；横竖<b>交点</b>上的格会计两次；</li><li>一条笔画若全由同一种墨写成（<b>纯色</b>）：墨 形+40、朱 神+4、青 神×1.2、金 +1 文；</li><li>最后再乘这个字的<b>字格</b>（王 ×3、田 ×4……）。</li></ul><h3>一卷八法</h3><p>一卷共八「法」，每法三局：<b>习字</b>、<b>课业</b>，与一张自带规矩的<b>名帖</b>。在挥毫的次数用完之前达到目标分数即可过关。过关得<b>润笔</b>，可在文房铺添置：</p><ul><li><b>印</b>——至多五枚，自左至右依次生效，是一卷的根本；</li><li><b>字帖</b>——提升某一画数的等级；</li><li><b>文房</b>——为墨块染色、赋予墨性、拓印、销毁，或在纸上制格；</li><li><b>陈设</b>——整卷有效的添置。</li></ul><h3>操作</h3><ul><li>拖动落墨；轻点、右键、滚轮或 <b>R</b> 旋转；拖到「洗笔」上换块。</li><li>键盘：<b>1–4</b> 选块，方向键移动，<b>空格</b>落墨或挥毫，<b>Q</b> 洗笔，<b>Z / X / C</b> 字典、墨匣、卷况，<b>Esc</b> 暂歇。</li><li>计分时点击任意处可加速。</li></ul>',
   },
   en: {
     form: 'Form', spirit: 'Spirit', ink: 'Ink', money: 'Coins', ignite: 'Flourish', rinse: 'Rinse', seals: 'Seals', items: 'Items', sanbi: 'Scribble',
@@ -3331,7 +3331,7 @@ const STR = {
     'stat.runs': 'Runs', 'stat.wins': 'Wins', 'stat.bestAnte': 'Furthest', 'stat.endless': 'Furthest (endless)', 'stat.bestScore': 'Best flourish', 'stat.ignites': 'Flourishes', 'stat.placed': 'Blocks placed', 'stat.cells': 'Cells written', 'stat.clean': 'Clean sheets',
     'stat.time': 'Time practised', 'stat.time.v': '{0} h {1} min', 'stat.decks': 'By script', 'stat.deck.v': '{0} win(s) · best rank {1}', 'stat.history': 'Recent runs', 'stat.lostat': 'ended at principle {0}', 'stat.won': 'Won',
     'set.lang': 'Language · 语言', 'set.music': 'Music', 'set.sfx': 'Sound', 'set.speed': 'Scoring speed', 'set.speed.d': 'Tapping anywhere while scoring also hurries it along', 'set.hints': 'Character hints', 'set.hints.d': 'Show characters one or two strokes away',
-    'set.marks': 'Ink marks', 'set.marks.d': 'Mark the four inks with ● ▲ ◆ ★', 'set.shake': 'Screen shake', 'set.reduce': 'Reduce motion', 'set.reduce.d': 'Fewer flashes and particles, a calmer background',
+    'set.marks': 'Ink marks', 'set.marks.d': 'Mark the four inks with ● ▲ ◆ ★', 'set.shake': 'Screen shake', 'set.haptics': 'Haptics', 'set.haptics.d': 'A light buzz on placing and scoring (where supported)', 'set.reduce': 'Reduce motion', 'set.reduce.d': 'Fewer flashes and particles, a calmer background',
     'set.confirm': 'Confirm flourish', 'set.confirm.d': 'Guards against a stray tap', 'set.full': 'Fullscreen', 'set.full.b': 'Toggle', 'set.data': 'Save data', 'set.data.d': 'Kept in this browser; export it as text to back it up', 'set.data.bad': 'This browser cannot store saves — export a backup',
     'set.export': 'Export', 'set.export.d': 'Copy this text somewhere safe. Import it on any device to restore your progress.', 'set.copy': 'Copy', 'set.copied': 'Copied', 'set.import': 'Import', 'set.import.d': 'Paste a save you exported earlier. It replaces your current progress.',
     'set.import.bad': 'That is not a valid save', 'set.imported': 'Save imported', 'set.reset': 'Erase all progress', 'set.reset.b': 'Erase', 'set.reset.d': 'Collection, unlocks and records are all wiped', 'set.reset.q': 'Everything you have collected and unlocked will be gone for good.', 'set.reset.y': 'Erase everything',
@@ -3346,7 +3346,7 @@ const STR = {
     'tut.8': 'This opens the <b>Lexicon</b>: every character you can write, and how. Off you go — blocks become strokes, strokes become characters.',
     'tut.shop': 'Clearing a sheet pays <b>coins</b> to spend on <b>seals</b>, <b>copybooks</b> and <b>studio items</b>. Seals are the heart of a run — tap anything to read it before you buy. Coins you keep earn <b>interest</b>.',
     'help.1': '<h3>Blocks become strokes</h3><p>Drag blocks onto the sheet (tap to rotate). A <b>full row</b> is a horizontal stroke; a <b>full column</b> is a vertical one. Each block costs <b>Ink</b> equal to its cells, and when the Ink is gone no more can be placed.</p><h3>Strokes become characters</h3><p>Press <b>Flourish</b> and every complete row and column scores together and leaves the sheet — together they write one <b>character</b>. The strokes must match the character <b>exactly</b>: edge or middle matters, and one stroke more or fewer is a different character, or a formless <b>scribble</b>.</p>',
-    'help.2': '<h3>Form × Spirit</h3><p>Score = <b>Form × Spirit</b>.</p><ul><li>The <b>stroke count</b> sets the base Form and Spirit; <b>copybooks</b> raise its level.</li><li>Each scored cell gives <b>+5 Form</b>; a cell at a <b>crossing</b> counts twice.</li><li>A stroke written in a single ink is <b>pure</b>: Black +40 Form, Vermilion +4 Spirit, Azure ×1.25 Spirit, Gold +$1.</li><li>Finally everything is multiplied by the <b>character multiplier</b> (王 ×3, 田 ×4 …).</li></ul><h3>Eight principles</h3><p>A run has eight principles of three sheets each: <b>Practice</b>, an <b>Assignment</b>, and a <b>Masterwork</b> with a rule of its own. Reach the target before your flourishes run out. Clearing a sheet pays <b>coins</b> for the shop:</p><ul><li><b>Seals</b> — up to five, acting from left to right; the heart of a run.</li><li><b>Copybooks</b> — raise the level of one stroke tier.</li><li><b>Studio items</b> — dye blocks, give them a nature, copy or destroy them, or mark squares on your paper.</li><li><b>Furnishings</b> — lasting upgrades for the whole run.</li></ul><h3>Controls</h3><ul><li>Drag to place; tap, right-click, scroll or press <b>R</b> to rotate; drop a block on Rinse to swap it.</li><li>Keyboard: <b>1–4</b> pick a block, arrows move, <b>Space</b> places or flourishes, <b>Q</b> rinses, <b>Z / X / C</b> open Lexicon, Ink Box and Run record, <b>Esc</b> pauses.</li><li>Tap anywhere while scoring to speed it up.</li></ul>',
+    'help.2': '<h3>Form × Spirit</h3><p>Score = <b>Form × Spirit</b>.</p><ul><li>The <b>stroke count</b> sets the base Form and Spirit; <b>copybooks</b> raise its level.</li><li>Each scored cell gives <b>+5 Form</b>; a cell at a <b>crossing</b> counts twice.</li><li>A stroke written in a single ink is <b>pure</b>: Black +40 Form, Vermilion +4 Spirit, Azure ×1.2 Spirit, Gold +$1.</li><li>Finally everything is multiplied by the <b>character multiplier</b> (王 ×3, 田 ×4 …).</li></ul><h3>Eight principles</h3><p>A run has eight principles of three sheets each: <b>Practice</b>, an <b>Assignment</b>, and a <b>Masterwork</b> with a rule of its own. Reach the target before your flourishes run out. Clearing a sheet pays <b>coins</b> for the shop:</p><ul><li><b>Seals</b> — up to five, acting from left to right; the heart of a run.</li><li><b>Copybooks</b> — raise the level of one stroke tier.</li><li><b>Studio items</b> — dye blocks, give them a nature, copy or destroy them, or mark squares on your paper.</li><li><b>Furnishings</b> — lasting upgrades for the whole run.</li></ul><h3>Controls</h3><ul><li>Drag to place; tap, right-click, scroll or press <b>R</b> to rotate; drop a block on Rinse to swap it.</li><li>Keyboard: <b>1–4</b> pick a block, arrows move, <b>Space</b> places or flourishes, <b>Q</b> rinses, <b>Z / X / C</b> open Lexicon, Ink Box and Run record, <b>Esc</b> pauses.</li><li>Tap anywhere while scoring to speed it up.</li></ul>',
   },
 };
 function T(key, ...args) {
@@ -5672,6 +5672,47 @@ const Score = {
     const c = UI.center(Hud.el.glyph);
     return { x: c.x, y: c.y - c.h * 0.3, size: Math.max(18, c.h * 0.36) };
   },
+  // the finished character, stamped in vermilion above the score
+  stamp(res, at, u) {
+    const run = UI.run, id = res.char, b = res.ev[0];
+    const size = Play.cs * 1.9 * u, life = 1.25;
+    const cv = mkCanvas(256, 256), c = cv.getContext('2d');
+    const R = prng(hashStr(id) + 11);
+    c.beginPath();
+    const m = 14, n = 7, pts = [];
+    const side = (ax, ay, bx, by) => { for (let i = 0; i <= n; i++) { const q = i / n; pts.push([lerp(ax, bx, q) + (R() - 0.5) * 5, lerp(ay, by, q) + (R() - 0.5) * 5]); } };
+    side(m + 20, m, 256 - m - 20, m); side(256 - m, m + 20, 256 - m, 256 - m - 20); side(256 - m - 20, 256 - m, m + 20, 256 - m); side(m, 256 - m - 20, m, m + 20);
+    pts.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])));
+    c.closePath();
+    const g = c.createLinearGradient(0, 0, 256, 256);
+    g.addColorStop(0, id === 'sanbi' ? '#6b645c' : '#d23a26'); g.addColorStop(1, id === 'sanbi' ? '#3d3833' : '#9a1f14');
+    c.fillStyle = g; c.fill();
+    c.save(); c.clip();
+    if (id === 'sanbi') {
+      c.fillStyle = '#efe6d2'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = `700 ${LANG === 'zh' ? 92 : 44}px ${FONT_KAI}`;
+      c.fillText(T('sanbi'), 128, 134);
+    } else Gfx.glyph(c, { rows: b.rows, cols: b.cols, diags: b.diags }, run.w, run.h, 40, 40, 176, '#f8eed6', { dry: false, weight: 0.1 });
+    c.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 70; i++) { c.globalAlpha = 0.2 + R() * 0.5; c.beginPath(); c.arc(R() * 256, R() * 256, 1 + R() * 3.5, 0, 7); c.fill(); }
+    c.restore();
+    let t = 0;
+    const x = at.x, y = at.y - Play.cs * u * 1.25, rot = (Math.random() - 0.5) * 0.16;
+    FX.add((ctx, dt) => {
+      t += dt * this.speed() / Math.max(1, PROFILE.settings.speed || 1);
+      const q = t / life;
+      if (q >= 1) return false;
+      const sc = q < 0.12 ? lerp(2.1, 0.94, q / 0.12) : q < 0.2 ? lerp(0.94, 1, (q - 0.12) / 0.08) : 1;
+      ctx.save();
+      ctx.globalAlpha = q < 0.1 ? q / 0.1 : q > 0.78 ? (1 - q) / 0.22 : 1;
+      ctx.translate(x, y); ctx.rotate(rot); ctx.scale(sc, sc);
+      ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 16 * u; ctx.shadowOffsetY = 5 * u;
+      ctx.drawImage(cv, -size / 2, -size / 2, size, size);
+      ctx.restore();
+      return true;
+    });
+    setTimeout(() => { Snd.play('seal'); FX.ring(x, y, 'rgba(210,58,38,0.85)', size * 0.5, size * 1.15, 4 * u, 0.4); }, 120 / this.speed());
+    if (UI.touch && PROFILE.settings.haptics !== false && navigator.vibrate) { try { navigator.vibrate(18); } catch (e2) { /* unsupported */ } }
+  },
   async play(res) {
     const run = UI.run, w = run.w, h = run.h;
     this.playing = true; this.fast = false;
@@ -5739,6 +5780,7 @@ const Score = {
           if (e.src && e.src.k === 'char') {
             // the character multiplier: the written glyph flares
             Snd.play('char', UI.run.lastTier);
+            this.cur.flared = true;
             FX.shake(Math.min(14, 5 + Math.log10(Math.max(10, e.c * e.m))) * u);
             FX.flash('#fff3d0', 0.16);
             FX.ring(boardVP.x, boardVP.y, 'rgba(255,214,120,0.9)', Play.cs * u, Play.cs * u * 5.5, 6 * u, 0.6);
@@ -5779,9 +5821,11 @@ const Score = {
           await this.wait(220);
           if (!e.nul) {
             Snd.play('total');
+            if (!this.cur.flared) Snd.play('char', 1);
+            this.stamp(res, boardVP, u);
             const big = fmtNum(e.score);
             const size = clamp(74 - big.length * 2.2, 38, 74) * u;
-            FX.text(boardVP.x, boardVP.y, big, '#fff3c9', size, { life: 1.15, vy: -22, edge: 'rgba(60,12,6,0.95)' });
+            FX.text(boardVP.x, boardVP.y + Play.cs * u * 0.55, big, '#fff3c9', size, { life: 1.15, vy: -16, edge: 'rgba(60,12,6,0.95)' });
             FX.ink(boardVP.x, boardVP.y, '#1b1918', 26, 520 * u, 7 * u);
             const mag = Math.log10(Math.max(10, e.score));
             FX.shake(Math.min(18, 2 + mag * 1.6) * u);
@@ -5964,6 +6008,7 @@ const Game = {
       FX.ink(p.x, p.y, INK[r.ink].col, 2, 130 * u, 3.4 * u);
     }
     Snd.play('place', r.cells.length);
+    if (UI.touch && PROFILE.settings.haptics !== false && navigator.vibrate) { try { navigator.vibrate(8); } catch (e) { /* unsupported */ } }
     if (r.newLines > 0) {
       Snd.play('line', r.lines.n);
       BG.pulse(0.22);
@@ -6823,6 +6868,7 @@ const Overlays = {
         row(T('set.hints'), T('set.hints.d'), onoff(S.hints, (v) => { S.hints = v; Hud._patKey = ''; if (UI.run) Hud.pattern(); }));
         row(T('set.marks'), T('set.marks.d'), onoff(S.marks, (v) => { S.marks = v; Play.inkDirty = true; }));
         row(T('set.shake'), null, onoff(S.shake, (v) => { S.shake = v; }));
+        if (navigator.vibrate) row(T('set.haptics'), T('set.haptics.d'), onoff(S.haptics !== false, (v) => { S.haptics = v; }));
         row(T('set.reduce'), T('set.reduce.d'), onoff(S.reduce, (v) => { S.reduce = v; }));
         row(T('set.confirm'), T('set.confirm.d'), onoff(S.confirmIgnite, (v) => { S.confirmIgnite = v; }));
         if (document.fullscreenEnabled || document.webkitFullscreenEnabled) row(T('set.full'), null, mkBtn(T('set.full.b'), 'small', () => App.fullscreen()));

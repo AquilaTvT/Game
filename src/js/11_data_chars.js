@@ -118,7 +118,7 @@ defChar('yi4', '乂', 'yì', 2, 2.5, NONE, NONE, { d: 3, tags: ['diag'], secret:
 defChar('mi', '米', 'mǐ', 4, 5, [[0, 1, 0]], [[0, 1, 0]], { d: 3, tags: ['diag', 'cross'], secret: true,
   zh: '米', en: 'Rice', gz: '粟实也，象禾实之形。习字者以米字格为范。', ge: 'The grain of millet. Every student of writing begins on rice-pattern squares.' });
 // ---- specials
-defChar('xuan', '玄', 'xuán', 16, 5, [], [], { tags: ['full'], yi: 'allTier', secret: true,
+defChar('xuan', '玄', 'xuán', 16, 2.5, [], [], { tags: ['full'], yi: 'allTier', secret: true,
   zh: '玄', en: 'The Dark', gz: '幽远也。黑而有赤色者为玄。满纸皆墨，玄之又玄，众妙之门。', ge: 'The deep and distant. A sheet wholly black: "mystery upon mystery, the gate of all wonders."' });
 defChar('sanbi', '〇', '', 0, 1, [], [], { tags: ['san'],
   zh: '散笔', en: 'Scribble', gz: '笔画纵横而不成字。', ge: 'Strokes that cross and scatter, yet form no character.' });

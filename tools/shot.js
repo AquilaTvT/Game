@@ -7,7 +7,7 @@ const path = require('path');
 const os = require('os');
 const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : d; };
 (async () => {
-  const out = arg('out', '.');
+  const out = arg('out', os.tmpdir());
   const [W, H] = arg('size', '1280x720').split('x').map(Number);
   const file = path.join(os.tmpdir(), 'fkz-dev-' + process.pid + '.html');
   execFileSync('node', [path.join(__dirname, 'build.js'), '--dev', file], { stdio: 'ignore' });

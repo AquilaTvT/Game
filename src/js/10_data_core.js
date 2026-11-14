@@ -6,11 +6,11 @@ const INK = {
   zhu:  { zh: '朱', en: 'Vermilion', col: '#c0321f', hi: '#e8614a', lo: '#7d1a10', mark: '▲',
           pure: { zh: '纯朱之笔：[m|神+4]', en: 'Pure Vermilion stroke: [m|+4 Spirit]' } },
   qing: { zh: '青', en: 'Azure',     col: '#1f5c8f', hi: '#4d92c9', lo: '#0f3558', mark: '◆',
-          pure: { zh: '纯青之笔：[x|神×1.25]', en: 'Pure Azure stroke: [x|×1.25 Spirit]' } },
+          pure: { zh: '纯青之笔：[x|神×1.2]', en: 'Pure Azure stroke: [x|×1.2 Spirit]' } },
   jin:  { zh: '金', en: 'Gold',      col: '#c79a36', hi: '#f6dc8c', lo: '#8a6316', mark: '★',
-          pure: { zh: '纯金之笔：[g|+1 文]', en: 'Pure Gold stroke: [g|+$1]' } },
+          pure: { zh: '纯金之笔：[g|+1 文]（每次挥毫至多 5 文）', en: 'Pure Gold stroke: [g|+$1] (up to $5 per flourish)' } },
 };
-const PURE = { mo: 40, zhu: 4, qing: 1.25, jin: 1 };
+const PURE = { mo: 40, zhu: 4, qing: 1.2, jin: 1 };
 const CELL_CHIPS = 5;
 
 // 墨性 (ink natures, carried by a whole block)

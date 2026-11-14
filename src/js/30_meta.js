@@ -1,6 +1,6 @@
 // ---------- profile: settings, collection, unlocks, achievements ----------
 const SAVE_KEY = 'fangkuaizi.save.v1';
-const DEFAULT_SETTINGS = { lang: 'zh', music: 0.6, sfx: 0.8, speed: 1, shake: true, marks: false, reduce: false, hints: true, confirmIgnite: false };
+const DEFAULT_SETTINGS = { lang: 'zh', music: 0.6, sfx: 0.8, speed: 1, shake: true, marks: false, reduce: false, hints: true, confirmIgnite: false, haptics: true };
 function freshProfile() {
   return {
     v: 1, settings: Object.assign({}, DEFAULT_SETTINGS),

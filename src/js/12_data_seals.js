@@ -130,8 +130,8 @@ defSeal('suanchou', '算筹', 'Counting Rods', 2, 7, {
   dz: '写出[k|数字]时，[m|神]增加其数值\n[n|一 1 · 二 2 · 三 3 · 亖四 4 · 十 10 · 廿 20 · 卅 30 · 卌 40]', de: 'When you write a [k|numeral], add its value to [m|Spirit]\n[n|一 1 · 二 2 · 三 3 · 亖/四 4 · 十 10 · 廿 20 · 卅 30 · 卌 40]',
   end(sc) { if (sc.num) sc.m(sc.num); } });
 defSeal('shiquan', '十全十美', 'Perfect in Every Way', 2, 6, {
-  dz: '每个横竖相交的[k|交点] [m|神+3]', de: '[m|+3 Spirit] for every [k|crossing] of a row and a column',
-  end(sc) { if (sc.nodes > 0) sc.m(3 * sc.nodes); } });
+  dz: '每个横竖相交的[k|交点] [m|神+3]（至多 16 个交点）', de: '[m|+3 Spirit] for every [k|crossing] of a row and a column (up to 16 crossings)',
+  end(sc) { if (sc.nodes > 0) sc.m(3 * Math.min(16, sc.nodes)); } });
 defSeal('wuse', '墨分五色', 'Five Shades of Ink', 2, 7, {
   dz: '计分的格中含[k|三种]墨色 [x|神×1.5]；[k|四种]俱全 [x|神×2]', de: 'If the scored cells include [k|3 inks]: [x|×1.5 Spirit]; all [k|4 inks]: [x|×2 Spirit]',
   end(sc) { const k = Object.keys(sc.inkCount).length; if (k >= 4) sc.x(2); else if (k === 3) sc.x(1.5); } });
@@ -159,8 +159,8 @@ defSeal('dianjing', '画龙点睛', 'Dotting the Dragon\'s Eyes', 2, 6, {
   dz: '挥毫前最后落下的墨块是[k|「点」]时 [x|神×2]', de: 'If the last block you placed before the flourish was a [k|Dot]: [x|×2 Spirit]',
   end(sc) { if (sc.rd.lastPlaced === 'dot') sc.x(2); } });
 defSeal('longshe', '笔走龙蛇', 'Dragons and Serpents', 2, 7, {
-  dz: '每块参与计分的[k|蛇形]墨块（乙、之、阶、曲、弓）[x|神×1.2]', de: 'Each [k|serpentine] block that scores (Wave, Zigzag, Stairs, Crook, Bow): [x|×1.2 Spirit]',
-  end(sc) { for (const p of sc.pieces) if (hasTag(p.shape, 'snake')) sc.x(1.2); } });
+  dz: '每块参与计分的[k|蛇形]墨块（乙、之、阶、曲、弓）[x|神×1.2]（每次挥毫至多 6 块）', de: 'Each [k|serpentine] block that scores (Wave, Zigzag, Stairs, Crook, Bow): [x|×1.2 Spirit] (up to 6 blocks per flourish)',
+  end(sc) { let k = 0; for (const p of sc.pieces) if (hasTag(p.shape, 'snake') && k < 6) { k++; sc.x(1.2); } } });
 defSeal('shuke', '疏可走马', 'Room for a Horse to Run', 2, 7, {
   dz: '两画以上，且所有并列的笔画[k|互不相邻]时 [x|神×2]', de: 'With 2+ strokes, if no two parallel strokes are [k|adjacent]: [x|×2 Spirit]',
   end(sc) { if (sc.n >= 2 && sc.adjPairs === 0) sc.x(2); } });
@@ -214,8 +214,8 @@ defSeal('kubi', '枯笔', 'Dry Brush', 2, 7, {
   dz: '[k|墨量−25]\n[x|神×1.75]', de: '[k|−25 Ink] each round\n[x|×1.75 Spirit]', mods: { inkMax: -25 },
   end(sc) { sc.x(1.75); } });
 defSeal('yajiao', '压角章', 'Corner Seal', 2, 6, {
-  dz: '纸面[k|四角]的格计分时 [x|神×1.25]', de: 'The [k|four corner] cells of the sheet: [x|×1.25 Spirit] when scored',
-  cell(sc, s, c) { if (c.corner) sc.x(1.25); } });
+  dz: '纸面[k|四角]的格每次计分 [x|神×1.1]', de: 'The [k|four corner] cells of the sheet: [x|×1.1 Spirit] each time they score',
+  cell(sc, s, c) { if (c.corner) sc.x(1.1); } });
 defSeal('luokuan', '落款章', 'Signature Seal', 2, 6, {
   dz: '写出[k|底行]之横时 [x|神×1.5]', de: 'When the [k|bottom row] is one of your strokes: [x|×1.5 Spirit]',
   end(sc) { if (sc.rows.includes(sc.h - 1)) sc.x(1.5); } });
@@ -295,8 +295,8 @@ defSeal('mobao', '墨宝', 'Treasured Ink', 2, 6, {
   dz: '[mo|纯墨]之笔额外 [c|形+100]', de: 'Each [mo|pure Black] stroke: an extra [c|+100 Form]',
   stroke(sc, s, st) { if (st.pure === 'mo') sc.c(100); } });
 defSeal('qinglan', '青出于蓝', 'Bluer than Indigo', 2, 7, {
-  dz: '[qing|纯青]之笔额外 [x|神×1.3]', de: 'Each [qing|pure Azure] stroke: an extra [x|×1.3 Spirit]',
-  stroke(sc, s, st) { if (st.pure === 'qing') sc.x(1.3); } });
+  dz: '[qing|纯青]之笔额外 [m|神+6]', de: 'Each [qing|pure Azure] stroke: an extra [m|+6 Spirit]',
+  stroke(sc, s, st) { if (st.pure === 'qing') sc.m(6); } });
 defSeal('jinbi', '金碧辉煌', 'Gold and Jade Resplendent', 2, 6, {
   dz: '[jin|纯金]之笔额外 [g|+1 文]、[m|神+5]', de: 'Each [jin|pure Gold] stroke: an extra [g|+$1] and [m|+5 Spirit]',
   stroke(sc, s, st) { if (st.pure === 'jin') { sc.cash(1); sc.m(5); } } });

@@ -19,6 +19,47 @@ const Score = {
     const c = UI.center(Hud.el.glyph);
     return { x: c.x, y: c.y - c.h * 0.3, size: Math.max(18, c.h * 0.36) };
   },
+  // the finished character, stamped in vermilion above the score
+  stamp(res, at, u) {
+    const run = UI.run, id = res.char, b = res.ev[0];
+    const size = Play.cs * 1.9 * u, life = 1.25;
+    const cv = mkCanvas(256, 256), c = cv.getContext('2d');
+    const R = prng(hashStr(id) + 11);
+    c.beginPath();
+    const m = 14, n = 7, pts = [];
+    const side = (ax, ay, bx, by) => { for (let i = 0; i <= n; i++) { const q = i / n; pts.push([lerp(ax, bx, q) + (R() - 0.5) * 5, lerp(ay, by, q) + (R() - 0.5) * 5]); } };
+    side(m + 20, m, 256 - m - 20, m); side(256 - m, m + 20, 256 - m, 256 - m - 20); side(256 - m - 20, 256 - m, m + 20, 256 - m); side(m, 256 - m - 20, m, m + 20);
+    pts.forEach((p, i) => (i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])));
+    c.closePath();
+    const g = c.createLinearGradient(0, 0, 256, 256);
+    g.addColorStop(0, id === 'sanbi' ? '#6b645c' : '#d23a26'); g.addColorStop(1, id === 'sanbi' ? '#3d3833' : '#9a1f14');
+    c.fillStyle = g; c.fill();
+    c.save(); c.clip();
+    if (id === 'sanbi') {
+      c.fillStyle = '#efe6d2'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = `700 ${LANG === 'zh' ? 92 : 44}px ${FONT_KAI}`;
+      c.fillText(T('sanbi'), 128, 134);
+    } else Gfx.glyph(c, { rows: b.rows, cols: b.cols, diags: b.diags }, run.w, run.h, 40, 40, 176, '#f8eed6', { dry: false, weight: 0.1 });
+    c.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 70; i++) { c.globalAlpha = 0.2 + R() * 0.5; c.beginPath(); c.arc(R() * 256, R() * 256, 1 + R() * 3.5, 0, 7); c.fill(); }
+    c.restore();
+    let t = 0;
+    const x = at.x, y = at.y - Play.cs * u * 1.25, rot = (Math.random() - 0.5) * 0.16;
+    FX.add((ctx, dt) => {
+      t += dt * this.speed() / Math.max(1, PROFILE.settings.speed || 1);
+      const q = t / life;
+      if (q >= 1) return false;
+      const sc = q < 0.12 ? lerp(2.1, 0.94, q / 0.12) : q < 0.2 ? lerp(0.94, 1, (q - 0.12) / 0.08) : 1;
+      ctx.save();
+      ctx.globalAlpha = q < 0.1 ? q / 0.1 : q > 0.78 ? (1 - q) / 0.22 : 1;
+      ctx.translate(x, y); ctx.rotate(rot); ctx.scale(sc, sc);
+      ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 16 * u; ctx.shadowOffsetY = 5 * u;
+      ctx.drawImage(cv, -size / 2, -size / 2, size, size);
+      ctx.restore();
+      return true;
+    });
+    setTimeout(() => { Snd.play('seal'); FX.ring(x, y, 'rgba(210,58,38,0.85)', size * 0.5, size * 1.15, 4 * u, 0.4); }, 120 / this.speed());
+    if (UI.touch && PROFILE.settings.haptics !== false && navigator.vibrate) { try { navigator.vibrate(18); } catch (e2) { /* unsupported */ } }
+  },
   async play(res) {
     const run = UI.run, w = run.w, h = run.h;
     this.playing = true; this.fast = false;
@@ -86,6 +127,7 @@ const Score = {
           if (e.src && e.src.k === 'char') {
             // the character multiplier: the written glyph flares
             Snd.play('char', UI.run.lastTier);
+            this.cur.flared = true;
             FX.shake(Math.min(14, 5 + Math.log10(Math.max(10, e.c * e.m))) * u);
             FX.flash('#fff3d0', 0.16);
             FX.ring(boardVP.x, boardVP.y, 'rgba(255,214,120,0.9)', Play.cs * u, Play.cs * u * 5.5, 6 * u, 0.6);
@@ -126,9 +168,11 @@ const Score = {
           await this.wait(220);
           if (!e.nul) {
             Snd.play('total');
+            if (!this.cur.flared) Snd.play('char', 1);
+            this.stamp(res, boardVP, u);
             const big = fmtNum(e.score);
             const size = clamp(74 - big.length * 2.2, 38, 74) * u;
-            FX.text(boardVP.x, boardVP.y, big, '#fff3c9', size, { life: 1.15, vy: -22, edge: 'rgba(60,12,6,0.95)' });
+            FX.text(boardVP.x, boardVP.y + Play.cs * u * 0.55, big, '#fff3c9', size, { life: 1.15, vy: -16, edge: 'rgba(60,12,6,0.95)' });
             FX.ink(boardVP.x, boardVP.y, '#1b1918', 26, 520 * u, 7 * u);
             const mag = Math.log10(Math.max(10, e.score));
             FX.shake(Math.min(18, 2 + mag * 1.6) * u);

@@ -51,7 +51,7 @@ const score = (run) => E.ignite(run);
   eq([r.char, r.score], ['wang', Math.floor((160 + 55) * (4 + 16) * 3)], '王 in pure vermilion');
   run = fresh(); fill(run, [2], [], 'qing');
   r = score(run);
-  eq(r.score, Math.floor((10 + 40) * 1 * 1.25), 'pure azure multiplies');
+  eq(r.score, Math.floor((10 + 40) * 1 * 1.2), 'pure azure multiplies');
   run = fresh(); fill(run, [2], [], 'jin'); const m0 = run.money;
   r = score(run);
   eq(run.money, m0 + 1, 'pure gold pays');

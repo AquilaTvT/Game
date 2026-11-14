@@ -89,6 +89,7 @@ const Game = {
       FX.ink(p.x, p.y, INK[r.ink].col, 2, 130 * u, 3.4 * u);
     }
     Snd.play('place', r.cells.length);
+    if (UI.touch && PROFILE.settings.haptics !== false && navigator.vibrate) { try { navigator.vibrate(8); } catch (e) { /* unsupported */ } }
     if (r.newLines > 0) {
       Snd.play('line', r.lines.n);
       BG.pulse(0.22);

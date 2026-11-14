@@ -520,7 +520,7 @@ function ignite(run) {
         if (st.pure === 'mo') sc.c(PURE.mo);
         else if (st.pure === 'zhu') sc.m(PURE.zhu);
         else if (st.pure === 'qing') sc.x(PURE.qing);
-        else if (st.pure === 'jin') sc.cash(PURE.jin);
+        else if (st.pure === 'jin' && (once.gold || 0) < 5) { once.gold = (once.gold || 0) + 1; sc.cash(PURE.jin); }
       } else st.pure = null;
       for (const e of seals) if (e.def.stroke) { sc.src = { k: 'seal', u: e.u }; e.def.stroke(sc, e.s, st); }
       ev.push({ t: 'strokeEnd', si: st.si });
