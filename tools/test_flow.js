@@ -1,222 +1,123 @@
-// Flow test: tutorial, shop, cases, items, saving, resizing, language, endings.
-//   node tools/shot.js --steps tools/test_flow.js [--out dir]
+// Flow test in a real browser: menus, input, a ring drawn with the mouse, levels, pause, checkpoint, endings.
+//   node tools/shot.js --steps tools/test_flow.js [--size 390x844 --touch]
 const assert = (c, m) => { if (!c) throw new Error('assert: ' + m); };
-module.exports = async ({ page, ev, shot, W, H }) => {
+module.exports = async ({ page, ev, W, H }) => {
   const J = (code) => ev(`JSON.stringify(${code})`).then(JSON.parse);
-  const settle = (ms) => page.waitForTimeout(ms || 250);
-  const fastScore = async () => { for (let i = 0; i < 80 && (await ev('UI.busy')); i++) { await page.mouse.click(4, 4); await settle(120); } };
-  await settle(500);
+  const wait = (ms) => page.waitForTimeout(ms || 250);
+  const until = async (code, ms, what) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 8000)) { if (await ev(code)) return; await wait(100); } throw new Error('timed out: ' + (what || code)); };
+  await wait(1500);
 
-  // ---- 1. first run: the tutorial walks along
-  await page.click('#btn-new'); await settle();
-  if (await page.$('#btn-go')) await page.click('#btn-go'); await settle(500);
-  assert(await ev('UI.run.tutorial === true'), 'first run is a tutorial run');
-  assert(await ev('!!document.querySelector(".coach")'), 'coach shown on the sheet picker');
-  await shot('F01-tut-pick');
-  await page.click('#btn-start'); await settle(500);
-  assert((await ev('PROFILE.meta.tutorial')) === 1, 'tutorial step 1');
-  await shot('F02-tut-round');
-  await ev(`(() => { const run = UI.run; for (let s = 0; s < 3; s++) for (let r = 0; r < 4; r++) { run.round.tray[s].rot = r; const g = trayGeom(run, s); if (canPlace(run, s, 0, 8 - g.h)) { Game.place(s, 0, 8 - g.h); return; } } })()`);
-  await settle();
-  assert((await ev('PROFILE.meta.tutorial')) === 2, 'tutorial step 2 after a placement');
-  await ev(`(() => { const run = UI.run, rd = run.round; for (let x = 0; x < 8; x++) if (!rd.board[7 * 8 + x] && x < 7) rd.board[7 * 8 + x] = { ink: 'mo', enh: null, pid: 0, shape: 'dot' };
-    rd.board[7 * 8 + 7] = null; for (let s = 0; s < 3; s++) { const t = rd.tray[s]; t.sh = 'dot'; } Play.inkDirty = true; Game.place(0, 7, 7); })()`);
-  await settle();
-  assert((await ev('PROFILE.meta.tutorial')) === 3, 'tutorial step 3 once a row is full');
-  await shot('F03-tut-line');
-  await page.click('.coach .btn.gold'); await settle();
-  assert((await ev('PROFILE.meta.tutorial')) === 4, 'tutorial step 4');
-  await page.click('#btn-ignite'); await settle(300);
-  await fastScore();
-  assert((await ev('PROFILE.meta.tutorial')) === 5, 'tutorial step 5 after the flourish');
-  await shot('F04-tut-score');
-  await page.click('.coach .btn.gold'); await settle(150);
-  await page.click('.coach .btn.gold'); await settle(150);
-  await page.click('.coach .btn.gold'); await settle(150);
-  assert((await ev('PROFILE.meta.tutorial')) === 99 && !(await ev('!!document.querySelector(".coach")')), 'tutorial finished');
+  // ---- 1. the title, with the parade playing behind it
+  assert(await ev('GL.ok && App.demo && !!document.querySelector("#btn-start")'), 'title is up and the demo runs');
+  assert(!(await ev('!!PROFILE.run')), 'no checkpoint on a first visit');
+  await page.click('#btn-start'); await wait(400);
+  assert(await ev('!!document.querySelector(".hero.sel")'), 'spirit select');
+  await page.click('.hside .btn.gold'); await wait(600);
+  assert(await ev('App.mode === "play" && !App.demo && document.querySelector("#hud").classList.contains("on")'), 'a night begins');
+  assert(await ev('!!PROFILE.run && PROFILE.run.stage === 0'), 'a checkpoint is written as the stage begins');
+  assert(await ev('document.querySelector(".hint").classList.contains("on")'), 'first-night hint');
+  await ev('App.w.quiet = true; App.w.foes.length = 0; App.w.p.inv = 1e9; 1');
 
-  // ---- 2. every sound effect can be triggered
-  const snd = await ev(`(() => { const names = ['tick','click','back','pick','rotate','place','bad','line','rinse','ignite','stroke','cell','dead','chips','mult','xmult','coin','seal','pure','char','total','count','flame','win','lose','victory','buy','sell','deny','reroll','open','level','ach','paper','stone','shatter','newchar','use','boss'];
-    for (const n of names) Snd.play(n, 3); for (const m of ['calm','boss','shop','title']) Snd.setMusic(m); return Snd.ready; })()`);
-  assert(snd === true, 'audio engine ready after a gesture');
+  // ---- 2. keyboard, mouse, dash
+  let x0 = await ev('App.w.p.x');
+  await page.keyboard.down('d'); await wait(500); await page.keyboard.up('d');
+  assert((await ev('App.w.p.x')) > x0 + 60, 'D moves the spirit right');
+  x0 = await ev('App.w.p.x'); const y0 = await ev('App.w.p.y');
+  await page.mouse.move(W / 2, H / 2 - Math.min(W, H) * 0.3); await wait(600);
+  assert((await ev('App.w.p.y')) < y0 - 40, 'the spirit follows the mouse');
+  await page.mouse.move(W / 2, H / 2); await wait(300);
+  const d0 = await ev('App.w.p.dashN');
+  await page.keyboard.press(' '); await wait(80);
+  assert((await ev('App.w.p.dashN')) === d0 - 1 || (await ev('App.w.p.dash')) > 0, 'Space dashes');
+  await wait(400);
 
-  // ---- 3. win the sheet, collect, shop
-  await ev(`(() => { const run = UI.run, rd = run.round; rd.target = 10; for (let x = 0; x < 8; x++) rd.board[x] = { ink: 'zhu', enh: null, pid: 0, shape: 'dot' }; Play.inkDirty = true; Hud.refresh(); })()`);
-  await page.click('#btn-ignite'); await settle(300); await fastScore(); await settle(1200);
-  assert((await ev('UI.run.phase')) === 'cash', 'payout view after clearing');
-  await page.waitForFunction(() => { const b = document.querySelector('#btn-collect'); return b && !b.disabled; }, null, { timeout: 8000 });
-  await page.click('#btn-collect'); await settle(500);
-  assert((await ev('UI.run.phase')) === 'shop', 'shop after payout');
-  assert(await ev('!!document.querySelector(".coach")'), 'shop tip shown once');
-  await page.click('.coach .btn.gold'); await settle(150);
-  await ev('UI.run.money = 60; Shop.render(); Hud.refresh(); 1');
-  await shot('F05-shop');
-  // buy the first thing on the shelf through its card
-  const m0 = await ev('UI.run.money');
-  await page.click('.goods .good'); await settle(200);
-  assert(await ev('document.querySelector("#pop").style.display === "block"'), 'card opens on click');
-  await page.click('#pop .btn.red'); await settle(300);
-  assert((await ev('UI.run.money')) < m0, 'buying costs money');
-  // a case
-  await ev(`(() => { const run = UI.run; run.shop.packs[0] = { id: 'wen2', price: 4, sold: false }; Shop.render(); })()`);
-  await page.click('.good[data-p="0"]'); await settle(200);
-  await page.click('#pop .btn.red'); await settle(600);
-  assert(await ev('!!UI.run.pack && modalOpen()'), 'case opened');
-  await shot('F06-case');
-  await page.click('.pchoice .btn'); await settle(400);
-  assert(await ev('!UI.run.pack && !modalOpen()'), 'case closes after choosing');
-
-  // ---- 4. items: dye blocks through the picker, mark a paper square
-  await ev(`(() => { const run = UI.run; run.items.length = 0; giveItem(run, 'zhusha', true); giveItem(run, 'g_zhusi', true); Hud.refresh(); })()`);
-  const red0 = await ev('UI.run.deck.filter(p => p.ink === "zhu").length');
-  await page.click('#side .item:not(.empty)'); await settle(200);
-  await page.click('#pop .btn.red'); await settle(300);
-  assert(await ev('modalOpen()'), 'block picker opens');
-  const pcs = await page.$$('.modal .pc');
-  let picked = 0;
-  for (const el of pcs) { const uid = await el.getAttribute('data-uid'); if (await ev(`pieceByUid(UI.run, ${uid}).ink !== 'zhu'`)) { await el.click(); if (++picked === 3) break; } }
-  await shot('F07-picker');
-  await page.click('#btn-target-ok'); await settle(300);
-  assert((await ev('UI.run.deck.filter(p => p.ink === "zhu").length')) === red0 + 3, 'three blocks dyed vermilion');
-  await page.click('#side .item:not(.empty)'); await settle(200);
-  await page.click('#pop .btn.red'); await settle(300);
-  await page.click('.paperpick button:nth-child(28)'); await settle(300);
-  assert((await ev('UI.run.paper[27]')) === 'zhusi', 'paper square marked');
-
-  // ---- 5. next sheet; an item aimed straight at the sheet
-  await page.click('#btn-next'); await settle(400);
-  assert((await ev('UI.run.phase')) === 'pick', 'sheet picker after the shop');
-  await page.click('#btn-start'); await settle(500);
-  await ev(`giveItem(UI.run, 'dianjing_i', true); Hud.refresh(); 1`);
-  await page.click('#side .item:not(.empty)'); await settle(200);
-  await page.click('#pop .btn.red'); await settle(300);
-  assert(await ev('!!Play.target'), 'sheet targeting mode');
-  const cp = await J('Play.cellVP(3 * 8 + 4)');
-  await page.mouse.click(cp.x, cp.y); await settle(300);
-  assert(await ev('!!UI.run.round.board[28] && UI.run.round.board[28].enh === "bai" && !Play.target'), 'blank cell dotted onto the sheet');
-
-  // ---- 6. save, reload, continue exactly where we were
-  await ev(`(() => { const run = UI.run; for (let s = 0; s < 3; s++) for (let r = 0; r < 4; r++) { run.round.tray[s].rot = r; const g = trayGeom(run, s); if (canPlace(run, s, 0, 8 - g.h)) { Game.place(s, 0, 8 - g.h); return; } } })()`);
-  await settle(400);
-  const before = await J('({ ante: UI.run.ante, blind: UI.run.blind, phase: UI.run.phase, ink: UI.run.round.ink, filled: UI.run.round.board.filter(Boolean).length, seed: UI.run.seed, tray: UI.run.round.tray.map(t => t && t.uid), money: UI.run.money, seals: UI.run.seals.length })');
-  await ev('saveProfile(true); 1');
-  await page.reload(); await settle(900);
-  assert(await ev('!!document.querySelector("#btn-continue")'), 'continue offered after reload');
-  // the page going to the background while the title is showing must leave the stored run alone
-  await ev('Game.save(); saveProfile(true); 1');
-  assert(await ev('!!PROFILE.run'), 'hiding the page on the title screen keeps the saved run');
-  await page.reload(); await settle(900);
-  assert(await ev('!!document.querySelector("#btn-continue")'), 'continue still offered after a second reload');
-  await shot('F08-title-continue');
-  await page.click('#btn-continue'); await settle(600);
-  const after = await J('({ ante: UI.run.ante, blind: UI.run.blind, phase: UI.run.phase, ink: UI.run.round.ink, filled: UI.run.round.board.filter(Boolean).length, seed: UI.run.seed, tray: UI.run.round.tray.map(t => t && t.uid), money: UI.run.money, seals: UI.run.seals.length })');
-  assert(JSON.stringify(before) === JSON.stringify(after), 'run restored exactly: ' + JSON.stringify([before, after]));
-  await shot('F09-resumed');
-
-  // ---- 7. rotate the device / resize the window mid-round
-  await page.setViewportSize({ width: 430, height: 900 }); await settle(500);
-  assert((await ev('UI.orient')) === 'p' && (await ev('Play.cs')) > 30, 'portrait layout after resize');
-  await shot('F10-resized-portrait');
-  await page.setViewportSize({ width: 1000, height: 480 }); await settle(500);
-  assert((await ev('UI.orient')) === 'l', 'landscape layout after resize');
-  await shot('F11-resized-short');
-  await page.setViewportSize({ width: 1920, height: 1080 }); await settle(500);
-  await shot('F12-resized-1080p');
-  await page.setViewportSize({ width: W, height: H }); await settle(400);
-
-  // ---- 8. language switch
-  await page.keyboard.press('Escape'); await settle(250);
-  assert(await ev('modalOpen()'), 'pause opens with Escape');
-  await page.keyboard.press('Escape'); await settle(200);
-  await ev('Overlays.settings(); 1'); await settle(300);
-  await page.click('.seg button:nth-child(2)'); await settle(600);
-  assert((await ev('LANG')) === 'en' && (await ev('document.querySelector("#btn-ignite .t").textContent')) === 'Flourish', 'English interface');
-  await shot('F13-english-round');
-  await ev('Overlays.dictionary(); 1'); await settle(400); await shot('F14-english-lexicon');
-  await ev('closeAllModals(); Overlays.collection(); 1'); await settle(400); await shot('F15-english-collection');
-  await ev(`closeAllModals(); 1`);
-
-  // ---- 9. a masterwork, then victory and the endless scroll
-  await ev(`(() => { const run = UI.run; concede(run); })()`);
-  await ev(`(() => { Game.begin({ seed: 'ENDTEST', deck: 'kai' }); const run = UI.run; run.ante = 8; run.blind = 2; run.boss = 'lanting'; for (const id of ['zhenyun', 'kuteng']) addSeal(run, id); Game.route(); })()`);
-  await settle(400);
-  await shot('F16-english-pick-boss');
-  await page.click('#btn-start'); await settle(600);
-  await shot('F17-english-boss-round');
-  await ev(`(() => { const run = UI.run, rd = run.round; rd.target = 10; for (let x = 0; x < 8; x++) rd.board[16 + x] = { ink: 'jin', enh: null, pid: 0, shape: 'dot' }; Play.inkDirty = true; Hud.refresh(); })()`);
-  await page.click('#btn-ignite'); await settle(300); await fastScore(); await settle(1300);
-  await page.waitForFunction(() => { const b = document.querySelector('#btn-collect'); return b && !b.disabled; }, null, { timeout: 8000 });
-  await page.click('#btn-collect'); await settle(800);
-  assert((await ev('UI.run.phase')) === 'won' && (await ev('modalOpen()')), 'victory screen');
-  assert((await ev('PROFILE.meta.wins')) === 1 && (await ev('maxStake("kai")')) === 1, 'win recorded, next rank opened');
-  await settle(3000);
-  await shot('F18-english-victory');
-  await page.click('.modal .btn.gold'); await settle(600);
-  assert((await ev('UI.run.phase')) === 'shop' && (await ev('UI.run.endless')) === true && (await ev('UI.run.ante')) === 9, 'endless continues into the shop');
-  await page.click('#btn-next'); await settle(400);
-  await page.click('#btn-start'); await settle(500);
-  // ---- 10. losing
-  await ev(`(() => { const run = UI.run, rd = run.round; rd.ignites = 1; for (let x = 0; x < 8; x++) rd.board[16 + x] = { ink: 'mo', enh: null, pid: 0, shape: 'dot' }; Play.inkDirty = true; Hud.refresh(); })()`);
-  await page.click('#btn-ignite'); await settle(300); await fastScore(); await settle(1200);
-  assert(await ev('modalOpen() && UI.run.phase === "over" && PROFILE.run === null'), 'game over screen, run removed from the save');
-  await shot('F19-english-over');
-  await page.click('.modal .btn.ghost'); await settle(500);
-  assert(await ev('document.querySelector("#menu").classList.contains("on") && !document.querySelector("#btn-continue")'), 'back on the title');
-  await shot('F20-english-title');
-  assert((await ev('PROFILE.meta.runs')) >= 1, 'runs counted');
-
-  // ---- 11. hammering Enter through a winning flourish only skips the ceremony: the payout is taken once, from the payout view
-  await ev(`(() => { const orig = Game.collect.bind(Game); window.__collect = { early: 0, paid: 0 };
-    Game.collect = function () { const b = document.querySelector('#btn-collect'), m = UI.run ? UI.run.money : 0;
-      const shown = !UI.busy && document.querySelector('#v-cash').classList.contains('on') && !!b && !b.disabled;
-      const r = orig(); if (UI.run && UI.run.money !== m) { window.__collect.paid++; if (!shown) window.__collect.early++; } return r; };
-    Game.begin({ seed: 'KEYS', deck: 'kai' }); })()`); await settle(400);
-  for (let sheet = 0; sheet < 2; sheet++) {
-    await page.keyboard.press('Enter'); await settle(500);
-    assert((await ev('UI.run.phase')) === 'round', 'Enter starts the sheet');
-    await ev(`(() => { const run = UI.run, rd = run.round; rd.target = 10; for (let x = 0; x < 8; x++) rd.board[x] = { ink: 'mo', enh: null, pid: 0, shape: 'dot' }; Play.inkDirty = true; Hud.refresh(); })()`);
-    await page.keyboard.press(' '); await settle(60);
-    assert(await ev('UI.busy'), 'Space flourishes');
-    for (let i = 0; i < 600 && (await ev('UI.run.phase')) !== 'shop'; i++) { await page.keyboard.press('Enter'); await settle(25); }
-    const c = await J('window.__collect');
-    assert((await ev('UI.run.phase')) === 'shop', 'Enter collects the payout in the end');
-    assert(c.early === 0, 'nothing is collected before the payout is on screen (sheet ' + (sheet + 1) + ')');
-    assert(c.paid === sheet + 1, 'the payout is taken exactly once (sheet ' + (sheet + 1) + '): ' + JSON.stringify(c));
-    assert(!(await ev('!!document.querySelector("#btn-collect")')), 'no stale payout button is left behind');
-    await settle(300);
-    await page.click('#btn-next'); await settle(400);
+  // ---- 3. a ring drawn with the mouse seals what is inside it
+  await ev(`(() => { const w = App.w, p = w.p; w.clearTrail(); for (let i = 0; i < 6; i++) { const e = w.addFoe('wisp', p.x + 110 + Math.cos(i) * 14, p.y + Math.sin(i) * 14); e.spd = 0; } })()`);
+  const c = await J('(() => { const q = Render.toScreen(App.w.p.x + 110, App.w.p.y, {}); return q; })()');
+  const z = await ev('GL.cam.z / (GL.dpr * GL.scale)');
+  const r = 62 * z;
+  for (let turn = 0; turn < 3 && (await ev('App.w.stats.seals')) === 0; turn++) {
+    for (let i = 0; i <= 40; i++) {
+      const a = Math.PI + (i / 40) * Math.PI * 2.3;
+      // the camera follows the spirit, so the pack's place on the page is asked for again each step
+      const q = await J('Render.toScreen(App.w.foes.length ? App.w.foes[0].x : App.w.p.x, App.w.foes.length ? App.w.foes[0].y : App.w.p.y, {})');
+      await page.mouse.move(q.x + Math.cos(a) * r * 1.25, q.y + Math.sin(a) * r * 1.25);
+      await wait(45);
+      if ((await ev('App.w.stats.seals')) > 0) break;
+    }
   }
-  await ev('Game.abandon(); 1'); await settle(300);
+  assert((await ev('App.w.stats.seals')) >= 1 && (await ev('App.w.stats.kills')) >= 3, 'a ring drawn with the mouse seals the pack: ' + JSON.stringify(await J('App.w.stats')));
+  void c;
 
-  // ---- 12. a sheet with no move left: cancelling an item with Esc must not end the run; ending it asks first
-  await ev(`(() => { Game.begin({ seed: 'STUCK', deck: 'kai' }); Game.startRound(); const run = UI.run, rd = run.round; rd.ink = 0; rd.discards = 0; run.items.length = 0; giveItem(run, 'dianjing_i', true); Hud.refresh(); Game.after(); })()`);
-  await settle(300);
-  assert(await ev('!!document.querySelector(".stuckbar:not(.targetbar)")'), 'the "nothing more can be done" bar is up');
-  await page.click('#side .item:not(.empty)'); await settle(200);
-  await page.click('#pop .btn.red'); await settle(300);
-  assert(await ev('!!Play.target && !!document.querySelector(".targetbar") && !document.querySelector(".stuckbar:not(.targetbar)")'), 'picking a square replaces the bar');
-  await page.keyboard.press('Escape'); await settle(300);
-  assert(await ev('UI.run.phase === "round" && !Play.target && !document.querySelector(".targetbar") && UI.run.items.length === 1'), 'Esc cancels the item, the run goes on');
-  await page.click('.stuckbar:not(.targetbar) .btn'); await settle(300);
-  assert(await ev('modalOpen() && UI.run.phase === "round"'), 'ending the round asks first');
-  await page.click('.modal .btn.ghost'); await settle(300);
-  assert(await ev('!modalOpen() && UI.run.phase === "round"'), 'declining keeps the round');
-  // a held Space places the block once and does not go on to flourish
-  await ev(`(() => { const run = UI.run, rd = run.round; rd.ink = 50; for (let i = 0; i < 64; i++) rd.board[i] = null; for (let x = 0; x < 7; x++) rd.board[56 + x] = { ink: 'mo', enh: null, pid: 0, shape: 'dot' }; rd.tray[0].sh = 'dot'; rd.tray[0].rot = 0; Play._kbLast = null; Play.inkDirty = true; Hud.refresh(); Game.after(); })()`);
-  await settle(200);
-  await page.keyboard.press('1');
-  for (let i = 0; i < 4; i++) { await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowDown'); }
-  await page.keyboard.down(' '); await page.keyboard.down(' '); await page.keyboard.down(' '); await page.keyboard.up(' '); await settle(300);
-  assert(await ev('!!UI.run.round.board[63] && UI.run.round.igniteCount === 0 && !UI.busy'), 'holding Space places once and does not flourish');
-  // a click on the sheet drops the keyboard ghost
-  await page.keyboard.press('1'); await settle(100);
-  assert(await ev('!!Play.kb && !!Play.ghost'), 'keyboard ghost shown');
-  { const c = await J('Play.cellVP(2 * 8 + 2)'); await page.mouse.click(c.x, c.y); await settle(150); }
-  assert(await ev('!Play.kb && !Play.ghost'), 'clicking the sheet clears the keyboard ghost');
-  // the Flip tab appears with the mirror seal and flips the block under it
-  await ev(`(() => { addSeal(UI.run, 'jinghua'); Hud.refresh(); Play.poke(); })()`); await settle(300);
-  { const r = await J('(() => { const f = Play.flipRect(0); return Play.toViewport(f.x + f.w / 2, f.y + f.h / 2); })()'); await page.mouse.click(r.x, r.y); await settle(200); }
-  assert(await ev('UI.run.round.tray[0].flip === 1'), 'the Flip tab mirrors the block');
-  await ev('Game.abandon(); 1'); await settle(300);
+  // ---- 4. a level: three cards, picked with the keyboard
+  await page.mouse.move(W / 2, H / 2);
+  await ev('App.w.due = 1; 1');
+  await until('App.mode === "choice" && document.querySelectorAll(".card").length === 3', 5000, 'the choice of talismans');
+  const before = await J('App.w.lv');
+  await wait(500);
+  await page.keyboard.press('2'); await until('App.mode === "play"', 4000, 'play resumes after the pick');
+  assert(JSON.stringify(await J('App.w.lv')) !== JSON.stringify(before), 'the chosen talisman is held');
+
+  // ---- 5. pause and resume
+  await page.keyboard.press('Escape'); await wait(300);
+  assert(await ev('App.mode === "paused" && UI.open()'), 'Escape pauses');
+  const t1 = await ev('App.w.t'); await wait(500);
+  assert((await ev('App.w.t')) === t1, 'time stands still while paused');
+  await page.keyboard.press('Escape'); await wait(300);
+  assert(await ev('App.mode === "play" && !UI.open()'), 'Escape resumes');
+
+  // ---- 6. resize / rotate mid-fight
+  await page.setViewportSize({ width: 430, height: 880 }); await wait(500);
+  assert(await ev('GL.ok && GL.W > 0 && App.mode === "play"'), 'portrait after a resize');
+  await page.setViewportSize({ width: 900, height: 420 }); await wait(400);
+  await page.setViewportSize({ width: W, height: H }); await wait(400);
+
+  // ---- 7. the checkpoint survives a reload, and the title leaves it alone
+  await ev(`(() => { const w = App.w; w.lv = { power: 2, echo: 1 }; w.level = 5; w.recalc(); w.nextStage(); App.drain(); })()`);
+  assert(await ev('PROFILE.run.stage === 1 && PROFILE.run.level === 5'), 'the next stage writes a new checkpoint');
+  await page.reload(); await wait(1500);
+  assert(await ev('!!document.querySelector("#btn-continue")'), 'continue is offered after a reload');
+  await ev('saveProfile(true); 1');
+  assert(await ev('!!PROFILE.run'), 'saving on the title leaves the checkpoint alone');
+  await page.click('#btn-continue'); await wait(600);
+  assert(await ev('App.mode === "play" && App.w.stage === 1 && App.w.level === 5 && App.w.lv.power === 2'), 'the night is picked up at the start of its stage');
+
+  // ---- 8. language
+  await ev('App.w.quiet = true; App.w.p.inv = 1e9; UI.pause(); UI.settings(); 1'); await wait(300);
+  await page.click('.seg button:nth-child(2)'); await wait(500);
+  assert(await ev('LANG === "en" && !UI.open()'), 'English, and no stale dialog is left open');
+  await ev('PROFILE.settings.lang = "zh"; LANG = "zh"; App.relang(); App.mode = "play"; 1'); await wait(200);
+
+  // ---- 9. falling
+  await ev('(() => { const w = App.w; w.p.inv = 0; w.p.hp = 1; w.stats.kills = 120; w.addFoe("oni", w.p.x, w.p.y); })()');
+  await until('App.mode === "end" && !!document.querySelector(".results")', 9000, 'the results screen');
+  assert(await ev('PROFILE.run === null && PROFILE.meta.stats.runs === 1 && PROFILE.meta.jade > 0'), 'the run is settled: jade paid, checkpoint gone');
+  await page.click('.rbtns .btn.ghost'); await wait(600);
+  assert(await ev('App.demo && !!document.querySelector("#btn-start") && !document.querySelector("#btn-continue")'), 'back on the title');
+
+  // ---- 10. winning the night, then the endless parade
+  await ev(`(() => { PROFILE.meta.tutorial = 9; App.begin({ hero: 'fox', night: 1, stage: 4, seed: 'WIN' }); const w = App.w; w.p.inv = 1e9; w.quiet = true; w.spawnBoss(); App.drain(); w.boss.gate = []; w.hurt(w.boss, 1e9, 'seal'); App.drain(); })()`);
+  await until('App.mode === "end" && !!document.querySelector(".results.won")', 12000, 'the dawn screen');
+  assert(await ev('PROFILE.meta.nights.fox === 1 && !!PROFILE.meta.heroes.dragon && !!PROFILE.meta.seen.b_kuubou'), 'the night is recorded and the Ink Dragon unlocked');
+  const labels = await J('[...document.querySelectorAll(".rbtns .btn")].map((b) => b.textContent)');
+  assert(labels.length === 4, 'endless, a deeper night, again, title: ' + labels.join('|'));
+  await page.click('.rbtns .btn'); await wait(500);
+  await until('App.mode === "choice" && App.w.pending && App.w.pending.kind === "relic"', 5000, 'a relic is offered before the parade goes on');
+  await wait(500); await page.keyboard.press('1');
+  for (let i = 0; i < 12 && (await ev('App.mode')) === 'choice'; i++) { await wait(600); await page.keyboard.press('1'); await wait(500); }
+  assert(await ev('App.mode === "play" && App.w.stage === 5 && App.w.loop === 1 && App.w.endless'), 'the endless parade begins');
+  await ev('App.finish(false); 1'); await wait(500);
+
+  // ---- 11. shrine, codex, daily
+  await ev('PROFILE.meta.jade = 500; App.toTitle(); UI.shrine(); 1'); await wait(300);
+  await page.click('.boon'); await wait(200);
+  assert(await ev('PROFILE.meta.shrine.power === 1 && PROFILE.meta.jade === 470'), 'an offering at the shrine');
+  await ev('UI.codex("ach"); 1'); await wait(200);
+  assert(await ev('document.querySelectorAll(".codex .bl").length === ACH_IDS.length'), 'the codex lists every feat');
+  await ev('UI.title(); 1'); await wait(200);
+  await page.click('#btn-daily'); await wait(600);
+  assert(await ev('App.mode === "play" && !!App.w.daily && App.w.seed.startsWith("D")'), 'the daily night starts from the day’s seed');
+  await ev('App.finish(false); App.toTitle(); 1'); await wait(400);
+  assert(await ev('Object.keys(PROFILE.meta.daily).length === 1'), 'the daily result is kept');
   console.log('flow test passed', W + 'x' + H);
 };

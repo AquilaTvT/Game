@@ -1,295 +1,195 @@
-// Regression tests for the rules engine.  node tools/test_engine.js
+// Regression tests for the simulation.  node tools/test_engine.js
 const { loadEngine } = require('./engine');
 const { makeBot } = require('./bot');
 const E = loadEngine();
 let failed = 0, passed = 0;
 const ok = (c, m) => { if (c) passed++; else { failed++; console.error('FAIL: ' + m); } };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m + ' — got ' + JSON.stringify(a) + ', want ' + JSON.stringify(b));
-const cell = (ink, o) => Object.assign({ ink: ink || 'mo', enh: null, pid: 0, shape: 'i4' }, o || {});
-function fresh(o) {
-  const run = E.newRun(Object.assign({ seed: 'TEST', deck: 'kai' }, o || {}));
-  E.startRound(run);
-  run.round.boss = null;
-  run.round.target = 1e15;
-  return run;
+const near = (a, b, m, tol) => ok(Math.abs(a - b) <= (tol || 1e-6), m + ' — got ' + a + ', want ' + b);
+const fresh = (o) => { const w = new E.World(Object.assign({ seed: 'TEST', hero: 'fox' }, o || {})); w.quiet = true; w.p.inv = 0; return w; };
+const none = { x: 0, y: 0, dash: false };
+// walk the spirit once round a circle (a little more than a full turn, so the trail crosses itself)
+function ring(w, cx, cy, r, a0) {
+  w.p.x = cx + Math.cos(a0 || 0) * r; w.p.y = cy + Math.sin(a0 || 0) * r; w.p.vx = 0; w.p.vy = 0; w.clearTrail();
+  const seals0 = w.stats.seals, ev = [];
+  const steps = Math.ceil(((2 * Math.PI * r) / (w.S.speed * E.STEP)) * 1.7) + 40;
+  for (let i = 0; i < steps; i++) {
+    const aim = Math.atan2(w.p.y - cy, w.p.x - cx) + 0.35, tx = cx + Math.cos(aim) * r, ty = cy + Math.sin(aim) * r, d = Math.hypot(tx - w.p.x, ty - w.p.y) || 1;
+    w.step({ x: (tx - w.p.x) / d, y: (ty - w.p.y) / d, dash: false });
+    for (const e of w.ev) ev.push(e);
+    w.ev.length = 0;
+    if (w.stats.seals > seals0 || w.phase !== 'play') break;
+  }
+  return ev;
 }
-function fill(run, rows, cols, ink) {
-  const B = run.round.board;
-  for (const y of rows) for (let x = 0; x < run.w; x++) B[y * run.w + x] = cell(ink);
-  for (const x of cols) for (let y = 0; y < run.h; y++) B[y * run.w + x] = cell(ink);
-}
-const score = (run) => E.ignite(run);
 
-// ---- classification
+// ---- geometry
 {
-  const t = (r, c, d) => E.classifyLines(8, 8, r, c, d || []).id;
-  eq(t([0, 3, 7], [4]), 'wang', '王');
-  eq(t([0, 3, 7], [0, 4, 7]), 'tian', '田');
-  eq(t([2, 5], [2, 5]), 'jing', '井');
-  eq(t([0, 7], [0, 7]), 'kou', '口');
-  eq(t([1, 2], [1, 2, 3]), 'sanbi', '散笔');
-  eq(t(E.range(8), E.range(8)), 'xuan', '玄');
-  eq(E.classifyLines(7, 7, [0, 3, 6], [3], []).id, 'wang', '王 on 7×7');
-  eq(E.classifyLines(10, 6, [0, 5], [0, 9], []).id, 'kou', '口 on 10×6');
-  for (const id of E.CH_ORDER) for (const [w, h] of [[8, 8], [7, 7], [10, 6]]) {
-    for (const rc of E.charRecipes(id, w, h)) { const g = E.classifyLines(w, h, rc.rows, rc.cols, rc.diags).id; if (g !== id) { ok(false, `recipe of ${id} on ${w}x${h} classifies as ${g}`); break; } }
+  ok(E.segHit(0, 0, 10, 0, 5, -5, 5, 5) > 0.49 && E.segHit(0, 0, 10, 0, 5, 1, 5, 5) < 0, 'segments cross / miss');
+  const sq = [0, 0, 10, 0, 10, 10, 0, 10];
+  eq(Math.abs(E.polyArea(sq)), 100, 'area of a square');
+  ok(E.pointInPoly(sq, 5, 5) && !E.pointInPoly(sq, 15, 5), 'point in polygon');
+  near(E.distToPoly(sq, 5, -3), 3, 'distance to a polygon');
+}
+// ---- a ring seals what it encloses
+{
+  let w = fresh();
+  const a = w.addFoe('wisp', 0, 0), far = w.addFoe('wisp', 400, 0);
+  a.spd = 0; far.spd = 0;
+  const ev = ring(w, 0, 0, 60);
+  const s = ev.find((e) => e.t === 'seal');
+  ok(!!s && s.n === 1 && a.dead && !far.dead, 'the enclosed wisp is sealed, the far one is not');
+  ok(w.tl < 150, 'the ring is spent: the trail starts again');
+  eq([w.stats.seals, w.stats.kills, w.stats.maxRing], [1, 1, 1], 'seal statistics');
+  // the more in one ring, the harder it hits
+  w = fresh(); w.lv = {}; w.recalc();
+  const pack = []; for (let i = 0; i < 8; i++) { const e = w.addFoe('wisp', Math.cos(i) * 22, Math.sin(i) * 22); e.spd = 0; e.hp = e.mhp = 1000; pack.push(e); }
+  const hp0 = pack[0].hp; ring(w, 0, 0, 68);
+  near(hp0 - pack[0].hp, 10 * (1 + 0.05 * 7), 'each extra yokai adds 5%', 1e-6);
+  // talismans
+  w = fresh(); w.lv = { power: 2, great: 1, multi: 1 }; w.recalc();
+  const p2 = []; for (let i = 0; i < 6; i++) { const e = w.addFoe('wisp', Math.cos(i) * 22, Math.sin(i) * 22); e.spd = 0; e.hp = e.mhp = 1000; p2.push(e); }
+  const h0 = p2[0].hp; const ev2 = ring(w, 0, 0, 68);
+  near(h0 - p2[0].hp, 10 * 1.5 * (1 + 0.13 * 5) * 1.45, 'Seal Power, Clean Sweep and Grand Seal compound', 1e-6);
+  ok(ev2.find((e) => e.t === 'seal').great, 'a ring of six is a grand seal');
+}
+// ---- what a seal sets off
+{
+  let w = fresh(); w.lv = { echo: 1 }; w.recalc();
+  let e = w.addFoe('oni', 0, 0); e.spd = 0; let h = e.hp;
+  ring(w, 0, 0, 60); const h1 = e.hp; for (let i = 0; i < 40; i++) w.step(none);
+  near(h - h1, 10, 'the seal itself'); near(h1 - e.hp, 10 * 0.42, 'the echo strikes half a second later', 1e-6);
+  w = fresh(); w.lv = { burn: 1 }; w.recalc(); e = w.addFoe('oni', 0, 0); e.spd = 0; ring(w, 0, 0, 60); h = e.hp; for (let i = 0; i < 120; i++) w.step(none);
+  ok(h - e.hp > 10 * 0.4 * 1.5 && w.zones.length === 1, 'the sealed ground burns');
+  w = fresh(); w.lv = { chain: 2 }; w.recalc(); e = w.addFoe('wisp', 0, 0); e.spd = 0; const o1 = w.addFoe('oni', 150, 0), o2 = w.addFoe('oni', -150, 0); o1.spd = o2.spd = 0; const oh = o1.hp;
+  const evc = ring(w, 0, 0, 60);
+  ok(evc.filter((x) => x.t === 'zap').length === 2 && oh - o1.hp > 0 && oh - o2.hp > 0, 'Thunder leaps to the two nearest outside');
+  w = fresh(); w.lv = { frost: 1 }; w.recalc(); e = w.addFoe('wisp', 0, 0); e.spd = 0; const f1 = w.addFoe('oni', 120, 0); f1.spd = 0; ring(w, 0, 0, 60);
+  ok(f1.frozen > 0.5, 'Frost freezes those just outside');
+  w = fresh(); w.lv = { pull: 2 }; w.recalc(); e = w.addFoe('oni', 110, 0); e.spd = 0; h = e.hp; ring(w, 0, 0, 60);
+  ok(h - e.hp > 0 && Math.hypot(e.x, e.y) < 80, 'Gale sweeps the nearest in before the ring bites');
+  w = fresh(); w.lv = { blast: 1 }; w.recalc(); w.addFoe('wisp', 0, 0).spd = 0; e = w.addFoe('oni', 130, 0); e.spd = 0; h = e.hp; ring(w, 0, 0, 60);
+  near(h - e.hp, 10 * 0.55, 'Burst strikes outside the ring', 1e-6);
+  w = fresh(); w.lv = { exec: 1 }; w.recalc(); e = w.addFoe('oni', 0, 0); e.spd = 0; e.hp = e.mhp * 0.2; ring(w, 0, 0, 60);
+  ok(e.dead, 'Judgement finishes the weakened');
+  w = fresh(); w.lv = { wisp: 5 }; w.recalc(); for (let i = 0; i < 12; i++) w.addFoe('wisp', Math.cos(i) * 20, Math.sin(i) * 20).spd = 0; ring(w, 0, 0, 70);
+  ok(w.allies.length > 0 && w.allies.length <= w.S.wispMax, 'Bound Souls raises friendly flames');
+  // orbs can be sealed
+  w = fresh(); w.shoot(0, 0, 0, 0.001); w.shoot(5, 5, 0, 0.001); w.shoot(300, 0, 0, 0.001); ring(w, 0, 0, 60);
+  eq([w.shots.length, w.stats.orbs], [1, 2], 'orbs inside the ring are snuffed out');
+}
+// ---- being hit
+{
+  let w = fresh(); const e = w.addFoe('oni', 0, 0); e.spd = 0;
+  w.p.x = 5; w.p.y = 0; w.tx.push(1, 2, 3); w.ty.push(1, 2, 3); w.step(none);
+  eq([w.p.hp, w.tx.length <= 1, w.p.inv > 1], [2, true, true], 'a touch costs a life, breaks the trail and grants a moment of grace');
+  w.p.x = e.x; w.p.y = e.y; for (let i = 0; i < 20; i++) w.step(none);
+  eq(w.p.hp, 2, 'no second hit during the grace');
+  w = fresh(); w.lv = { shield: 1 }; w.recalc(); w.p.shield = 1; w.addFoe('oni', 0, 0).spd = 0; w.step(none);
+  eq([w.p.hp, w.p.shield], [3, 0], 'the Spirit Wall takes the hit');
+  w = fresh(); w.revives = 1; w.p.hp = 1; w.addFoe('oni', 0, 0).spd = 0; w.step(none);
+  eq([w.phase, w.p.hp, w.revives], ['play', 1, 0], 'a charm brings the spirit back once');
+  w.p.inv = 0; w.addFoe('oni', w.p.x, w.p.y).spd = 0; w.step(none);
+  eq(w.phase, 'dead', 'and then no more');
+  // a dash passes through
+  w = fresh(); w.addFoe('oni', 40, 0).spd = 0; w.p.x = 0; w.p.y = 0;
+  w.step({ x: 1, y: 0, dash: true }); for (let i = 0; i < 12; i++) w.step({ x: 1, y: 0, dash: false });
+  ok(w.p.hp === 3 && w.p.x > 80, 'the dash carries the spirit through unharmed');
+}
+// ---- levels and choices
+{
+  const w = fresh(); w.xp = E.xpNeed(1) + 1; w.step(none);
+  ok(w.phase === 'choice' && w.pending.choices.length === 3 && new Set(w.pending.choices.map((c) => c.id)).size === 3, 'a level offers three different talismans');
+  const c = w.pending.choices[0]; ok(w.choose(0) && w.lv[c.id] === c.to && w.phase === 'play', 'choosing applies it and play resumes');
+  w.due = 1; w.rollChoices(); const before = w.pending.choices.map((x) => x.id).join(); w.rerolls = 1; ok(w.reroll() && w.rerolls === 0 && !w.reroll(), 'one reroll, then none'); void before;
+  w.banishes = 1; const b = w.pending.choices[0].id; ok(w.banish(0) && w.banned[b] && !w.pending.choices.some((x) => x.id === b), 'a banished talisman does not come back');
+  // eight kinds at most; evolutions when both parents are full
+  const w2 = fresh(); w2.lv = { power: 1, multi: 1, chain: 5, burn: 1, frost: 1, pull: 1, blast: 1, bolt: 5 }; w2.recalc(); w2.due = 1; w2.rollChoices();
+  ok(w2.pending.choices[0].k === 'evo' && w2.pending.choices[0].id === 'tenbatsu', 'an evolution is offered when both parents are full');
+  ok(w2.pending.choices.slice(1).every((x) => w2.lv[x.id] > 0), 'with eight kinds held, only those are offered');
+  w2.choose(0); ok(w2.evo.tenbatsu === 1 && w2.S.chainJump === 2, 'the evolution takes effect');
+  for (const id of E.TALI_IDS) for (let l = 1; l <= E.TALIS[id].max; l++) { const d = E.TALIS[id].d(l); ok(d.zh && d.en && !/undefined|NaN/.test(d.zh + d.en), 'talisman text: ' + id + ' ' + l); }
+}
+// ---- every yokai lives through a rough half minute; trail cutters cut
+{
+  for (const k of E.FOE_IDS) {
+    const w = fresh(); w.lv = { ink: 2, shock: 2, ward: 2, shiki: 2, bolt: 2, burn: 2, echo: 2, chain: 2, blast: 2, frost: 2, pull: 2, wisp: 3 }; w.recalc();
+    for (let i = 0; i < 10; i++) w.addFoe(k, 200 + i * 20, (i % 3) * 30, i === 0 ? { elite: 1 } : null);
+    const bot = makeBot(E, { skill: 1 });
+    let err = null;
+    try { for (let i = 0; i < 1500 && w.phase !== 'dead'; i++) { if (w.phase === 'choice') bot.choose(w); else w.step(bot.input(w)); w.ev.length = 0; if (w.p.hp < 3) w.p.hp = 3; } } catch (e) { err = e; }
+    ok(!err, 'foe survives a rough round: ' + k + (err ? ' ' + err.stack : ''));
+    ok(w.foes.every((e) => isFinite(e.x) && isFinite(e.y) && isFinite(e.hp)) && isFinite(w.p.x), 'numbers stay finite: ' + k);
   }
-  ok(true, 'recipes consistent');
+  const w = fresh(); const c = w.addFoe('cutter', 300, 0);
+  for (let i = 0; i < 60; i++) w.step({ x: -1, y: 0, dash: false });
+  const len0 = w.tl; let cut = false;
+  for (let i = 0; i < 400 && !cut; i++) { w.step({ x: 0, y: i % 40 < 20 ? 0.4 : -0.4, dash: false }); if (w.ev.some((e) => e.t === 'cut')) cut = true; w.ev.length = 0; if (w.p.hp < 3) { w.p.hp = 3; } }
+  ok(cut && w.tl < len0, 'the sickle weasel bites the trail through'); void c;
 }
-// ---- base scoring
+// ---- the stages and their bosses
 {
-  let run = fresh(); fill(run, [3], []);
-  let r = score(run);
-  eq([r.char, r.score], ['yi', (10 + 40 + 40) * 1], '一: base 10 + 8 cells + pure black 40');
-  run = fresh(); fill(run, [3], [4]);
-  r = score(run);
-  // 16 triggers ×5 = 80, base 20, two pure strokes 80 → 180 × 2 × 1.5
-  eq([r.char, r.score], ['shi', Math.floor(180 * 2 * 1.5)], '十 with a crossing counted twice');
-  run = fresh(); fill(run, [0, 3, 7], [4], 'zhu');
-  r = score(run);
-  // 32 triggers = 160 + 55; spirit 4 + 4 pure red strokes ×4 = 20; ×3
-  eq([r.char, r.score], ['wang', Math.floor((160 + 55) * (4 + 16) * 3)], '王 in pure vermilion');
-  run = fresh(); fill(run, [2], [], 'qing');
-  r = score(run);
-  eq(r.score, Math.floor((10 + 40) * 1 * 1.2), 'pure azure multiplies');
-  run = fresh(); fill(run, [2], [], 'jin'); const m0 = run.money;
-  r = score(run);
-  eq(run.money, m0 + 1, 'pure gold pays');
-  eq(run.round.board.filter(Boolean).length, 0, 'strokes are cleared');
-  eq(run.round.ignites, E.stat(run, 'ignites') - 1, 'a flourish is spent');
-}
-// ---- levels, natures, squares
-{
-  let run = fresh(); run.tiers[1] = 3; fill(run, [1], []);
-  eq(score(run).score, (30 + 40 + 40) * 3, 'tier level raises the base');
-  run = fresh(); fill(run, [1], []); run.round.board[8] = cell('mo', { enh: 'nong' }); run.round.board[9] = cell('mo', { enh: 'fei' }); run.round.board[10] = cell('mo', { enh: 'yin' });
-  eq(score(run).score, (10 + 45 + 40 + 12) * (1 + 1), 'thick, flying and sealed cells');
-  run = fresh(); fill(run, [1], []); run.paper[8] = 'wusi'; run.paper[9] = 'zhusi'; run.paper[10] = 'yunwen'; run.paper[11] = 'die';
-  eq(score(run).score, Math.floor((10 + 45 + 40 + 25) * (1 + 3) * 1.2), 'paper squares');
-  run = fresh(); fill(run, [1], []); run.round.board[20] = cell('mo', { enh: 'su' });
-  eq(score(run).score, (10 + 40 + 40) * (1 + 2), 'aged ink left outside the strokes');
-  run = fresh(); fill(run, [1], []); run.round.board[8] = cell('zhu', { enh: 'bai' });
-  eq(score(run).score, (10 + 40 + 40) * 1, 'a blank cell keeps a stroke pure');
-  run = fresh(); fill(run, [1], []); run.round.board[8] = { stone: true, ink: null, enh: null, pid: 0, shape: null };
-  eq(score(run).score, (10 + 35) * 1, 'a stone scores nothing and breaks purity');
-}
-// ---- seals: a few exact checks
-{
-  const withSeal = (id, setup) => { const run = fresh(); E.addSeal(run, id); setup(run); return score(run); };
-  eq(withSeal('zhenyun', (r) => fill(r, [1, 2], [])).score, (20 + 80 + 80) * (2 + 6), '千里阵云 +3 per row');
-  eq(withSeal('wangzhe', (r) => fill(r, [0, 3, 7], [4])).score, Math.floor((55 + 160 + 160) * 4 * 3 * 3), '王者之风');
-  eq(withSeal('xizhi', (r) => fill(r, [0, 3, 7], [4])).score, Math.floor((55 + 160 + 160) * 4 * 9), '王羲之 squares the character multiplier');
-  eq(withSeal('suanchou', (r) => fill(r, [3], [1, 2, 5, 6])).char, 'xi', '卌 recognised');
-  eq(withSeal('huaisu', (r) => fill(r, [1, 2], [1, 2, 3])).score, Math.floor((80 + 200 + 200) * 5 * 5), '怀素 multiplies a scribble by its strokes');
-  eq(withSeal('litou', (r) => fill(r, [3], [4])).score, Math.floor((20 + 80 + 10 + 80) * 2 * 1.5), '力透纸背 retriggers the crossing');
-  eq(withSeal('yichui', (r) => { fill(r, [3], []); }).score, (10 + 40 + 40) * 5, '一锤定音 ×5');
-  { const run = fresh(); E.addSeal(run, 'yichui'); E.concede(run); const r2 = E.newRun({ seed: 'T2' }); E.addSeal(r2, 'yichui'); E.startRound(r2); eq(r2.round.ignites, 1, '一锤定音 leaves one flourish'); }
-  { const run = fresh(); E.addSeal(run, 'linmo'); E.addSeal(run, 'zhenyun'); fill(run, [1, 2], []); eq(score(run).score, (20 + 80 + 80) * (2 + 12), '临摹 copies its right neighbour'); }
-  { const run = fresh(); E.addSeal(run, 'sansheng'); fill(run, [1], []); score(run); fill(run, [1, 2], []); score(run); fill(run, [1, 2, 3], []); eq(score(run).score, (35 + 120 + 120) * 3 * 4, '三生万物 after 一 二 三'); }
-  { const run = fresh(); E.addSeal(run, 'langhao'); for (let i = 0; i < 8; i++) { run.round.board[i * 8 + i] = cell('mo'); run.round.board[i * 8 + 7 - i] = cell('mo'); } eq(score(run).char, 'yi4', '狼毫 writes 乂'); }
-  { const run = fresh(); E.addSeal(run, 'juechu'); run.round.target = 100; run.round.ignites = 1; fill(run, [1], []); const r = score(run); ok(r.won && r.rescued && !run.seals.length, '绝处逢生 rescues at half the target'); }
-}
-// ---- character meanings
-{
-  let run = fresh(); fill(run, [2, 5], [2, 5]); run.round.ink = 50; score(run);
-  eq(run.round.ink, 66, '井 restores ink');
-  fill(run, [2, 5], [2, 5]); score(run);
-  eq(run.round.ink, 66, '…only once per round');
-  run = fresh(); const ig = run.round.ignites; fill(run, [7], [0]); score(run);
-  eq(run.round.ignites, ig, '乚 is a free flourish');
-  run = fresh(); fill(run, E.range(8), E.range(8)); const r = score(run);
-  eq([r.char, run.tiers[3]], ['xuan', 2], '玄 raises every tier');
-}
-// ---- bosses
-{
-  const boss = (id, setup) => { const run = E.newRun({ seed: 'B' + id }); run.blind = 2; run.boss = id; E.startRound(run); run.round.target = 1e15; if (setup) setup(run); return run; };
-  let run = boss('jiucheng'); fill(run, [1, 2], [1, 2, 3]);
-  eq(score(run).score, 0, '九成宫: scribbles score nothing');
-  run = boss('duobao'); fill(run, [1], []);
-  eq(score(run).score, 0, '多宝塔: fewer than three strokes score nothing');
-  run = boss('lanting'); fill(run, [1], []); ok(score(run).score > 0, '兰亭: first time scores'); fill(run, [1], []); eq(score(run).score, 0, '兰亭: a repeat scores nothing');
-  run = boss('sangluan'); fill(run, [1], []);
-  eq(score(run).score, 10, '丧乱帖: black cells are dead');
-  run = boss('caoquan'); fill(run, [3], [4]);
-  eq(score(run).score, Math.floor((20 + 40 + 40) * 2 * 1.5), '曹全碑: column cells give nothing');
-  run = boss('maogong'); run.tiers[1] = 5; fill(run, [1], []);
-  eq(score(run).score, 90, '毛公鼎: levels ignored');
-  run = boss('pingfu'); eq(Object.keys(run.round.holes).length, 3, '平复帖: three wormholes');
-  run = boss('shigu'); eq(run.round.board.filter((c) => c && c.stone).length, 8, '石鼓文: eight stones');
-  run = boss('hanshi'); eq(run.round.discards, 0, '寒食帖: no rinses');
-  run = boss('zhengzuo'); ok(!E.slotUsable(run, 1) && E.slotUsable(run, 0), '争座位帖: leftmost block only');
-  run = boss('shiqi'); run.round.placed = 17; ok(E.placeBlocked(run, 0) === 'limit', '十七帖: block limit');
-  run = boss('liqi', null); { const r2 = E.newRun({ seed: 'L' }); E.addSeal(r2, 'zhenyun'); r2.blind = 2; r2.boss = 'liqi'; E.startRound(r2); r2.round.target = 1e15; fill(r2, [1, 2], []); eq(score(r2).score, (20 + 80 + 80) * 2, '礼器碑: the leftmost seal is silent'); }
-  for (const id of E.BOSS_ORDER) { const b = boss(id); ok(b.phase === 'round' && b.round.tray.some(Boolean), 'boss starts: ' + id); }
-}
-// ---- items
-{
-  for (const id of E.ITEM_ORDER) {
-    const run = fresh(); const def = E.ITEMS[id];
-    E.giveItem(run, id, true);
-    let tg = {};
-    if (def.need && def.need.t === 'pieces') tg = { pieces: run.deck.filter((p) => !def.ok || def.ok(p)).slice(0, def.need.max).map((p) => p.uid) };
-    if (def.need && (def.need.t === 'square' || def.need.t === 'cell')) { tg = { square: 27 }; if (!def.need.empty) run.round.board[27] = cell('mo'); }
-    if (id === 'xinde') run.lastTier = 2;
-    const n = run.deck.length;
-    const r = E.useItem(run, run.items.length - 1, tg);
-    ok(r.ok, 'item usable: ' + id + ' ' + JSON.stringify(r));
-    ok(E.checkRun(run).length === 0, 'state sane after ' + id + ': ' + E.checkRun(run).join(','));
-    if (id === 'taben') eq(run.deck.length, n + 1, 'rubbing adds a block');
-    if (id === 'kedao') eq(run.deck.length, n - 2, 'knife removes blocks');
-    if (id === 'suimo') eq(run.deck.length, n + 1, 'crushing gives two dots');
-  }
-  const run = fresh(); E.giveItem(run, 'kedao', true); run.deck.length = 8; E.syncRound(run);
-  ok(!E.useItem(run, 0, { pieces: [run.deck[0].uid] }).ok, 'the Ink Box keeps eight blocks');
-}
-// ---- shop and economy
-{
-  const run = E.newRun({ seed: 'SHOP' }); E.startRound(run); run.round.target = 10; fill(run, [1], []); score(run);
-  eq(run.phase, 'cash', 'cleared sheet goes to payout');
-  const total = run.cash.total, m = run.money;
-  E.collectCash(run);
-  eq([run.phase, run.money, run.blind], ['shop', m + total, 1], 'payout collected, shop opens');
-  ok(run.shop.items.length === 2 && run.shop.packs.length === 2, 'shop stocked');
-  run.money = 100;
-  const it = run.shop.items.findIndex((i) => i.kind === 'seal');
-  if (it >= 0) { ok(E.shopBuy(run, it, false).ok, 'buy a seal'); eq(run.seals.length, 1, 'seal owned'); const v = E.sellSeal(run, run.seals[0].uid); ok(v > 0 && !run.seals.length, 'sell it again'); }
-  const c0 = E.rerollCost(run); ok(E.shopReroll(run), 'reroll'); eq(E.rerollCost(run), c0 + 1, 'reroll price rises');
-  ok(E.openPack(run, 0).ok && run.pack, 'open a case'); ok(E.pickPack(run, 0, null).ok || true, 'pick'); if (run.pack) E.closePack(run);
-  ok(E.leaveShop(run) && run.phase === 'pick', 'leave shop');
-  const tag = E.skipBlind(run); ok(tag && run.blind === 2, 'skip to the masterwork');
-  ok(E.skipBlind(run) === null, 'the masterwork cannot be skipped');
-}
-// ---- details of the rules that once went wrong
-{
-  const boss = (id, o) => { const run = E.newRun(Object.assign({ seed: 'D' + id }, o || {})); run.blind = 2; run.boss = id; E.startRound(run); run.round.target = 1e15; return run; };
-  // 寒食帖: rinses cannot be brought back by any means
-  let run = boss('hanshi');
-  E.giveItem(run, 'xiyan', true);
-  ok(!E.useItem(run, run.items.length - 1, {}).ok && run.round.discards === 0, '寒食帖: Inkstone Rinse cannot be used');
-  fill(run, [], [1, 3, 5]); const rc = score(run);
-  eq([rc.char, run.round.discards], ['chuan', 0], '寒食帖: 川 grants no rinse');
-  ok(!E.discardBlock(run, 0).ok, '寒食帖: no rinse is possible');
-  // 巾 wipes ink, not stones
-  run = fresh();
-  { const id = E.CH_ORDER.find((k) => E.CH[k].yi === 'wipe'); const L = E.charLayout(id, run.w, run.h); fill(run, L.rows, L.cols);
-    const free = []; for (let i = 0; i < 64; i++) if (!run.round.board[i]) free.push(i);
-    run.round.board[free[0]] = { stone: true, ink: 'mo', enh: null, pid: 0, shape: 'dot' }; run.round.board[free[1]] = cell('zhu');
-    const r = score(run); eq([r.char, run.round.board.filter((c) => c && c.stone).length, run.round.board.filter((c) => c && !c.stone).length], [id, 1, 0], '巾: stray ink is wiped, stones stay'); }
-  // a disabled seal neither grows nor withers
-  run = E.newRun({ seed: 'OFF' }); E.addSeal(run, 'tieyan'); E.addSeal(run, 'bizhou'); run.blind = 2; run.boss = 'liqi'; E.startRound(run); run.round.target = 5;
-  const st0 = JSON.stringify(run.seals[0].st), b1 = run.seals[1].bonus;
-  fill(run, [1], []); score(run);
-  eq([JSON.stringify(run.seals[0].st), run.seals[1].bonus], [st0, b1 + 3], '礼器碑: the disabled seal does not grow, the others do');
-  // a voided flourish is not remembered as a character
-  run = boss('duobao'); fill(run, [1], []); score(run);
-  eq([run.round.chars.length, run.charCounts.yi || 0, run.lastTier], [0, 0, 0], 'a voided flourish writes nothing into the record');
-  // the pure bonus needs a cell that scores
-  run = boss('taishan'); fill(run, [0], []);
-  eq(score(run).score, 10, '泰山刻石: a border stroke of dead cells earns no pure bonus');
-  // dead cells are not "scored cells"
-  run = E.newRun({ seed: 'DEAD' }); E.addSeal(run, 'zhumo'); run.blind = 2; run.boss = 'sangluan'; E.startRound(run); run.round.target = 1e15;
-  { const B = run.round.board; for (let x = 0; x < 8; x++) B[8 + x] = cell(x < 4 ? 'zhu' : 'mo'); }
-  eq(score(run).score, (10 + 4 * 5) * 1, '丧乱帖: dead black cells do not count for Red-and-Black Printing');
-  // splash blocks shatter only when the splash went off
-  run = boss('sangluan'); { const p = run.deck.find((q) => q.ink === 'mo'); p.enh = 'po'; let lost = 0; for (let k = 0; k < 60; k++) { for (let x = 0; x < 8; x++) run.round.board[8 + x] = cell('mo', { enh: 'po', pid: p.uid, q: k }); run.round.ignites = 4; const n0 = run.deck.length; score(run); if (run.deck.length < n0) lost++; } eq(lost, 0, 'a splash block that scored nothing cannot shatter'); }
-  // the same block placed twice counts as two blocks
-  run = fresh(); E.addSeal(run, 'changqiang'); { const B = run.round.board, u = run.deck[0].uid; for (let x = 0; x < 4; x++) B[8 + x] = cell('mo', { pid: u, q: 1, shape: 'i4' }); for (let x = 4; x < 8; x++) B[8 + x] = cell('mo', { pid: u, q: 2, shape: 'i4' }); }
-  eq(score(run).mult, 1 + 8, 'Long Spears counts both placements of one block');
-  // 收笔 does not fire on a free flourish
-  run = fresh(); E.addSeal(run, 'shoubi'); run.round.ignites = 1;
-  { const id = E.CH_ORDER.find((k) => E.CH[k].yi === 'ignite'); const L = E.charLayout(id, run.w, run.h); fill(run, L.rows, L.cols); const r = score(run); eq([r.char, run.round.ignites, r.ev.some((e) => e.t === 'add' && e.k === 'm' && e.v === 20)], [id, 1, false], 'Closing Stroke waits for a flourish that is really spent'); }
-  // a seal gained in the middle of a sheet brings its terms at once
-  run = fresh(); run.round.ignites = 4; E.addSeal(run, 'yichui'); eq(run.round.ignites, 1, 'One Stroke of the Gavel leaves one flourish at once');
-  run = fresh(); run.round.ink = 80; E.addSeal(run, 'pofu'); eq([run.round.inkMax, run.round.ink], [50, 30], 'Smash the Pots halves the Ink at once');
-  // scribbles are not characters
-  run = fresh(); E.addSeal(run, 'wengu'); fill(run, [1, 2], [1, 2, 3]); score(run); fill(run, [1, 2], [1, 2, 3]); const rs = score(run);
-  eq([rs.char, rs.ev.some((e) => e.t === 'add' && e.k === 'x' && e.v === 2)], ['sanbi', false], 'Review the Old ignores scribbles');
-  run = fresh(); E.addSeal(run, 'luoyang'); run.round.target = 5; fill(run, [1, 2], [1, 2, 3]); score(run);
-  ok(!run.cash.lines.some((l) => l.k === 'seal'), 'Paper Grows Dear pays nothing for a scribble');
-  // 工欲善其事 keeps its trigger when there is no room
-  run = fresh(); E.addSeal(run, 'gongyu'); E.giveItem(run, 'zhusha', true); E.giveItem(run, 'zhusha', true);
-  { const L = E.charLayout('gong', run.w, run.h); fill(run, L.rows, L.cols); score(run); ok(!run.seals[0].st.used && run.items.length === 2, 'First Sharpen the Tools waits for room'); }
-  // seals that need a square sheet are not offered on other sheets; vouchers that could do nothing are not offered
-  run = E.newRun({ seed: 'SQ', deck: 'changjuan' }); ok(!run.pool.includes('langhao') && E.newRun({ seed: 'SQ' }).pool.includes('langhao'), 'the Wolf-hair Brush stays off the handscroll');
-  run = E.newRun({ seed: 'SJ', deck: 'shoujin' }); { let bad = 0; for (let k = 0; k < 300; k++) { const v = E.rollVoucher(run); if (v === 'v_zhang1' || v === 'v_zhang2') bad++; } eq(bad, 0, 'no interest furnishings on the Slender Gold script'); }
-  // the look-ahead tells the truth under 爨宝子碑
-  run = boss('cuan'); { let wrong = 0; for (let k = 0; k < 60; k++) { const nx = E.peekList(run, 1)[0]; if (!nx) break; const before = run.round.tray.map((t) => t && t.uid); E.discardBlock(run, 0); run.round.discards = 3; const t = run.round.tray.find((q) => q && !before.includes(q.uid)) || run.round.tray[0]; const p = E.pieceByUid(run, t.uid); if (t.uid === nx.uid && (t.sh || p.shape) !== nx.shape) wrong++; } eq(wrong, 0, 'the look-ahead shows the block that really arrives'); }
-  // shop: furnishings act at once; buying and using pays first; the gift survives a reroll; stake prices compound
-  run = E.newRun({ seed: 'SHOP2' }); E.startRound(run); run.round.target = 5; fill(run, [1], []); score(run); E.collectCash(run);
-  run.money = 100; run.shop.voucher = 'v_jia3'; const p0 = run.shop.items.map((i) => i.price), k0 = run.shop.packs.map((i) => i.price);
-  ok(E.buyVoucher(run).ok, 'buy Haggling');
-  ok(run.shop.items.every((i, k) => i.price === Math.max(1, Math.round(i.base * 0.75)) && i.price <= p0[k]) && run.shop.packs.every((i, k) => i.price <= k0[k]), 'Haggling lowers the prices on display');
-  run.shop.voucher = 'v_huo1'; const n0 = run.shop.items.length; ok(E.buyVoucher(run).ok && run.shop.items.length === n0 + 1, 'Extra Shelf adds an item at once');
-  run.money = 10; run.shop.items[0] = { kind: 'wen', id: 'runge', base: 3, price: 3, sold: false };
-  ok(E.shopBuy(run, 0, true).ok, 'buy and use the Price List'); eq(run.money, 14, 'the Price List does not double the coins that pay for it');
-  run.money = 50; run.shop.items[0] = { kind: 'seal', id: 'xinshou', ed: null, price: 0, sold: false, gift: true }; E.shopReroll(run);
-  ok(run.shop.items[0].gift && run.shop.items.length === E.stat(run, 'shopSlots'), 'a gift stays on the shelf through a reroll');
-  run = E.newRun({ seed: 'YAJI' }); E.startRound(run); run.round.target = 5; fill(run, [1], []); score(run); E.collectCash(run);
-  run.money = 50; run.shop.items[0] = { kind: 'seal', id: 'yaji', ed: null, base: 6, price: 6, sold: false }; E.shopBuy(run, 0, false);
-  eq(E.rerollCost(run), 0, 'Gathering of Scholars gives its free reroll in the shop where it is bought');
-  run = E.newRun({ seed: 'ST5', stake: 5 }); eq([E.priceOf(run, 10), (run.vouchers.v_jia3 = 1, E.priceOf(run, 10)), (run.vouchers.v_jia4 = 1, E.priceOf(run, 10))], [12, 9, 6], 'discounts compound with the dearer prices of a high rank');
-  // items that would change nothing are refused
-  run = fresh(); E.giveItem(run, 'songyan', true); { const p = run.deck.find((q) => q.ink === 'mo'); ok(!E.useItem(run, run.items.length - 1, { pieces: [p.uid] }).ok && run.items.length === 1, 'Pine Soot is not spent on a block that is already black'); }
-  run = fresh(); run.money = 0; E.giveItem(run, 'runge', true); ok(!E.useItem(run, run.items.length - 1, {}).ok, 'the Price List is not spent on an empty purse');
-  // 少而精 measures from the opening size of the Ink Box
-  run = E.newRun({ seed: 'JG', deck: 'jiagu' }); E.addSeal(run, 'shaoer'); E.startRound(run); run.round.boss = null; run.round.target = 1e15; fill(run, [1], []);
-  eq(score(run).mult, 1, 'Few but Fine starts at nothing on the oracle-bone script');
-}
-// ---- every seal survives a rough round; every description renders
-{
-  const bot = makeBot(E, { simTop: 2, shopSkill: 0 });
-  for (const id of E.SEAL_ORDER) {
-    const run = E.newRun({ seed: 'S' + id });
-    E.addSeal(run, id, null); E.addSeal(run, 'zhenyun', 'jin');
+  for (let s = 0; s < E.STAGES.length; s++) {
+    const w = new E.World({ seed: 'BOSS' + s, hero: 'fox', stage: s });
+    w.lv = { power: 5, multi: 5, long: 5, echo: 5, great: 5, burn: 5, swift: 3, exec: 5 }; w.recalc(); w.p.hp = w.S.maxHp;
+    w.stageT = E.STAGES[s].dur - 0.5;
+    const bot = makeBot(E, { skill: 1.2 });
+    let err = null, sawBoss = false, t0 = w.t, cleared = false;
     try {
-      for (let k = 0; k < 2; k++) { E.startRound(run); run.round.target = 1; bot.playRound(run); if (run.phase === 'cash') { E.collectCash(run); E.leaveShop(run); } else break; }
-      ok(E.checkRun(run).length === 0, 'sane after ' + id);
-    } catch (e) { ok(false, 'seal ' + id + ' threw: ' + e.message); }
-    for (const lang of ['zh', 'en']) {
-      const d = E.SEALS[id], f = lang === 'zh' ? d.dz : d.de;
-      for (const args of [[null, null], [run.seals[0], run]]) {
-        const s = typeof f === 'function' ? f(args[0], args[1]) : f;
-        ok(typeof s === 'string' && s.length > 3 && !/undefined|NaN|\[object/.test(s), `description of ${id} (${lang}): ${s}`);
-        ok(!/\[\w+\|[^\]]*$/.test(s) && E.plain(s).indexOf('[') < 0, `markup of ${id} (${lang})`);
+      for (let i = 0; i < 60 * 150; i++) {
+        if (w.phase === 'choice') { if (w.pending.kind === 'relic') { cleared = true; break; } bot.choose(w); continue; }
+        if (w.phase !== 'play') break;
+        w.step(bot.input(w));
+        if (w.boss) sawBoss = true;
+        w.ev.length = 0;
+        if (w.p.hp < 3) w.p.hp = 3;       // the bot is clumsy; this checks the fight, not its dodging
       }
-    }
-    ok(E.SEALS[id].zh && E.SEALS[id].en, 'names of ' + id);
-  }
-  for (const id of E.ITEM_ORDER) for (const key of ['dz', 'de']) { const f = E.ITEMS[id][key]; const s = typeof f === 'function' ? f(E.newRun({ seed: 'D' })) : f; ok(typeof s === 'string' && !/undefined|NaN/.test(s) && E.plain(s).indexOf('[') < 0, 'item text ' + id); }
-  for (const id of E.BOSS_ORDER) ok(E.plain(E.BOSSES[id].dz).indexOf('[') < 0 && E.plain(E.BOSSES[id].de).indexOf('[') < 0 && E.BOSSES[id].author, 'boss text ' + id);
-}
-// ---- determinism and save/load
-{
-  const play = (mid) => {
-    const bot = makeBot(E, { simTop: 2 });
-    let run = E.newRun({ seed: 'SAME', deck: 'kai' });
-    let guard = 0, swapped = false;
-    while (guard++ < 60 && run.ante <= 2) {
-      if (run.phase === 'pick') { E.startRound(run); if (mid && !swapped && run.blind === 1) { swapped = true; run = JSON.parse(JSON.stringify(run)); } bot.playRound(run); }
-      else if (run.phase === 'cash') E.collectCash(run);
-      else if (run.phase === 'shop') { bot.shop(run); if (mid) run = JSON.parse(JSON.stringify(run)); }
-      else break;
-    }
-    return JSON.stringify([run.ante, run.blind, run.money, run.seals.map((s) => s.id), run.deck.length, run.stats.best, run.tiers, run.rng]);
-  };
-  const a = play(false), b = play(false), c = play(true);
-  eq(a, b, 'the same seed plays out identically');
-  eq(a, c, 'a run survives being saved and loaded at any point');
-}
-// ---- every script can be played
-{
-  const bot = makeBot(E, { simTop: 2 });
-  for (const id of E.DECK_ORDER) {
-    const run = E.newRun({ seed: 'DK' + id, deck: id });
-    try {
-      let guard = 0;
-      while (guard++ < 30 && run.ante <= 2 && run.phase !== 'over') {
-        if (run.phase === 'pick') { E.startRound(run); bot.playRound(run); } else if (run.phase === 'cash') E.collectCash(run); else if (run.phase === 'shop') bot.shop(run); else break;
-        const errs = E.checkRun(run); if (errs.length) throw new Error(errs.join(','));
+      // the bot is no duellist: if the boss still stands, finish the fight with plain rings drawn around it (and around its cores)
+      w.quiet = true; w.p.inv = 1e9;
+      for (const e of w.foes) if (!e.boss && !e.part && e !== w.boss) e.dead = 1;
+      for (let k = 0; k < 160 && w.phase === 'play' && w.boss && !cleared; k++) {
+        const b = w.boss; let tg = b;
+        if (b.shielded) tg = w.foes.find((e) => e.k === 'core' && !e.dead) || b;
+        if (b.k === 'kyubi' && b.s === 0 && !b.struck) { for (let i = 0; i < 20; i++) { w.step(none); w.ev.length = 0; } }
+        if (tg !== b) { const oa = tg.oa + 0.22, cx = b.x + Math.cos(oa) * 118, cy = b.y + Math.sin(oa) * 118; ring(w, cx, cy, 58, oa); }
+        else ring(w, tg.x, tg.y, tg.r + 36);
+        w.p.inv = 1e9;                 // this part checks the fight's rules, not anyone's dodging
+        if (w.phase === 'choice') { if (w.pending.kind === 'relic') cleared = true; else bot.choose(w); }
+        for (let i = 0; i < 200 && w.phase === 'play' && w.clearT > 0; i++) { w.step(none); w.ev.length = 0; }
+        if (w.phase === 'choice' && w.pending.kind === 'relic') cleared = true;
       }
-      ok(true, 'deck ' + id);
-    } catch (e) { ok(false, 'deck ' + id + ': ' + e.stack); }
+    } catch (e) { err = e; }
+    ok(!err, 'boss fight runs: ' + E.STAGES[s].boss + (err ? ' ' + err.stack : ''));
+    ok(sawBoss, 'the boss arrives when the stage has run its time: ' + E.STAGES[s].boss);
+    ok(cleared || w.phase === 'won', 'the boss can be brought down: ' + E.STAGES[s].boss + ' (hp ' + (w.boss ? w.bossHp().toFixed(2) : '-') + ' after ' + (w.t - t0).toFixed(0) + 's)');
+    w.p.inv = 0;
+    if (cleared) { const hp = w.p.hp; w.p.hp = 1; const st = w.stage; w.choose(0); ok(w.stage === st + 1 && w.p.hp === 2 && w.foes.length === 0 && Object.keys(w.rel).length === 1, 'a relic is taken, the next stage begins, one life is restored'); void hp; }
+    if (s === E.STAGES.length - 1) { ok(w.phase === 'won', 'the last boss ends the night'); w.goEndless(); ok(w.endless && (w.phase === 'choice' || w.phase === 'play'), 'the parade can go on without end'); }
   }
+}
+// ---- checkpoint, determinism
+{
+  const run = (seed) => { const w = new E.World({ seed, hero: 'fox' }); const bot = makeBot(E, { skill: 1 }); for (let i = 0; i < 3000 && w.phase !== 'dead'; i++) { if (w.phase === 'choice') bot.choose(w); else w.step(bot.input(w)); w.ev.length = 0; } return [w.t.toFixed(3), w.stats.kills, w.level, w.p.x.toFixed(3), w.foes.length, Object.keys(w.lv).join()]; };
+  eq(run('SAME'), run('SAME'), 'the same seed and the same hands give the same night');
+  const w = fresh(); w.lv = { power: 3, echo: 2 }; w.rel = { gold: 1 }; w.evo = {}; w.level = 7; w.xp = 3; w.p.hp = 2; w.recalc();
+  const cp = JSON.parse(JSON.stringify(w.checkpoint()));
+  const w2 = new E.World({ seed: cp.seed, hero: cp.hero, night: cp.night, stage: cp.stage, save: cp });
+  eq([w2.lv, w2.rel, w2.level, w2.p.hp, w2.S.power], [w.lv, w.rel, 7, 2, w.S.power], 'a checkpoint restores the build');
+}
+// ---- what outlives a run
+{
+  const w = fresh(); w.stats.kills = 220; w.stats.bosses = 2; w.stats.maxRing = 13; w.level = 16; w.stage = 2;
+  E.setProfile(E.migrateProfile(null));
+  const r = E.settleRun(w, false), m = E.getProfile().meta;
+  ok(r.jade > 0 && m.jade === r.jade && m.stats.runs === 1, 'a run pays jade');
+  ok(m.heroes.crane && m.heroes.turtle && m.heroes.raiju && !m.heroes.dragon, 'spirits are unlocked by what happened');
+  ok(r.ach.includes('ring8') && m.ach.first, 'feats are granted');
+  ok(E.buyShrine('magnet') && m.shrine.magnet === 1 && m.jade === r.jade - 20, 'the shrine takes jade');
+  const code = 'NB1:' + Buffer.from(JSON.stringify({ meta: { jade: 5 }, settings: {}, run: { seed: '<img src=x>' } })).toString('base64');
+  global.btoa = (s) => Buffer.from(s, 'binary').toString('base64'); global.atob = (s) => Buffer.from(s, 'base64').toString('binary');
+  ok(!E.importProfile(code), 'a save code carrying markup is refused');
+  const good = E.migrateProfile({ meta: { jade: 5.7, hero: 'nobody' }, settings: {}, run: { v: 1, seed: 'ABC', hero: 'fox', stage: 1, lv: { bogus: 3 }, stats: {} } });
+  eq([good.meta.jade, good.meta.hero, good.run], [5, 'fox', null], 'a doubtful save is cleaned, a doubtful checkpoint dropped');
 }
 console.log(`${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

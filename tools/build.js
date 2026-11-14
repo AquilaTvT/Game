@@ -1,5 +1,6 @@
 // Bundles everything under src/ into one self-contained HTML file.
-//   node tools/build.js
+//   node tools/build.js            -> 缚夜.html
+//   node tools/build.js --dev out  -> a test build that exposes the internals to the test scripts
 const fs = require('fs');
 const path = require('path');
 
@@ -18,17 +19,16 @@ const css = cssFiles.map((f) => read(path.join(cssDir, f))).join('\n');
 // a syntax check before anything is written
 try { new Function(js); } catch (e) { console.error('JavaScript does not parse:', e.message); process.exit(1); }
 
-// `node tools/build.js --dev <file>` writes a test build that exposes the internals to the test scripts
 const devAt = process.argv.indexOf('--dev');
 const dev = devAt > 0;
-const hook = dev ? '\nwindow.__fkz = (code) => eval(code);' : '';
+const hook = dev ? '\nwindow.__dbg = (code) => eval(code);' : '';
 const body = `(function () {\n'use strict';\n${js}${hook}\n})();`;
 if (body.includes('</script')) { console.error('bundle contains a closing script tag'); process.exit(1); }
 
 let html = read(path.join(src, 'index.html'));
 html = html.replace('/*__CSS__*/', () => css).replace('/*__JS__*/', () => body);
 
-const out = dev ? path.resolve(process.argv[devAt + 1]) : path.join(root, '方块字.html');
+const out = dev ? path.resolve(process.argv[devAt + 1]) : path.join(root, '缚夜.html');
 fs.writeFileSync(out, html);
 const kb = (fs.statSync(out).size / 1024).toFixed(0);
 console.log(`built ${path.basename(out)}  ${kb} KB  (${jsFiles.length} scripts, ${cssFiles.length} stylesheets)`);

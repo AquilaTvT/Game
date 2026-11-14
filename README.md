@@ -1,83 +1,102 @@
-# 方块字 · Block Script
+# 缚夜 · Nightbind
 
-**落墨成笔，积笔成字。** 一款以书法为题的方块肉鸽——填满整行是一「横」，填满整列是一「竖」；挥毫之时，纸上所有的横竖合成一个汉字：一、十、王、井、田……每个字就是一手“牌型”。
+> 一笔成环，万鬼皆封。
 
-作者：**藤野京**
+**作者：藤野京**
 
-![挥毫：写出「田」](docs/flourish.jpg)
+一款画圈封印百鬼的俯视角动作肉鸽。整个游戏只有一个文件——[`缚夜.html`](./缚夜.html)，下载后双击，用浏览器打开就能玩；不需要安装，不需要联网，电脑和手机都可以。
+
+![标题](docs/title.jpg)
 
 ## 怎么玩
 
-**只需要一个文件。** 下载 [`方块字.html`](方块字.html)，用任意现代浏览器打开（双击即可）。不需要安装，不需要联网，电脑与手机、横屏与竖屏都能玩；进度自动保存在浏览器里，也可以在「设置」中导出为一段文字备份。
+你是一缕笔灵，在夜色里穿行，身后拖着一道发光的墨痕。
 
-| 对局 | 文房铺 | 竖屏 |
+- **绕着妖怪画一个圈，让墨痕首尾相接**——圈里的妖怪当场被封印。
+- **一圈套得越多，伤害越高。** 把它们引成一团，再一网打尽。
+- 被碰到会受伤，墨痕也会震断；有些妖怪还会专门冲过来咬断它。
+- **冲刺**时无敌，用来穿出包围。
+
+![战斗](docs/play.jpg)
+
+| 操作 | 电脑 | 手机 |
 | --- | --- | --- |
-| ![对局](docs/play.jpg) | ![文房铺](docs/shop.jpg) | <img src="docs/phone.jpg" width="220" alt="竖屏"> |
+| 移动 | 鼠标指向 / WASD / 方向键 | 在屏幕上拖动 |
+| 冲刺 | 空格 / 点击鼠标 | 第二根手指，或右下角的「瞬」 |
+| 暂停 | Esc / P | 右上角按钮 |
 
-### 规则一页纸
+## 一夜之内
 
-- **落墨**：把墨块拖到纸上（轻点 / 右键 / 滚轮 / `R` 旋转）。每块墨耗去与格数相同的「墨」。
-- **成笔**：填满的整行是「横」，整列是「竖」。
-- **挥毫**：所有成笔的横竖一同计分并消去，合成一个字。笔画须与字的图样**完全吻合**——在纸边还是在中间都有讲究，多一笔少一笔就是另一个字，或是不成字的「散笔」。
-- **得分 = 形 × 神**：字的画数定下基础的形与神；每个计分的墨格添形，横竖交点上的格计两次；整条笔画由同一种墨写成则为「纯色」，另有加成；最后乘以这个字的「字格」（王 ×3、田 ×4……）。
-- **一卷八法**：一卷分八「法」，每法三局——习字、课业，与一张自带规矩的名帖（《兰亭集序》《祭侄文稿》《寒食帖》……）。在挥毫的次数用完之前达到目标分数即可过关。
-- **文房铺**：过关得润笔，添置**印**（至多五枚，自左至右依次生效，是一卷的根本）、**字帖**（提升某一画数的等级）、**文房**（染色、赋予墨性、拓印、制格……）与整卷有效的**陈设**。
+- **五场、五个首领**：竹林夜径的百目、朱门鸟居的大百足、荒寺的大天狗、黄泉坂的九尾、百鬼夜行尽头的空亡。每个首领都要用不同的办法去圈。
+- **十二种妖怪**，各有各的走法：会扑的提灯、一跳一停的伞妖、隔空吐弹的目目连、专断墨痕的镰鼬……鬼弹同样可以被圈住。
+- **二十二张符**，升级时三选一，每张五级：雷符连锁、火符焚地、冰符冻结、回响再发、式神助战……同一局里最多持有八种，如何取舍就是流派。
+- **六种进阶**：两张符都练到顶，可以合为更强的一张。
+- **十四件神器**：每击败一个首领带走一件，往往改变整局的打法。
 
-### 内容
+![选符](docs/choice.jpg)
 
-- 45 个可以写出的字，各有来历、写法与字义——其中几个藏了起来，待你发现
-- 107 枚印、29 件文房、7 种字帖、20 件陈设、28 张名帖
-- 10 种书体（起手墨匣），其中有 7×7 的龟甲与 10×6 的长卷
-- 8 重难度（童生 → 状元）、无尽之卷、每日一帖、自定卷号
-- 图鉴、44 项成就与生平战绩
-- 中文 / English
+## 一夜之外
 
-### 操作
+- **六位笔灵**，各有长短，靠战绩解锁：白狐、青鸾、玄龟、雷兽、灯灵、墨龙。
+- **十夜**：渡过一夜，更深的一夜才会打开，一夜比一夜难。通关之后还可以继续**无尽夜行**。
+- **神社**：用战斗得来的灵玉供奉九种庇佑，永久生效。
+- **每日一夜**：每天一个固定的笔灵与种子，比一比今天的功德。
+- **图鉴与三十项成就**。
+- 中途退出也不要紧：每一场开始时自动存档，回来可以从这一场的开头续行。
 
-| | 鼠标 / 触屏 | 键盘 |
-| --- | --- | --- |
-| 落墨 | 拖动墨块到纸上 | `1`–`4` 选块，方向键移动，`空格` 落下 |
-| 旋转 | 轻点墨块 · 右键 · 滚轮 · 拖动时第二指轻点 | `R`（`Shift+R` 反向） |
-| 洗笔 | 把墨块拖到「洗笔」上 | `Q` |
-| 挥毫 | 点「挥毫」 | `空格`（未选块时） |
-| 其他 | 长按 / 悬停查看墨块；计分时点击可加速 | `Z` 字典 · `X` 墨匣 · `C` 卷况 · `Esc` 暂歇 |
+![首领战](docs/boss.jpg)
 
-## 开发
+## 手机
 
-游戏没有任何外部依赖：画面、字形、印章、纸张纹理与音乐音效全部由程序生成。源码在 `src/`，由一个脚本拼成单个 HTML 文件。
+横屏竖屏都能玩，界面会自己适应，刘海与手势条也避开了。
+
+<img src="docs/phone.jpg" width="300" alt="手机竖屏">
+
+## 关于这个文件
+
+- 没有任何外部资源：画面全部由程序实时绘制（WebGL），音乐与音效全部实时合成。
+- 存档在浏览器本地；「设置」里可以导出、导入存档文字。
+- 中文 / English 可切换；可调音量、震屏、减弱动态、画质。
+- 需要支持 WebGL 的浏览器（近几年的 Chrome、Edge、Safari、Firefox 都可以）。
+
+## 源码
+
+```
+src/        源码（数据、模拟、渲染、界面、声音）
+tools/      构建与测试脚本
+缚夜.html    构建产物，也就是游戏本体
+```
 
 ```bash
-node tools/build.js          # 生成 方块字.html
-node tools/test_engine.js    # 规则引擎回归测试
-node tools/sim.js 200 kai 0  # 练习机器人打 200 卷，用于校准数值
+node tools/build.js          # 重新打包出 缚夜.html
 ```
-
-界面测试用 Playwright 驱动真实页面（需自行安装 `playwright`）：
 
 ```bash
-node tools/shot.js --steps tools/test_ui.js                        # 鼠标与键盘
-node tools/shot.js --steps tools/test_ui.js --size 390x844 --touch # 触屏
-node tools/shot.js --steps tools/test_flow.js                      # 教学、铺子、存档、语言、结局
-node tools/shot.js --steps tools/test_soak.js                      # 机器人经由真实界面打完整卷
+node tools/test_engine.js    # 模拟层回归测试
 ```
 
+```bash
+node tools/sim.js 20 fox 1   # 让练习机器人打 20 夜，看看难度
 ```
-src/index.html      页面骨架
-src/css/            样式
-src/js/0x–1x        通用函数与内容数据（字、印、文房、名帖、书体）
-src/js/2x           规则引擎（不依赖页面，可在 Node 中运行）
-src/js/3x           存档、成就与界面文字
-src/js/4x–5x        声音合成、程序化绘制、特效与背景
-src/js/6x–9x        界面
-tools/              构建、测试与数值模拟
+
+浏览器端的流程测试与整夜浸泡测试（需要 Playwright）：
+
+```bash
+node tools/shot.js --steps tools/test_flow.js
+```
+
+```bash
+node tools/shot.js --steps tools/test_soak.js
 ```
 
 ---
 
-## Block Script (English)
+## English
 
-A calligraphy roguelike played with blocks. Fill a whole row and it becomes a horizontal stroke; fill a whole column and it becomes a vertical one. When you **flourish**, every complete line on the sheet joins into one Chinese character — 一, 十, 王, 井, 田 … — and each character is a "hand" with its own power. Build your box of ink blocks, your seals and your paper across eight principles, and write your way past the great masterworks.
+**Nightbind** is a top-down action roguelite in a single HTML file: download [`缚夜.html`](./缚夜.html), open it in a browser, and play — on a computer or a phone, with no install and no network.
 
-**One file.** Download [`方块字.html`](方块字.html) and open it in any modern browser. No install, works offline, on desktop and phones, in either orientation. The interface is available in Chinese and English.
+You are a brush-spirit trailing a line of light. **Draw a ring around the yokai and let your trail cross itself**: everything inside is sealed on the spot, and the more you catch in one ring, the harder it hits. Five stages and five bosses make a night; there are 12 kinds of yokai, 22 talismans in five levels with 6 evolutions, 14 relics, 6 spirits to unlock, 10 nights of rising difficulty, an endless parade, a shrine of permanent boons, a daily challenge and 30 feats. The interface is available in Chinese and English.
 
-Made by **藤野京**.
+Move with the mouse, WASD / arrows, or by dragging on a touch screen; dash with Space, a click, or a second finger.
+
+Created by **藤野京**.
