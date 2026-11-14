@@ -1982,8 +1982,8 @@ defDeck('changjuan', '长卷', 'The Handscroll', {
   w: 10, h: 6, mods: { inkMax: 10 }, unlock: { stake: 2 },
   build: () => perInk(['dot', 'i2', 'i3', 'i4', 'v3', 'o4', 't4', 'l4']) });
 defDeck('feibai', '飞白书', 'Flying White', {
-  dz: '每块墨都带有随机的[k|墨性]，但 [k|印位−1]。\n[n|丝丝露白，若飞若动]', de: 'Every block carries a random [k|ink nature], but [k|−1 seal slot].\n[n|Streaks of white, as if in flight]',
-  mods: { sealSlots: -1 }, unlock: { stake: 4 }, randomEnh: true,
+  dz: '每块墨都带有随机的[k|墨性]；但笔枯墨少，[k|墨量−25]、[k|印位−1]。\n[n|丝丝露白，若飞若动]', de: 'Every block carries a random [k|ink nature]; but the brush runs dry: [k|−25 Ink] and [k|−1 seal slot].\n[n|Streaks of white, as if in flight]',
+  mods: { sealSlots: -1, inkMax: -25 }, unlock: { stake: 4 }, randomEnh: true,
   build: () => perInk(['dot', 'i2', 'i3', 'i4', 'v3', 'o4', 't4', 'l4']) });
 
 // ---------- 科第 (difficulty ladder) ----------
