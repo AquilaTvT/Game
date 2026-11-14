@@ -159,5 +159,28 @@ module.exports = async ({ page, ev, shot, W, H }) => {
   assert(await ev('document.querySelector("#menu").classList.contains("on") && !document.querySelector("#btn-continue")'), 'back on the title');
   await shot('F20-english-title');
   assert((await ev('PROFILE.meta.runs')) >= 1, 'runs counted');
+
+  // ---- 11. hammering Enter through a winning flourish only skips the ceremony: the payout is taken once, from the payout view
+  await ev(`(() => { const orig = Game.collect.bind(Game); window.__collect = { early: 0, paid: 0 };
+    Game.collect = function () { const b = document.querySelector('#btn-collect'), m = UI.run ? UI.run.money : 0;
+      const shown = !UI.busy && document.querySelector('#v-cash').classList.contains('on') && !!b && !b.disabled;
+      const r = orig(); if (UI.run && UI.run.money !== m) { window.__collect.paid++; if (!shown) window.__collect.early++; } return r; };
+    Game.begin({ seed: 'KEYS', deck: 'kai' }); })()`); await settle(400);
+  for (let sheet = 0; sheet < 2; sheet++) {
+    await page.keyboard.press('Enter'); await settle(500);
+    assert((await ev('UI.run.phase')) === 'round', 'Enter starts the sheet');
+    await ev(`(() => { const run = UI.run, rd = run.round; rd.target = 10; for (let x = 0; x < 8; x++) rd.board[x] = { ink: 'mo', enh: null, pid: 0, shape: 'dot' }; Play.inkDirty = true; Hud.refresh(); })()`);
+    await page.keyboard.press(' '); await settle(60);
+    assert(await ev('UI.busy'), 'Space flourishes');
+    for (let i = 0; i < 600 && (await ev('UI.run.phase')) !== 'shop'; i++) { await page.keyboard.press('Enter'); await settle(25); }
+    const c = await J('window.__collect');
+    assert((await ev('UI.run.phase')) === 'shop', 'Enter collects the payout in the end');
+    assert(c.early === 0, 'nothing is collected before the payout is on screen (sheet ' + (sheet + 1) + ')');
+    assert(c.paid === sheet + 1, 'the payout is taken exactly once (sheet ' + (sheet + 1) + '): ' + JSON.stringify(c));
+    assert(!(await ev('!!document.querySelector("#btn-collect")')), 'no stale payout button is left behind');
+    await settle(300);
+    await page.click('#btn-next'); await settle(400);
+  }
+  await ev('Game.abandon(); 1'); await settle(300);
   console.log('flow test passed', W + 'x' + H);
 };

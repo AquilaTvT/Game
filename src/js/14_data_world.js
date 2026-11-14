@@ -57,7 +57,7 @@ defBoss('kuaixue', '快雪时晴帖', 'Clearing After Snow', 1, {
   dz: '[k|墨量−25]\n[n|全帖仅二十八字]', de: '[k|−25 Ink]\n[n|The whole letter is only twenty-eight characters]', mods: { inkMax: -25 } });
 defBoss('pingfu', '平复帖', 'Letter on Recovery', 1, {
   author: { zh: '西晋 · 陆机', en: 'Lu Ji, Western Jin' },
-  dz: '纸上有 [k|3 处虫蛀]：无法落墨，其所在的行与列写不成笔画', de: 'The sheet has [k|3 wormholes]: nothing can be placed there, so their rows and columns can never be completed',
+  dz: '纸上有 [k|3 处虫蛀]：无法落墨，其所在的行与列写不成笔画', de: 'The sheet has [k|3 wormholes]: their rows and columns can never be completed',
   start(run) { scatter(run, 3, (i) => { run.round.holes[i] = 1; }, true); } });
 defBoss('sangluan', '丧乱帖', 'Letter in Turmoil', 1, {
   author: { zh: '东晋 · 王羲之', en: 'Wang Xizhi, Eastern Jin' },

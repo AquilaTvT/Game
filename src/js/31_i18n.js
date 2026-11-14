@@ -83,7 +83,7 @@ const STR = {
     'ach.got': 'Feat — {0}',
     'btn.dict': 'Lexicon', 'btn.dict.g': 'Lex', 'btn.deck': 'Ink Box', 'btn.deck.g': 'Box', 'btn.run': 'Run record', 'btn.run.g': 'Run', 'btn.menu': 'Menu', 'btn.menu.g': '≡',
     'hud.score': 'Score', 'hud.target': 'Target', 'hud.fa': 'Principle {0}', 'hud.seed': 'Seed', 'hud.hints': 'Near', 'hud.next': 'Next', 'hud.pure': 'A stroke of one ink',
-    'hud.nochar': 'No stroke yet', 'hud.nochar.tip': 'Fill a whole row or column to make a stroke', 'hud.sanbi.tip': 'No character — scored by stroke count alone',
+    'hud.nochar': 'No stroke yet', 'hud.nochar.tip': 'Fill a whole row or column to make a stroke', 'hud.sanbi.tip': 'Strokes only, no character',
     'hud.tier': '{0}-stroke · Lv.{1}', 'hud.yi': 'Meaning', 'hud.yi.used': '(used this round)',
     'num.1': 'I', 'num.2': 'II', 'num.3': 'III', 'num.4': 'IV', 'num.5': 'V', 'num.6': 'VI', 'num.7': 'VII', 'num.8': 'VIII',
     'nul.san': 'Scribbles score nothing', 'nul.min': 'Too few strokes — no score', 'nul.repeat': 'Repeated character — no score',

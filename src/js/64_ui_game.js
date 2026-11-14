@@ -157,7 +157,6 @@ const Game = {
     const isNew = metaOnIgnite(run, res);
     this.save();
     await Score.play(res);
-    UI.busy = false;
     if (isNew) toast({ iconEl: Gfx.glyphCanvas(res.char, 34, '#1b1918'), title: T('fx.newchar', CH[res.char].g + (LANG === 'en' ? ' · ' + CH[res.char].en : '')), text: escHtml(LANG === 'zh' ? CH[res.char].gz : CH[res.char].ge), ms: 4800, snd: 'newchar' });
     metaOnState(run);
     if (res.won) {
@@ -167,13 +166,16 @@ const Game = {
       FX.flash('#fff3d0', 0.2);
       this.save();
       await wait(650);
-      this.showCash();
+      UI.busy = false;
+      if (UI.run === run && run.phase === 'cash') this.showCash();
     } else if (res.lost) {
       showAchievements();
       this.save();
       await wait(500);
-      this.finish();
+      UI.busy = false;
+      if (UI.run === run) this.finish();
     } else {
+      UI.busy = false;
       this.after();
       Tutorial.on('ignite', res);
     }
@@ -380,11 +382,12 @@ const Game = {
   },
   collect() {
     const run = UI.run;
-    if (run.phase !== 'cash') return;
+    if (UI.busy || !run || run.phase !== 'cash' || !run.cash) return;
     const c = UI.center(Hud.el.money);
     FX.spark(c.x, c.y, '#ffe08a', 22, 300 * UI.s, 2.6 * UI.s);
     Snd.play('buy');
     collectCash(run);
+    clear(Hud.el.viewCash);
     Play.viewBoard = null;
     if (run.phase === 'won' && !run.winRecorded) { run.winRecorded = true; metaOnWin(run); }
     metaOnState(run);

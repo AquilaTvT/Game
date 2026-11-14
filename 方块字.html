@@ -161,7 +161,7 @@ body[data-o="p"] .calc { flex: 1 1 0; min-width: 0; }
 @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.12); filter: brightness(1.5); } 100% { transform: scale(1); } }
 .hints { display: flex; gap: 6px; align-items: center; min-height: 42px; }
 body[data-o="p"] .hints { flex: 0 0 auto; }
-.hints .hl { font-size: 15px; color: var(--dim2); writing-mode: vertical-rl; letter-spacing: 0.1em; font-family: var(--f-kai); }
+.hints .hl { flex: 0 0 auto; width: 1.1em; font-size: 15px; line-height: 1.14; color: var(--dim2); font-family: var(--f-kai); text-align: center; word-break: break-all; }
 .hint { display: flex; align-items: center; gap: 5px; padding: 3px 7px 3px 4px; border-radius: 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); }
 .hint canvas { width: 34px; height: 34px; background: #efe5cc; border-radius: 4px; }
 .hint span { font-family: var(--f-num); font-size: 16px; color: var(--gold2); font-weight: 700; }
@@ -171,6 +171,10 @@ body[data-o="p"] .hints { flex: 0 0 auto; }
 body[data-o="l"] .purekey { display: flex; flex-wrap: wrap; gap: 1px 11px; padding: 0 4px; font-size: 14px; color: var(--dim); line-height: 1.3; margin-top: -2px; }
 .purekey b { font-weight: 400; color: var(--dim2); font-family: var(--f-kai); font-size: 14px; letter-spacing: 0.06em; }
 .purekey span { white-space: nowrap; }
+.purekey em { font-style: normal; }
+body[data-o="l"] .purekey.tight { flex-wrap: nowrap; justify-content: space-between; gap: 0 6px; overflow: hidden; }
+.purekey.tight b, .purekey.tight em { display: none; }
+body[data-o="l"] .purekey.off { display: none; }
 .purekey i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35); }
 .inkcard { padding: 6px 12px 9px; }
 body[data-o="p"] .inkcard { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
@@ -232,7 +236,7 @@ body[data-o="p"] .seal.dropbefore::before { top: 4px; bottom: 4px; left: -4px; w
 .seal.empty { border: 1px dashed rgba(210, 168, 74, 0.22); cursor: default; justify-content: center; color: var(--dim2); font-family: var(--f-kai); font-size: 17px; }
 .seal.empty:hover { background: none; }
 body[data-o="p"] .seal.empty { width: calc(var(--ss, 74px) + 4px); height: calc(var(--ss, 74px) + 4px); font-size: 15px; flex: none; }
-.edtag { position: absolute; left: 2px; top: 0; font-family: var(--f-kai); font-size: 13px; padding: 0 5px; border-radius: 5px; background: #111; color: var(--gold2); border: 1px solid var(--line2); z-index: 2; }
+.edtag { position: absolute; left: 2px; top: 0; white-space: nowrap; font-family: var(--f-kai); font-size: 13px; padding: 0 5px; border-radius: 5px; background: #111; color: var(--gold2); border: 1px solid var(--line2); z-index: 2; }
 .itembox { padding: 8px; display: flex; gap: 6px; min-width: 0; }
 body[data-o="l"] .itembox { flex-direction: column; flex: none; }
 body[data-o="p"] .itembox { flex-direction: row; flex: none; align-items: center; }
@@ -613,6 +617,8 @@ html[lang="en"] .vtitle, html[lang="en"] .cashcard .hd, html[lang="en"] .shophea
 html[lang="en"] .endwrap .big { font-size: 46px; }
 html[lang="en"] .vtitle { font-size: 34px; }
 html[lang="en"] .shophead .nm { font-size: 28px; }
+html[lang="en"] .shelf .lab { font-family: var(--f-num); letter-spacing: 0.02em; gap: 16px; }
+html[lang="en"] .shelf .lab span:last-child { text-align: right; }
 html[lang="en"] #trayrow .actbtn .t { font-size: 23px; letter-spacing: 0; font-family: var(--f-num); }
 html[lang="en"] .blindcard .nm { font-size: 21px; font-family: var(--f-num); white-space: normal; line-height: 1.12; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 html[lang="en"] .sheet .stamp { font-family: var(--f-num); font-size: 19px; }
@@ -634,7 +640,7 @@ html[lang="en"] .deck .dn2 { font-size: 13px; font-family: var(--f-num); }
 html[lang="en"] .slip .nm { font-family: var(--f-num); font-size: 11px; white-space: normal; line-height: 1.05; }
 html[lang="en"] .logo .tag { font-family: var(--f-num); font-size: 17px; letter-spacing: 0.08em; padding-left: 0; font-style: italic; }
 html[lang="en"] .dsec { font-family: var(--f-num); letter-spacing: 0.02em; }
-html[lang="en"] .hints .hl { font-family: var(--f-num); font-size: 12px; }
+html[lang="en"] .hints .hl { width: auto; font-family: var(--f-num); font-size: 12px; word-break: normal; white-space: nowrap; }
 html[lang="en"] .coach .cstep { font-family: var(--f-num); }
 html[lang="en"] .setrow .sl, html[lang="en"] .cashtotal, html[lang="en"] .stuckbar span, html[lang="en"] .bossline, html[lang="en"] .toast .tt { font-family: var(--f-num); }
 html[lang="en"] .packart .pn, html[lang="en"] .vouch .pn { font-family: var(--f-num); font-size: 13px; line-height: 1.1; text-align: center; padding: 0 3px; }
@@ -685,6 +691,9 @@ body[data-o="p"] .cashline { font-size: 25px; padding: 9px 0; }
 body[data-o="p"] .cashline .v { font-size: 29px; }
 body[data-o="p"] .cashcard .sc { font-size: 21px; }
 body[data-o="p"] .shelf .lab { font-size: 19px; }
+body[data-o="p"] .shopscroll { justify-content: center; gap: 12px; }
+body[data-o="p"] .shelf { flex: 1 0 auto; max-height: 430px; display: flex; flex-direction: column; }
+body[data-o="p"] .shelf .goods { flex: 1 1 auto; align-content: center; align-items: center; row-gap: 14px; zoom: 1.12; }
 body[data-o="p"] .good { width: 172px; }
 body[data-o="p"] .good .gn { font-size: 22px; max-width: 168px; }
 body[data-o="p"] .price { font-size: 27px; padding: 1px 16px 3px; }
@@ -1588,12 +1597,12 @@ function copyNote(s, run, lang) {
   return lang === 'zh' ? `\n[n|当前复制：${SEALS[t.id].zh}]` : `\n[n|Copying: ${SEALS[t.id].en}]`;
 }
 
-// 拓 (editions of a seal)
+// 拓 (editions of a seal); `te` is the short English label shown on the corner tag
 const EDITIONS = {
-  jing: { zh: '精拓', en: 'Fine Rubbing', dz: '[c|形+40]', de: '[c|+40 Form]', w: 5, add: 2 },
-  zhu:  { zh: '朱拓', en: 'Red Rubbing',  dz: '[m|神+8]', de: '[m|+8 Spirit]', w: 3.5, add: 3 },
-  jin:  { zh: '金拓', en: 'Gold Rubbing', dz: '[x|神×1.5]', de: '[x|×1.5 Spirit]', w: 1.2, add: 5 },
-  xian: { zh: '闲章', en: 'Leisure Seal', dz: '不占印位', de: 'Takes no seal slot', w: 0.6, add: 5 },
+  jing: { zh: '精拓', en: 'Fine Rubbing', te: 'Fine', dz: '[c|形+40]', de: '[c|+40 Form]', w: 5, add: 2 },
+  zhu:  { zh: '朱拓', en: 'Red Rubbing', te: 'Red',  dz: '[m|神+8]', de: '[m|+8 Spirit]', w: 3.5, add: 3 },
+  jin:  { zh: '金拓', en: 'Gold Rubbing', te: 'Gold', dz: '[x|神×1.5]', de: '[x|×1.5 Spirit]', w: 1.2, add: 5 },
+  xian: { zh: '闲章', en: 'Leisure Seal', te: 'Leisure', dz: '不占印位', de: 'Takes no seal slot', w: 0.6, add: 5 },
 };
 
 // ---------- 字帖 (copybooks) and 文房 (studio items) ----------
@@ -1839,7 +1848,7 @@ defBoss('kuaixue', '快雪时晴帖', 'Clearing After Snow', 1, {
   dz: '[k|墨量−25]\n[n|全帖仅二十八字]', de: '[k|−25 Ink]\n[n|The whole letter is only twenty-eight characters]', mods: { inkMax: -25 } });
 defBoss('pingfu', '平复帖', 'Letter on Recovery', 1, {
   author: { zh: '西晋 · 陆机', en: 'Lu Ji, Western Jin' },
-  dz: '纸上有 [k|3 处虫蛀]：无法落墨，其所在的行与列写不成笔画', de: 'The sheet has [k|3 wormholes]: nothing can be placed there, so their rows and columns can never be completed',
+  dz: '纸上有 [k|3 处虫蛀]：无法落墨，其所在的行与列写不成笔画', de: 'The sheet has [k|3 wormholes]: their rows and columns can never be completed',
   start(run) { scatter(run, 3, (i) => { run.round.holes[i] = 1; }, true); } });
 defBoss('sangluan', '丧乱帖', 'Letter in Turmoil', 1, {
   author: { zh: '东晋 · 王羲之', en: 'Wang Xizhi, Eastern Jin' },
@@ -3379,7 +3388,7 @@ const STR = {
     'ach.got': 'Feat — {0}',
     'btn.dict': 'Lexicon', 'btn.dict.g': 'Lex', 'btn.deck': 'Ink Box', 'btn.deck.g': 'Box', 'btn.run': 'Run record', 'btn.run.g': 'Run', 'btn.menu': 'Menu', 'btn.menu.g': '≡',
     'hud.score': 'Score', 'hud.target': 'Target', 'hud.fa': 'Principle {0}', 'hud.seed': 'Seed', 'hud.hints': 'Near', 'hud.next': 'Next', 'hud.pure': 'A stroke of one ink',
-    'hud.nochar': 'No stroke yet', 'hud.nochar.tip': 'Fill a whole row or column to make a stroke', 'hud.sanbi.tip': 'No character — scored by stroke count alone',
+    'hud.nochar': 'No stroke yet', 'hud.nochar.tip': 'Fill a whole row or column to make a stroke', 'hud.sanbi.tip': 'Strokes only, no character',
     'hud.tier': '{0}-stroke · Lv.{1}', 'hud.yi': 'Meaning', 'hud.yi.used': '(used this round)',
     'num.1': 'I', 'num.2': 'II', 'num.3': 'III', 'num.4': 'IV', 'num.5': 'V', 'num.6': 'VI', 'num.7': 'VII', 'num.8': 'VIII',
     'nul.san': 'Scribbles score nothing', 'nul.min': 'Too few strokes — no score', 'nul.repeat': 'Repeated character — no score',
@@ -4808,15 +4817,28 @@ function confirmBox(title, text, yes, no, danger) {
 }
 
 // ---- toasts
+const _toastQ = [];
 function toast(o) {
   // o: { icon (text) | iconEl, title, text, ms, snd }
+  _toastQ.push(o);
+  if (_toastQ.length > 12) _toastQ.shift();
+  pumpToasts();
+}
+// at most two notes on screen in landscape (three in portrait); the rest wait their turn
+function pumpToasts() {
   const box = $('#toasts');
-  const ic = h('div.ti', { class: o.iconEl ? 'paper' : '' }, o.iconEl || o.icon || '印');
-  const el = h('div.toast', ic, h('div', h('div.tt', { html: o.title || '' }), o.text ? h('div.td', { html: o.text }) : null));
-  box.appendChild(el);
-  if (o.snd) Snd.play(o.snd);
-  while (box.children.length > 3) box.firstChild.remove();
-  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 380); }, o.ms || 3200);
+  if (!box) return;
+  const max = UI.orient === 'p' ? 3 : 2;
+  while (_toastQ.length && box.children.length < max) {
+    const o = _toastQ.shift();
+    const ic = h('div.ti', { class: o.iconEl ? 'paper' : '' }, o.iconEl || o.icon || '印');
+    const el = h('div.toast', ic, h('div', h('div.tt', { html: o.title || '' }), o.text ? h('div.td', { html: o.text }) : null));
+    box.appendChild(el);
+    if (o.snd) Snd.play(o.snd);
+    // a waiting queue moves along a little faster
+    const ms = _toastQ.length ? Math.min(o.ms || 3200, 2400) : (o.ms || 3200);
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => { el.remove(); pumpToasts(); }, 380); }, ms);
+  }
 }
 function showAchievements() {
   for (const id of takeNewAch()) {
@@ -4846,6 +4868,7 @@ function initUiCore() {
 }
 
 // ---------- HUD: sheet info, score, the character being written, ink, seals and items ----------
+const edTag = (ed) => (LANG === 'zh' ? EDITIONS[ed].zh : EDITIONS[ed].te);
 const Hud = {
   el: {},
   build() {
@@ -4891,9 +4914,9 @@ const Hud = {
       E.bRun = ib(T('btn.run.g'), T('btn.run'), () => Overlays.runInfo()),
       E.bMenu = ib(T('btn.menu.g'), T('btn.menu'), () => Overlays.pause()));
     // what a stroke written in a single ink is worth
-    const key = h('div.purekey', h('b', { text: T('hud.pure') }));
-    const short = { mo: T('form') + '+' + PURE.mo, zhu: T('spirit') + '+' + PURE.zhu, qing: T('spirit') + '×' + PURE.qing, jin: '+' + PURE.jin + (LANG === 'zh' ? '文' : '$') };
-    for (const k of INKS) key.appendChild(h('span', h('i', { style: { background: INK[k].col } }), nm(INK[k]) + ' ' + short[k]));
+    const key = E.pureKey = h('div.purekey', h('b', { text: T('hud.pure') }));
+    const short = { mo: T('form') + '+' + PURE.mo, zhu: T('spirit') + '+' + PURE.zhu, qing: T('spirit') + '×' + PURE.qing, jin: LANG === 'zh' ? '+' + PURE.jin + '文' : '+$' + PURE.jin };
+    for (const k of INKS) key.appendChild(h('span', { title: nm(INK[k]) }, h('i', { style: { background: INK[k].col } }), h('em', { text: nm(INK[k]) + ' ' }), short[k]));
     g.appendChild(h('div#res', key, E.ink, h('div.counters', E.money), E.runline, E.btns));
     this._score = 0;
   },
@@ -4950,6 +4973,15 @@ const Hud = {
       E.bossline.innerHTML = rich(dtx(BOSSES[rd.boss]).split('\n')[0]) + (extra ? `<b style="color:#ffd9a0;margin-left:10px">${extra}</b>` : '');
     } else E.bossline.classList.add('hide');
     this.renderPeek();
+    this.fitKey();
+  },
+  // the legend gives way when the cards above need the room: full, then one line without names, then nothing
+  fitKey() {
+    const k = this.el.pureKey;
+    if (!k || UI.orient !== 'l') return;
+    const tight = () => k.getBoundingClientRect().top - this.el.char.getBoundingClientRect().bottom < 5 * UI.s;
+    k.className = 'purekey';
+    if (tight()) { k.classList.add('tight'); if (tight()) k.classList.add('off'); }
   },
   buttons() {
     const run = UI.run, E = this.el, rd = run && run.round;
@@ -5084,7 +5116,7 @@ const Hud = {
       const d = SEALS[s.id];
       const el = h('div.seal', { data: { uid: s.uid } }, Gfx.sealEl(s.id, size, s.ed),
         h('div.st', h('div.n', { text: nm(d) }), h('div.d', { html: rich(sealDesc(s.id, s, run).split('\n')[0]) })));
-      if (s.ed) el.appendChild(h('span.edtag', { text: nm(EDITIONS[s.ed]) }));
+      if (s.ed) el.appendChild(h('span.edtag', { text: edTag(s.ed) }));
       if (rd && rd.sealOff[s.uid]) el.classList.add('off');
       bindCard(el, () => sealCard(s.id, s, run, { owned: true, index: i }));
       this.bindSealDrag(el, i);
@@ -6187,7 +6219,6 @@ const Game = {
     const isNew = metaOnIgnite(run, res);
     this.save();
     await Score.play(res);
-    UI.busy = false;
     if (isNew) toast({ iconEl: Gfx.glyphCanvas(res.char, 34, '#1b1918'), title: T('fx.newchar', CH[res.char].g + (LANG === 'en' ? ' · ' + CH[res.char].en : '')), text: escHtml(LANG === 'zh' ? CH[res.char].gz : CH[res.char].ge), ms: 4800, snd: 'newchar' });
     metaOnState(run);
     if (res.won) {
@@ -6197,13 +6228,16 @@ const Game = {
       FX.flash('#fff3d0', 0.2);
       this.save();
       await wait(650);
-      this.showCash();
+      UI.busy = false;
+      if (UI.run === run && run.phase === 'cash') this.showCash();
     } else if (res.lost) {
       showAchievements();
       this.save();
       await wait(500);
-      this.finish();
+      UI.busy = false;
+      if (UI.run === run) this.finish();
     } else {
+      UI.busy = false;
       this.after();
       Tutorial.on('ignite', res);
     }
@@ -6410,11 +6444,12 @@ const Game = {
   },
   collect() {
     const run = UI.run;
-    if (run.phase !== 'cash') return;
+    if (UI.busy || !run || run.phase !== 'cash' || !run.cash) return;
     const c = UI.center(Hud.el.money);
     FX.spark(c.x, c.y, '#ffe08a', 22, 300 * UI.s, 2.6 * UI.s);
     Snd.play('buy');
     collectCash(run);
+    clear(Hud.el.viewCash);
     Play.viewBoard = null;
     if (run.phase === 'won' && !run.winRecorded) { run.winRecorded = true; metaOnWin(run); }
     metaOnState(run);
@@ -6472,7 +6507,7 @@ const Shop = {
     if (it.kind === 'seal') {
       const d = SEALS[it.id];
       const el = h('div.good.gseal', { class: it.sold ? 'sold' : '', data: { i } },
-        h('div.body', Gfx.sealEl(it.id, 84, it.ed), h('div.gn', { text: nm(d) }), h('span.rar', { style: { background: RARITY[d.r].col } }), it.ed ? h('span.edtag', { text: nm(EDITIONS[it.ed]), style: { left: 'auto', right: '4px', top: '4px' } }) : null),
+        h('div.body', Gfx.sealEl(it.id, 84, it.ed), h('div.gn', { text: nm(d) }), h('span.rar', { style: { background: RARITY[d.r].col } }), it.ed ? h('span.edtag', { text: edTag(it.ed), style: { left: 'auto', right: '4px', top: '4px' } }) : null),
         this.priceEl(it.price, it.gift));
       bindCard(el, () => sealCard(it.id, null, run, { ed: it.ed, actions: [{ label: `${T('buy')} ${it.price ? coinHtml(it.price) : ''}`, cls: 'red', silent: true, fn: () => this.buy(i, false) }] }));
       return el;
@@ -7670,6 +7705,7 @@ const App = {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     this.wake();
     if (Score.playing) { Score.fast = true; if (e.key === ' ') e.preventDefault(); return; }
+    if (UI.busy) { if (e.key === ' ') e.preventDefault(); return; }
     if (modalOpen()) { if (e.key === 'Escape') { closeTopModal(); e.preventDefault(); } return; }
     if (e.key === 'Escape' && _popAnchor) { hidePop(); return; }
     if (!$('#game').classList.contains('on') || !UI.run) return;

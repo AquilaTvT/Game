@@ -1,4 +1,5 @@
 // ---------- HUD: sheet info, score, the character being written, ink, seals and items ----------
+const edTag = (ed) => (LANG === 'zh' ? EDITIONS[ed].zh : EDITIONS[ed].te);
 const Hud = {
   el: {},
   build() {
@@ -44,9 +45,9 @@ const Hud = {
       E.bRun = ib(T('btn.run.g'), T('btn.run'), () => Overlays.runInfo()),
       E.bMenu = ib(T('btn.menu.g'), T('btn.menu'), () => Overlays.pause()));
     // what a stroke written in a single ink is worth
-    const key = h('div.purekey', h('b', { text: T('hud.pure') }));
-    const short = { mo: T('form') + '+' + PURE.mo, zhu: T('spirit') + '+' + PURE.zhu, qing: T('spirit') + '×' + PURE.qing, jin: '+' + PURE.jin + (LANG === 'zh' ? '文' : '$') };
-    for (const k of INKS) key.appendChild(h('span', h('i', { style: { background: INK[k].col } }), nm(INK[k]) + ' ' + short[k]));
+    const key = E.pureKey = h('div.purekey', h('b', { text: T('hud.pure') }));
+    const short = { mo: T('form') + '+' + PURE.mo, zhu: T('spirit') + '+' + PURE.zhu, qing: T('spirit') + '×' + PURE.qing, jin: LANG === 'zh' ? '+' + PURE.jin + '文' : '+$' + PURE.jin };
+    for (const k of INKS) key.appendChild(h('span', { title: nm(INK[k]) }, h('i', { style: { background: INK[k].col } }), h('em', { text: nm(INK[k]) + ' ' }), short[k]));
     g.appendChild(h('div#res', key, E.ink, h('div.counters', E.money), E.runline, E.btns));
     this._score = 0;
   },
@@ -103,6 +104,15 @@ const Hud = {
       E.bossline.innerHTML = rich(dtx(BOSSES[rd.boss]).split('\n')[0]) + (extra ? `<b style="color:#ffd9a0;margin-left:10px">${extra}</b>` : '');
     } else E.bossline.classList.add('hide');
     this.renderPeek();
+    this.fitKey();
+  },
+  // the legend gives way when the cards above need the room: full, then one line without names, then nothing
+  fitKey() {
+    const k = this.el.pureKey;
+    if (!k || UI.orient !== 'l') return;
+    const tight = () => k.getBoundingClientRect().top - this.el.char.getBoundingClientRect().bottom < 5 * UI.s;
+    k.className = 'purekey';
+    if (tight()) { k.classList.add('tight'); if (tight()) k.classList.add('off'); }
   },
   buttons() {
     const run = UI.run, E = this.el, rd = run && run.round;
@@ -237,7 +247,7 @@ const Hud = {
       const d = SEALS[s.id];
       const el = h('div.seal', { data: { uid: s.uid } }, Gfx.sealEl(s.id, size, s.ed),
         h('div.st', h('div.n', { text: nm(d) }), h('div.d', { html: rich(sealDesc(s.id, s, run).split('\n')[0]) })));
-      if (s.ed) el.appendChild(h('span.edtag', { text: nm(EDITIONS[s.ed]) }));
+      if (s.ed) el.appendChild(h('span.edtag', { text: edTag(s.ed) }));
       if (rd && rd.sealOff[s.uid]) el.classList.add('off');
       bindCard(el, () => sealCard(s.id, s, run, { owned: true, index: i }));
       this.bindSealDrag(el, i);

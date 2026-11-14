@@ -391,10 +391,10 @@ function copyNote(s, run, lang) {
   return lang === 'zh' ? `\n[n|当前复制：${SEALS[t.id].zh}]` : `\n[n|Copying: ${SEALS[t.id].en}]`;
 }
 
-// 拓 (editions of a seal)
+// 拓 (editions of a seal); `te` is the short English label shown on the corner tag
 const EDITIONS = {
-  jing: { zh: '精拓', en: 'Fine Rubbing', dz: '[c|形+40]', de: '[c|+40 Form]', w: 5, add: 2 },
-  zhu:  { zh: '朱拓', en: 'Red Rubbing',  dz: '[m|神+8]', de: '[m|+8 Spirit]', w: 3.5, add: 3 },
-  jin:  { zh: '金拓', en: 'Gold Rubbing', dz: '[x|神×1.5]', de: '[x|×1.5 Spirit]', w: 1.2, add: 5 },
-  xian: { zh: '闲章', en: 'Leisure Seal', dz: '不占印位', de: 'Takes no seal slot', w: 0.6, add: 5 },
+  jing: { zh: '精拓', en: 'Fine Rubbing', te: 'Fine', dz: '[c|形+40]', de: '[c|+40 Form]', w: 5, add: 2 },
+  zhu:  { zh: '朱拓', en: 'Red Rubbing', te: 'Red',  dz: '[m|神+8]', de: '[m|+8 Spirit]', w: 3.5, add: 3 },
+  jin:  { zh: '金拓', en: 'Gold Rubbing', te: 'Gold', dz: '[x|神×1.5]', de: '[x|×1.5 Spirit]', w: 1.2, add: 5 },
+  xian: { zh: '闲章', en: 'Leisure Seal', te: 'Leisure', dz: '不占印位', de: 'Takes no seal slot', w: 0.6, add: 5 },
 };

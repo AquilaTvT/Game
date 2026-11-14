@@ -232,15 +232,28 @@ function confirmBox(title, text, yes, no, danger) {
 }
 
 // ---- toasts
+const _toastQ = [];
 function toast(o) {
   // o: { icon (text) | iconEl, title, text, ms, snd }
+  _toastQ.push(o);
+  if (_toastQ.length > 12) _toastQ.shift();
+  pumpToasts();
+}
+// at most two notes on screen in landscape (three in portrait); the rest wait their turn
+function pumpToasts() {
   const box = $('#toasts');
-  const ic = h('div.ti', { class: o.iconEl ? 'paper' : '' }, o.iconEl || o.icon || '印');
-  const el = h('div.toast', ic, h('div', h('div.tt', { html: o.title || '' }), o.text ? h('div.td', { html: o.text }) : null));
-  box.appendChild(el);
-  if (o.snd) Snd.play(o.snd);
-  while (box.children.length > 3) box.firstChild.remove();
-  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 380); }, o.ms || 3200);
+  if (!box) return;
+  const max = UI.orient === 'p' ? 3 : 2;
+  while (_toastQ.length && box.children.length < max) {
+    const o = _toastQ.shift();
+    const ic = h('div.ti', { class: o.iconEl ? 'paper' : '' }, o.iconEl || o.icon || '印');
+    const el = h('div.toast', ic, h('div', h('div.tt', { html: o.title || '' }), o.text ? h('div.td', { html: o.text }) : null));
+    box.appendChild(el);
+    if (o.snd) Snd.play(o.snd);
+    // a waiting queue moves along a little faster
+    const ms = _toastQ.length ? Math.min(o.ms || 3200, 2400) : (o.ms || 3200);
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => { el.remove(); pumpToasts(); }, 380); }, ms);
+  }
 }
 function showAchievements() {
   for (const id of takeNewAch()) {

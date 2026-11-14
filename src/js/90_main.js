@@ -71,6 +71,7 @@ const App = {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     this.wake();
     if (Score.playing) { Score.fast = true; if (e.key === ' ') e.preventDefault(); return; }
+    if (UI.busy) { if (e.key === ' ') e.preventDefault(); return; }
     if (modalOpen()) { if (e.key === 'Escape') { closeTopModal(); e.preventDefault(); } return; }
     if (e.key === 'Escape' && _popAnchor) { hidePop(); return; }
     if (!$('#game').classList.contains('on') || !UI.run) return;
