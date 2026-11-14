@@ -310,7 +310,7 @@ const Game = {
           acts.appendChild(h('div.skip', { html: `${T('pick.skipfor')} <b>${nm(tag)}</b><br>${rich(dtx(tag))}` }));
           acts.appendChild(mkBtn(T('pick.skip'), 'ghost small', () => this.skip()));
         }
-      } else if (st === 'done') card.appendChild(h('div.stamp', { text: T('pick.done') }));
+      } else if (st === 'done') acts.appendChild(h('div.stamp', { text: T('pick.done') }));
       if (UI.orient === 'p') { const left = h('div.col', col, mid); card.append(left, acts); }
       else card.append(col, mid, acts);
       row.appendChild(card);

@@ -167,6 +167,11 @@ body[data-o="p"] .hints { flex: 0 0 auto; }
 .hint span { font-family: var(--f-num); font-size: 16px; color: var(--gold2); font-weight: 700; }
 
 /* resources */
+.purekey { display: none; }
+body[data-o="l"] .purekey { display: flex; flex-wrap: wrap; gap: 1px 11px; padding: 0 4px; font-size: 14px; color: var(--dim); line-height: 1.3; margin-top: -2px; }
+.purekey b { font-weight: 400; color: var(--dim2); font-family: var(--f-kai); font-size: 14px; letter-spacing: 0.06em; }
+.purekey span { white-space: nowrap; }
+.purekey i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35); }
 .inkcard { padding: 6px 12px 9px; }
 body[data-o="p"] .inkcard { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
 .inkcard .row { display: flex; align-items: baseline; justify-content: space-between; }
@@ -306,7 +311,7 @@ body[data-o="p"] .sheet .acts { margin-top: 0; }
 .sheet.now { border-color: var(--gold2); transform: translateY(-6px); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(243, 217, 139, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
 body[data-o="p"] .sheet.now { transform: none; }
 .sheet.boss { border-color: rgba(224, 80, 60, 0.65); background: linear-gradient(180deg, rgba(58, 24, 22, 0.96), rgba(24, 14, 15, 0.97)); }
-.sheet .stamp { position: absolute; right: 8px; top: 8px; font-family: var(--f-kai); font-size: 19px; color: #9fe0bf; border: 2px solid #9fe0bf; border-radius: 6px; padding: 0 6px; transform: rotate(8deg); }
+.sheet .stamp { align-self: center; font-family: var(--f-kai); font-size: 24px; color: #9fe0bf; border: 2px solid #9fe0bf; border-radius: 7px; padding: 1px 12px; transform: rotate(-7deg); white-space: nowrap; }
 .pickinfo { margin-top: 14px; font-size: 17px; color: var(--dim); text-align: center; line-height: 1.5; }
 .pickinfo b { color: var(--gold2); font-weight: 600; }
 
@@ -609,7 +614,8 @@ html[lang="en"] .endwrap .big { font-size: 46px; }
 html[lang="en"] .vtitle { font-size: 34px; }
 html[lang="en"] .shophead .nm { font-size: 28px; }
 html[lang="en"] #trayrow .actbtn .t { font-size: 23px; letter-spacing: 0; font-family: var(--f-num); }
-html[lang="en"] .blindcard .nm { font-size: 24px; font-family: var(--f-num); }
+html[lang="en"] .blindcard .nm { font-size: 21px; font-family: var(--f-num); white-space: normal; line-height: 1.12; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+html[lang="en"] .sheet .stamp { font-family: var(--f-num); font-size: 19px; }
 html[lang="en"] .blindcard .fa { font-family: var(--f-num); font-size: 18px; letter-spacing: 0.02em; }
 html[lang="en"] .scorecard .lbl, html[lang="en"] .inkcard .lbl, html[lang="en"] .counter .lbl, html[lang="en"] .boxtitle { letter-spacing: 0.02em; font-family: var(--f-num); }
 html[lang="en"] body[data-o="p"] .boxtitle { font-size: 12px; }
@@ -803,7 +809,8 @@ function fmtNum(n) {
     const m = n / Math.pow(10, e);
     return m.toFixed(2) + 'e' + e;
   }
-  const sig = (v) => (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2));
+  // four significant figures: 123.5万, 1235万, 1.23亿
+  const sig = (v) => (v >= 1000 ? v.toFixed(0) : v >= 100 ? v.toFixed(1) : v.toFixed(2));
   if (LANG === 'zh') {
     if (n < 1e8) return sig(n / 1e4) + '万';
     if (n < 1e12) return sig(n / 1e8) + '亿';
@@ -3052,11 +3059,19 @@ function migrateProfile(p) {
   if (!Array.isArray(p.meta.history)) p.meta.history = [];
   if (p.run && (!p.run.rng || !p.run.deck || !DECKS[p.run.deckId] || p.run.v !== 1)) p.run = null;
   if (p.run) {
-    // drop anything the current version does not know
-    p.run.seals = p.run.seals.filter((s) => SEALS[s.id]);
-    p.run.items = p.run.items.filter((i) => ITEMS[i.id]);
-    p.run.deck = p.run.deck.filter((q) => SHAPES[q.shape] && INK[q.ink]);
-    if (p.run.round && p.run.round.boss && !BOSSES[p.run.round.boss]) p.run = null;
+    // a saved run must be whole; anything doubtful is dropped rather than resumed half-broken
+    try {
+      const r = p.run;
+      r.seals = r.seals.filter((s) => SEALS[s.id]);
+      r.items = r.items.filter((i) => ITEMS[i.id]);
+      r.deck = r.deck.filter((q) => SHAPES[q.shape] && INK[q.ink]);
+      const okPhase = ['pick', 'round', 'cash', 'shop', 'won'].includes(r.phase);
+      const rd = r.round;
+      const okRound = r.phase !== 'round' && r.phase !== 'cash' ? true : !!rd && Array.isArray(rd.board) && rd.board.length === r.w * r.h && Array.isArray(rd.tray) && Array.isArray(rd.draw) && (!rd.boss || !!BOSSES[rd.boss]);
+      const okShop = r.phase !== 'shop' || (!!r.shop && Array.isArray(r.shop.items) && r.shop.items.every((i) => (i.kind === 'seal' ? SEALS[i.id] : ITEMS[i.id])) && r.shop.packs.every((k) => PACKS[k.id]));
+      const okMisc = r.deck.length >= 4 && Array.isArray(r.paper) && r.paper.length === r.w * r.h && Array.isArray(r.tiers) && !!BOSSES[r.boss] && !!STAKES[r.stake] && (r.phase !== 'cash' || !!r.cash);
+      if (!okPhase || !okRound || !okShop || !okMisc) p.run = null;
+    } catch (e) { p.run = null; }
   }
   p.v = 1;
   return p;
@@ -3287,7 +3302,7 @@ const STR = {
     oops: '出了点小岔子，已尽量恢复',
     'ach.got': '成就 · {0}',
     'btn.dict': '字典', 'btn.dict.g': '字', 'btn.deck': '墨匣', 'btn.deck.g': '匣', 'btn.run': '卷况', 'btn.run.g': '卷', 'btn.menu': '菜单', 'btn.menu.g': '≡',
-    'hud.score': '得分', 'hud.target': '目标', 'hud.fa': '第{0}法', 'hud.seed': '卷号', 'hud.hints': '可成', 'hud.next': '来墨',
+    'hud.score': '得分', 'hud.target': '目标', 'hud.fa': '第{0}法', 'hud.seed': '卷号', 'hud.hints': '可成', 'hud.next': '来墨', 'hud.pure': '纯色之笔',
     'hud.nochar': '尚未成笔', 'hud.nochar.tip': '填满整行成「横」，整列成「竖」', 'hud.sanbi.tip': '笔画不成字，只按画数计分',
     'hud.tier': '{0}画 · Lv.{1}', 'hud.yi': '字义', 'hud.yi.used': '（本局已用）',
     'num.1': '一', 'num.2': '二', 'num.3': '三', 'num.4': '四', 'num.5': '五', 'num.6': '六', 'num.7': '七', 'num.8': '八',
@@ -3363,7 +3378,7 @@ const STR = {
     oops: 'Something went wrong — recovered as far as possible',
     'ach.got': 'Feat — {0}',
     'btn.dict': 'Lexicon', 'btn.dict.g': 'Lex', 'btn.deck': 'Ink Box', 'btn.deck.g': 'Box', 'btn.run': 'Run record', 'btn.run.g': 'Run', 'btn.menu': 'Menu', 'btn.menu.g': '≡',
-    'hud.score': 'Score', 'hud.target': 'Target', 'hud.fa': 'Principle {0}', 'hud.seed': 'Seed', 'hud.hints': 'Near', 'hud.next': 'Next',
+    'hud.score': 'Score', 'hud.target': 'Target', 'hud.fa': 'Principle {0}', 'hud.seed': 'Seed', 'hud.hints': 'Near', 'hud.next': 'Next', 'hud.pure': 'A stroke of one ink',
     'hud.nochar': 'No stroke yet', 'hud.nochar.tip': 'Fill a whole row or column to make a stroke', 'hud.sanbi.tip': 'No character — scored by stroke count alone',
     'hud.tier': '{0}-stroke · Lv.{1}', 'hud.yi': 'Meaning', 'hud.yi.used': '(used this round)',
     'num.1': 'I', 'num.2': 'II', 'num.3': 'III', 'num.4': 'IV', 'num.5': 'V', 'num.6': 'VI', 'num.7': 'VII', 'num.8': 'VIII',
@@ -4875,7 +4890,11 @@ const Hud = {
       E.bDeck = ib(T('btn.deck.g'), T('btn.deck'), () => Overlays.deck()),
       E.bRun = ib(T('btn.run.g'), T('btn.run'), () => Overlays.runInfo()),
       E.bMenu = ib(T('btn.menu.g'), T('btn.menu'), () => Overlays.pause()));
-    g.appendChild(h('div#res', E.ink, h('div.counters', E.money), E.runline, E.btns));
+    // what a stroke written in a single ink is worth
+    const key = h('div.purekey', h('b', { text: T('hud.pure') }));
+    const short = { mo: T('form') + '+' + PURE.mo, zhu: T('spirit') + '+' + PURE.zhu, qing: T('spirit') + '×' + PURE.qing, jin: '+' + PURE.jin + (LANG === 'zh' ? '文' : '$') };
+    for (const k of INKS) key.appendChild(h('span', h('i', { style: { background: INK[k].col } }), nm(INK[k]) + ' ' + short[k]));
+    g.appendChild(h('div#res', key, E.ink, h('div.counters', E.money), E.runline, E.btns));
     this._score = 0;
   },
   view(name) {
@@ -6321,7 +6340,7 @@ const Game = {
           acts.appendChild(h('div.skip', { html: `${T('pick.skipfor')} <b>${nm(tag)}</b><br>${rich(dtx(tag))}` }));
           acts.appendChild(mkBtn(T('pick.skip'), 'ghost small', () => this.skip()));
         }
-      } else if (st === 'done') card.appendChild(h('div.stamp', { text: T('pick.done') }));
+      } else if (st === 'done') acts.appendChild(h('div.stamp', { text: T('pick.done') }));
       if (UI.orient === 'p') { const left = h('div.col', col, mid); card.append(left, acts); }
       else card.append(col, mid, acts);
       row.appendChild(card);
@@ -7217,7 +7236,13 @@ const Menu = {
     const list = h('div.menulist');
     const add = (label, cls, fn, id) => { const b = mkBtn(label, cls, fn); if (id) b.id = id; list.appendChild(b); return b; };
     const run = PROFILE.run;
-    if (run) add(`${T('menu.continue')}<small>${T('menu.continue.d', nm(DECKS[run.deckId]), run.ante > 8 ? run.ante : T('num.' + run.ante))}</small>`, 'gold', () => Game.resume(), 'btn-continue');
+    if (run) add(`${T('menu.continue')}<small>${T('menu.continue.d', nm(DECKS[run.deckId]), run.ante > 8 ? run.ante : T('num.' + run.ante))}</small>`, 'gold', () => {
+      try { Game.resume(); } catch (e) {
+        // a save that can no longer be read should never trap the player
+        PROFILE.run = null; UI.run = null; saveProfile(true); closeAllModals(); this.title();
+        toast({ icon: '误', title: T('oops'), ms: 3000 });
+      }
+    }, 'btn-continue');
     // the very first run starts straight away, with the tutorial; the full setup comes afterwards
     add(T('menu.new'), 'red', () => { if (!PROFILE.meta.tutorial && !PROFILE.meta.runs && !PROFILE.run) Game.begin({ deck: 'kai', stake: 0, tutorial: true }); else this.setup(); }, 'btn-new');
     const dk = todayKey(), dd = PROFILE.meta.daily[dk];

@@ -32,11 +32,19 @@ function migrateProfile(p) {
   if (!Array.isArray(p.meta.history)) p.meta.history = [];
   if (p.run && (!p.run.rng || !p.run.deck || !DECKS[p.run.deckId] || p.run.v !== 1)) p.run = null;
   if (p.run) {
-    // drop anything the current version does not know
-    p.run.seals = p.run.seals.filter((s) => SEALS[s.id]);
-    p.run.items = p.run.items.filter((i) => ITEMS[i.id]);
-    p.run.deck = p.run.deck.filter((q) => SHAPES[q.shape] && INK[q.ink]);
-    if (p.run.round && p.run.round.boss && !BOSSES[p.run.round.boss]) p.run = null;
+    // a saved run must be whole; anything doubtful is dropped rather than resumed half-broken
+    try {
+      const r = p.run;
+      r.seals = r.seals.filter((s) => SEALS[s.id]);
+      r.items = r.items.filter((i) => ITEMS[i.id]);
+      r.deck = r.deck.filter((q) => SHAPES[q.shape] && INK[q.ink]);
+      const okPhase = ['pick', 'round', 'cash', 'shop', 'won'].includes(r.phase);
+      const rd = r.round;
+      const okRound = r.phase !== 'round' && r.phase !== 'cash' ? true : !!rd && Array.isArray(rd.board) && rd.board.length === r.w * r.h && Array.isArray(rd.tray) && Array.isArray(rd.draw) && (!rd.boss || !!BOSSES[rd.boss]);
+      const okShop = r.phase !== 'shop' || (!!r.shop && Array.isArray(r.shop.items) && r.shop.items.every((i) => (i.kind === 'seal' ? SEALS[i.id] : ITEMS[i.id])) && r.shop.packs.every((k) => PACKS[k.id]));
+      const okMisc = r.deck.length >= 4 && Array.isArray(r.paper) && r.paper.length === r.w * r.h && Array.isArray(r.tiers) && !!BOSSES[r.boss] && !!STAKES[r.stake] && (r.phase !== 'cash' || !!r.cash);
+      if (!okPhase || !okRound || !okShop || !okMisc) p.run = null;
+    } catch (e) { p.run = null; }
   }
   p.v = 1;
   return p;

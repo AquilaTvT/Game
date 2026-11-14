@@ -66,7 +66,8 @@ function fmtNum(n) {
     const m = n / Math.pow(10, e);
     return m.toFixed(2) + 'e' + e;
   }
-  const sig = (v) => (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2));
+  // four significant figures: 123.5万, 1235万, 1.23亿
+  const sig = (v) => (v >= 1000 ? v.toFixed(0) : v >= 100 ? v.toFixed(1) : v.toFixed(2));
   if (LANG === 'zh') {
     if (n < 1e8) return sig(n / 1e4) + '万';
     if (n < 1e12) return sig(n / 1e8) + '亿';

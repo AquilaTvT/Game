@@ -111,7 +111,13 @@ const Menu = {
     const list = h('div.menulist');
     const add = (label, cls, fn, id) => { const b = mkBtn(label, cls, fn); if (id) b.id = id; list.appendChild(b); return b; };
     const run = PROFILE.run;
-    if (run) add(`${T('menu.continue')}<small>${T('menu.continue.d', nm(DECKS[run.deckId]), run.ante > 8 ? run.ante : T('num.' + run.ante))}</small>`, 'gold', () => Game.resume(), 'btn-continue');
+    if (run) add(`${T('menu.continue')}<small>${T('menu.continue.d', nm(DECKS[run.deckId]), run.ante > 8 ? run.ante : T('num.' + run.ante))}</small>`, 'gold', () => {
+      try { Game.resume(); } catch (e) {
+        // a save that can no longer be read should never trap the player
+        PROFILE.run = null; UI.run = null; saveProfile(true); closeAllModals(); this.title();
+        toast({ icon: '误', title: T('oops'), ms: 3000 });
+      }
+    }, 'btn-continue');
     // the very first run starts straight away, with the tutorial; the full setup comes afterwards
     add(T('menu.new'), 'red', () => { if (!PROFILE.meta.tutorial && !PROFILE.meta.runs && !PROFILE.run) Game.begin({ deck: 'kai', stake: 0, tutorial: true }); else this.setup(); }, 'btn-new');
     const dk = todayKey(), dd = PROFILE.meta.daily[dk];

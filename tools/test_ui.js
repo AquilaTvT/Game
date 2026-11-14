@@ -89,6 +89,19 @@ module.exports = async ({ page, ev, W, H }) => {
   const post = await st();
   assert(post.placed === pre.placed + 1, 'touch drag placed a block: ' + JSON.stringify([pre, post]));
 
+  // 7b. seals can be dragged into a new order
+  await ev("(() => { const run = UI.run; for (const id of ['zhenyun', 'kuteng', 'runbi']) addSeal(run, id); Hud.refresh(); })()");
+  await page.waitForTimeout(150);
+  const sealBox = async (i) => { const els = await page.$$('#side .seal:not(.empty)'); return els[i].boundingBox(); };
+  const a0 = await sealBox(0), a2 = await sealBox(2);
+  await page.mouse.move(a0.x + a0.width / 2, a0.y + a0.height / 2); await page.mouse.down();
+  await page.mouse.move(a0.x + a0.width / 2 + 5, a0.y + a0.height / 2 + 30, { steps: 4 });
+  await page.mouse.move(a2.x + a2.width / 2, a2.y + a2.height / 2, { steps: 6 });
+  await page.mouse.up(); await page.waitForTimeout(200);
+  const order = await ev('UI.run.seals.map(s => s.id).join(",")');
+  assert(order === 'kuteng,zhenyun,runbi', 'seal dragged before the third: ' + order);
+  assert(!(await ev('!!_popAnchor')), 'no card opened by the drag');
+
   // 8. fill a row through the engine and flourish with the keyboard
   await ev(`(() => { const run = UI.run, rd = run.round; for (let x = 0; x < run.w; x++) if (!rd.board[x]) rd.board[x] = { ink: 'mo', enh: null, pid: 0, shape: 'dot' }; Play.inkDirty = true; Hud.refresh(); })()`);
   await page.keyboard.press('Escape'); await page.waitForTimeout(100);

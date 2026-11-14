@@ -43,7 +43,11 @@ const Hud = {
       E.bDeck = ib(T('btn.deck.g'), T('btn.deck'), () => Overlays.deck()),
       E.bRun = ib(T('btn.run.g'), T('btn.run'), () => Overlays.runInfo()),
       E.bMenu = ib(T('btn.menu.g'), T('btn.menu'), () => Overlays.pause()));
-    g.appendChild(h('div#res', E.ink, h('div.counters', E.money), E.runline, E.btns));
+    // what a stroke written in a single ink is worth
+    const key = h('div.purekey', h('b', { text: T('hud.pure') }));
+    const short = { mo: T('form') + '+' + PURE.mo, zhu: T('spirit') + '+' + PURE.zhu, qing: T('spirit') + '×' + PURE.qing, jin: '+' + PURE.jin + (LANG === 'zh' ? '文' : '$') };
+    for (const k of INKS) key.appendChild(h('span', h('i', { style: { background: INK[k].col } }), nm(INK[k]) + ' ' + short[k]));
+    g.appendChild(h('div#res', key, E.ink, h('div.counters', E.money), E.runline, E.btns));
     this._score = 0;
   },
   view(name) {
